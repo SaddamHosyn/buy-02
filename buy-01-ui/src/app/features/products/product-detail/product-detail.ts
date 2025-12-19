@@ -13,7 +13,10 @@ import { MatBadgeModule } from '@angular/material/badge';
 import { MatDialog } from '@angular/material/dialog';
 import { ProductService, Product } from '../../../core/services/product.service';
 import { Auth, User } from '../../../core/services/auth';
-import { ImageLightbox } from '../../../shared/components/image-lightbox/image-lightbox';
+import { ImageLightbox } from '../../../shared/components/image-lightbox/image-lightbox';   
+
+import { environment } from '../../../../environments/environment';
+
 
 @Component({
   selector: 'app-product-detail',
@@ -111,7 +114,8 @@ export class ProductDetail implements OnInit {
    * Load seller information
    */
   loadSeller(sellerId: string): void {
-    this.http.get<User>(`http://localhost:3000/users/${sellerId}`).subscribe({
+   this.http.get<User>(`${environment.usersUrl}/${sellerId}`).subscribe({
+
       next: (seller) => {
         this.seller.set(seller);
         this.isLoading.set(false);

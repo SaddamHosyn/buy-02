@@ -1,10 +1,15 @@
 server:
-  port: 8080
+  port: 8080 # Use HTTP for backend services
 
 spring:
   application:
     name: api-gateway
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration # Disable security
   cloud:
+    compatibility-verifier:
+      enabled: false # From your application.properties
     gateway:
       discovery:
         locator:
@@ -12,13 +17,6 @@ spring:
           lower-case-service-id: true
       routes:
         # --- User Service Routes ---
-        - id: user-service-actuator
-          uri: lb://USER-SERVICE
-          predicates:
-            - Path=/api/users/actuator/**
-          filters:
-            - RewritePath=/api/users/(?<segment>.*), /$\{segment}
-
         - id: user-service-api
           uri: lb://USER-SERVICE
           predicates:
@@ -27,13 +25,6 @@ spring:
             - RewritePath=/api/(?<segment>.*), /$\{segment}
 
         # --- Product Service Routes ---
-        - id: product-service-actuator
-          uri: lb://PRODUCT-SERVICE
-          predicates:
-            - Path=/api/products/actuator/**
-          filters:
-            - RewritePath=/api/products/(?<segment>.*), /$\{segment}
-
         - id: product-service-api
           uri: lb://PRODUCT-SERVICE
           predicates:
@@ -42,13 +33,6 @@ spring:
             - RewritePath=/api/(?<segment>.*), /$\{segment}
 
         # --- Media Service Routes ---
-        - id: media-service-actuator
-          uri: lb://MEDIA-SERVICE
-          predicates:
-            - Path=/api/media/actuator/**
-          filters:
-            - RewritePath=/api/media/(?<segment>.*), /$\{segment}
-
         - id: media-service-api
           uri: lb://MEDIA-SERVICE
           predicates:
@@ -56,27 +40,30 @@ spring:
           filters:
             - RewritePath=/api/(?<segment>.*), /$\{segment}
 
-    globalcors:
-      corsConfigurations:
-        '[/**]': # Applies to all paths
-          allowedOrigins: "*" # for dev only: Allows requests from any origin; replace with explicit domain from where CORS requests are allowed to originate.
-          allowedHeaders: # "*" Allows all headers.
-            - "Content-Type"
-            - "Authorization"
-          allowedMethods:
-            - "GET"
-            - "POST"
-            - "PUT"
-            - "DELETE"
-          allowCredentials: true # Allows cookies and other credentials to be included in cross-origin requests.
-          maxAge: 30 # specifies the maximum time (in seconds) that the browser should cache the preflight response.
-          
+      globalcors:
+        cors-configurations:
+          "[/**]":
+            allowedOrigins:
+              - "http://localhost:4200"
+              - "https://localhost:4201"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders:
+              - "*"
+            allowCredentials: true
+            maxAge: 3600
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
 
 eureka:
   client:
     register-with-eureka: true
     fetch-registry: true
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: ${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE:http://localhost:8761/eureka/}
   instance:
-    hostname: localhost
+    hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}

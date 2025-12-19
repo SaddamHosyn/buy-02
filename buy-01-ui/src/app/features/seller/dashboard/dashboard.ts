@@ -34,7 +34,7 @@ import { DialogService } from '../../../shared/services/dialog.service';
 export class Dashboard implements OnInit {
   private readonly authService = inject(Auth);
   private readonly productService = inject(ProductService);
-  private readonly router = inject(Router);
+  private readonly router = inject<Router>(Router);
   private readonly dialogService = inject(DialogService);
   
   // Signals for reactive state
@@ -54,7 +54,7 @@ export class Dashboard implements OnInit {
   });
   
   // Table columns
-  readonly displayedColumns = ['image', 'name', 'price', 'createdAt', 'actions'];
+  readonly displayedColumns = ['image', 'name', 'price', 'stock', 'createdAt', 'actions'];
   
   ngOnInit(): void {
     this.loadMyProducts();
@@ -140,12 +140,22 @@ export class Dashboard implements OnInit {
   /**
    * Format date for display
    */
-  formatDate(dateStr: string): string {
+  formatDate(dateStr: string | undefined): string {
+    if (!dateStr) {
+      return 'N/A';
+    }
     const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { 
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return 'Invalid Date';
+    }
+    return date.toLocaleString('en-US', { 
       year: 'numeric', 
       month: 'short', 
-      day: 'numeric' 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
     });
   }
 }

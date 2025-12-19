@@ -1,15 +1,22 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, tap, catchError, of, BehaviorSubject } from 'rxjs';
+import { Observable, tap, catchError, throwError, map, switchMap } from 'rxjs'; // Added 'map'
+import { environment } from '../../../environments/environment';
 
-// Modern interface definitions
 export interface User {
   id: string;
   email: string;
   name: string;
   role: 'SELLER' | 'CLIENT' | 'ADMIN';
   avatarUrl?: string | null;
+}
+
+export interface UpdateProfileRequest {
+  name?: string;
+  password?: string;        // Current password (for verification)
+  newPassword?: string;     // New password
+  avatar?: string;       // Avatar (after upload)
 }
 
 export interface LoginRequest {
@@ -26,49 +33,60 @@ export interface RegisterRequest {
 }
 
 export interface AuthResponse {
-  user: User;
   token: string;
+  id: string;
+  email: string;
+  name: string;
+  role: 'SELLER' | 'CLIENT' | 'ADMIN';
+  avatarUrl?: string | null;
+}
+
+export interface RegisterResponse {
+  id: string;
+  email: string;
+  name: string;
+  role: 'SELLER' | 'CLIENT' | 'ADMIN';
+  avatarUrl?: string | null;
+}    
+
+// Interface for the Media response
+interface MediaResponse {
+  id: string;
+  url: string;
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class Auth {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
   
-  // Modern Signals for reactive state management
   private readonly currentUserSignal = signal<User | null>(null);
   private readonly tokenSignal = signal<string | null>(null);
   private readonly loadingSignal = signal<boolean>(false);
   
-  // Public readonly signals
   readonly currentUser = this.currentUserSignal.asReadonly();
   readonly token = this.tokenSignal.asReadonly();
   readonly isLoading = this.loadingSignal.asReadonly();
   
-  // Computed signals for derived state
   readonly isAuthenticated = computed(() => !!this.currentUserSignal());
   readonly isSeller = computed(() => this.currentUserSignal()?.role === 'SELLER');
   readonly isClient = computed(() => this.currentUserSignal()?.role === 'CLIENT');
   readonly isAdmin = computed(() => this.currentUserSignal()?.role === 'ADMIN');
   
-  // API URL - JSON Server for development, Spring Boot for production
-  private readonly API_URL = 'http://localhost:3000/api/auth';
-  // When backend is ready, change to: 'http://localhost:8080/api/auth'
+  private readonly AUTH_URL = `${environment.authUrl}`; 
+  private readonly USER_URL = `${environment.apiUrl}/users`; 
   
   constructor() {
     this.loadUserFromStorage();
   }
   
-  /**
-   * Load user from localStorage on app initialization
-   */
   private loadUserFromStorage(): void {
     try {
       const token = localStorage.getItem('auth_token');
       const userJson = localStorage.getItem('current_user');
-      
+
       if (token && userJson) {
         const user = JSON.parse(userJson);
         this.tokenSignal.set(token);
@@ -80,122 +98,45 @@ export class Auth {
     }
   }
   
-  /**
-   * Login with email and password
-   * DEVELOPMENT ONLY: Using localStorage simulation
-   * TODO: Replace with real API call when backend is ready
-   */
   login(credentials: LoginRequest): Observable<AuthResponse> {
     this.loadingSignal.set(true);
-    
-    // DEVELOPMENT ONLY: Simulate login without backend
-    return new Observable<AuthResponse>(observer => {
-      setTimeout(() => {
-        // Get registered users from localStorage
-        const registeredUsers = JSON.parse(localStorage.getItem('registered_users') || '[]');
-        
-        // Find user by email (we're not checking password in dev mode for simplicity)
-        const user = registeredUsers.find((u: User) => u.email === credentials.email);
-        
-        if (!user) {
-          this.loadingSignal.set(false);
-          observer.error({ error: { message: 'Invalid email or password' } });
-          return;
-        }
-        
-        // Create fake token
-        const fakeToken = `fake_token_${Date.now()}`;
-        
-        const response: AuthResponse = {
-          user: user,
-          token: fakeToken
+    return this.http.post<AuthResponse>(`${this.AUTH_URL}/login`, credentials).pipe(
+      tap((response: AuthResponse) => {
+        const user: User = {
+          id: response.id,
+          email: response.email,
+          name: response.name,
+          role: response.role,
+          avatarUrl: response.avatarUrl,
         };
-        
-        this.setAuth(response.user, response.token);
+        this.setAuth(user, response.token);
         this.loadingSignal.set(false);
-        
-        observer.next(response);
-        observer.complete();
-      }, 500); // Simulate network delay
-    });
-    
-    // PRODUCTION: Use real backend API
-    // return this.http.post<AuthResponse>(`${this.API_URL}/login`, credentials).pipe(
-    //   tap(response => {
-    //     this.setAuth(response.user, response.token);
-    //     this.loadingSignal.set(false);
-    //   }),
-    //   catchError(error => {
-    //     this.loadingSignal.set(false);
-    //     throw error;
-    //   })
-    // );
+      }),
+      catchError((error: any) => {
+        this.loadingSignal.set(false);
+        return throwError(() => error);
+      })
+    );
   }
-  
+
   /**
    * Register new user
-   * DEVELOPMENT ONLY: Using localStorage simulation
-   * TODO: Replace with real API call when backend is ready
+   * Calls backend API: POST /api/auth/register
    */
-  register(data: RegisterRequest): Observable<AuthResponse> {
+  register(data: RegisterRequest): Observable<RegisterResponse> {
     this.loadingSignal.set(true);
-    
-    // DEVELOPMENT ONLY: Simulate registration without backend
-    return new Observable<AuthResponse>(observer => {
-      setTimeout(() => {
-        // Check if email already exists (basic validation)
-        const existingUsers = JSON.parse(localStorage.getItem('registered_users') || '[]');
-        const emailExists = existingUsers.some((u: User) => u.email === data.email);
-        
-        if (emailExists) {
-          this.loadingSignal.set(false);
-          observer.error({ error: { message: 'Email already registered' } });
-          return;
-        }
-        
-        // Create new user
-        const newUser: User = {
-          id: Date.now().toString(), // Simple ID generation
-          email: data.email,
-          name: data.name,
-          role: data.role,
-          avatarUrl: data.avatarUrl || null
-        };
-        
-        // Store in "database" (localStorage)
-        existingUsers.push(newUser);
-        localStorage.setItem('registered_users', JSON.stringify(existingUsers));
-        
-        // Create fake token
-        const fakeToken = `fake_token_${Date.now()}`;
-        
-        const response: AuthResponse = {
-          user: newUser,
-          token: fakeToken
-        };
-        
-        // DON'T automatically log in - let user login manually
-        // this.setAuth(response.user, response.token);
+
+    return this.http.post<RegisterResponse>(`${this.AUTH_URL}/register`, data).pipe(
+      tap(() => {
         this.loadingSignal.set(false);
-        
-        observer.next(response);
-        observer.complete();
-      }, 500); // Simulate network delay
-    });
-    
-    // PRODUCTION: Use real backend API
-    // return this.http.post<AuthResponse>(`${this.API_URL}/register`, data).pipe(
-    //   tap(response => {
-    //     this.setAuth(response.user, response.token);
-    //     this.loadingSignal.set(false);
-    //   }),
-    //   catchError(error => {
-    //     this.loadingSignal.set(false);
-    //     throw error;
-    //   })
-    // );
+      }),
+      catchError((error: any) => {
+        this.loadingSignal.set(false);
+        return throwError(() => error);
+      })
+    );
   }
-  
+
   /**
    * Logout user
    */
@@ -203,57 +144,103 @@ export class Auth {
     this.clearAuth();
     this.router.navigate(['/auth/login']);
   }
-  
+
+  // --- Profile Updates (Name, Password, Avatar) ---
+
+
   /**
-   * Set authentication data
+   * Update Name
    */
+  updateName(name: string, password?: string): Observable<User> {
+    return this.updateProfile({ name, password });
+  }
+  /**
+   * Change Password
+   * FIXED: Added map(() => void 0) to correctly convert Observable<User> to Observable<void>
+   */
+  changePassword(currentPassword: string, newPassword: string): Observable<void> {
+    return this.updateProfile({ 
+      password: currentPassword, 
+      newPassword: newPassword 
+    }).pipe(
+      map(() => void 0) // Explicitly return void to satisfy the type signature
+    );
+  }
+
+   /**
+   * Update Avatar
+   * 1. Uploads file to Media Controller
+   * 2. Updates User Profile with new avatar URL
+   */
+uploadAvatar(file: File): Observable<{ avatarUrl: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  return this.http.post<{ url: string }>(`${environment.apiUrl}/media/images`, formData).pipe(
+    switchMap((response: { url: string }) => {
+      // Wait for profile update to complete before returning
+      return this.updateProfile({ avatar: response.url }).pipe(
+        tap(() => {
+          // Update the local user signal and localStorage
+          this.updateUser({ avatarUrl: response.url });
+        }),
+        map(() => ({ avatarUrl: response.url }))
+      );
+    }),
+    catchError(err => throwError(() => new Error('Avatar upload failed. ' + (err.message || ''))))
+  );
+}
+
+
+
+
   private setAuth(user: User, token: string): void {
     this.currentUserSignal.set(user);
     this.tokenSignal.set(token);
-    
-    // Persist to localStorage
     localStorage.setItem('auth_token', token);
     localStorage.setItem('current_user', JSON.stringify(user));
   }
-  
-  /**
-   * Clear authentication data
-   */
+
   private clearAuth(): void {
     this.currentUserSignal.set(null);
     this.tokenSignal.set(null);
-    
-    // Clear from localStorage
     localStorage.removeItem('auth_token');
     localStorage.removeItem('current_user');
   }
-  
-  /**
-   * Check if user has specific role
-   */
+
   hasRole(role: User['role']): boolean {
     return this.currentUserSignal()?.role === role;
   }
-  
+
   /**
-   * Update current user data (for profile updates)
+   * Update user profile via API
+   */
+  updateProfile(updates: { name?: string; avatar?: string; password?: string; newPassword?: string }): Observable<User> {
+    return this.http.put<User>(`${environment.usersUrl}/me`, updates).pipe(
+      tap((updatedUser) => {
+        // Update local state and storage
+        this.updateUser(updatedUser);
+      }),
+      catchError((error) => {
+        console.error('Profile update failed:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Update current user data (for local state updates)
    */
   updateUser(updates: Partial<User>): void {
     const currentUser = this.currentUserSignal();
     if (currentUser) {
       const updatedUser = { ...currentUser, ...updates };
       this.currentUserSignal.set(updatedUser);
-      
-      // Update localStorage
       localStorage.setItem('current_user', JSON.stringify(updatedUser));
     }
   }
   
-  /**
-   * Get current token (for interceptor)
-   */
   getToken(): string | null {
     return this.tokenSignal();
   }
 }
-

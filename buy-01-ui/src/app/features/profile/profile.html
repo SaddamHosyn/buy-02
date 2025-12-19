@@ -24,11 +24,12 @@
                   mat-mini-fab
                   color="warn"
                   type="button"
-                  (click)="removeAvatar()"
                   class="remove-avatar-btn"
                   matTooltip="Remove avatar"
+                  (click)="uploadAvatar()"
                 >
-                  <mat-icon>close</mat-icon>
+                  <!-- Note: Replaced remove with upload trigger since removeAvatar isn't in TS yet -->
+                  <mat-icon>edit</mat-icon>
                 </button>
               </div>
               } @else {
@@ -85,7 +86,7 @@
               <!-- Email Field -->
               <mat-form-field appearance="outline" class="full-width">
                 <mat-label>Email</mat-label>
-                <input matInput type="email" formControlName="email" />
+                <input matInput type="email" formControlName="email" [readonly]="true" />
                 <mat-icon matPrefix>email</mat-icon>
                 @if (profileForm.get('email')?.invalid && profileForm.get('email')?.touched) {
                 <mat-error>{{ getErrorMessage('email') }}</mat-error>
@@ -106,7 +107,9 @@
                 color="primary"
                 type="submit"
                 class="full-width submit-btn"
-                [disabled]="isLoading() || profileForm.invalid"
+                [disabled]="
+                  isLoading() || profileForm.invalid || (!profileForm.dirty && !selectedFile())
+                "
               >
                 @if (isLoading()) {
                 <mat-spinner diameter="20"></mat-spinner>
@@ -125,6 +128,8 @@
         <!-- Security Tab -->
         <mat-tab label="Security">
           <div class="tab-content">
+            <mat-divider class="section-divider"></mat-divider>
+
             <!-- Change Password Section -->
             <div class="security-section">
               <div class="section-header">
@@ -184,63 +189,6 @@
                 >
                   <mat-icon>vpn_key</mat-icon>
                   Update Password
-                </button>
-              </form>
-              }
-            </div>
-
-            <mat-divider class="section-divider"></mat-divider>
-
-            <!-- Change Email Section -->
-            <div class="security-section">
-              <div class="section-header">
-                <div>
-                  <h3>Change Email</h3>
-                  <p>Update your email address for account notifications</p>
-                </div>
-                <button mat-icon-button (click)="toggleEmailFields()">
-                  <mat-icon>{{ showEmailFields() ? 'expand_less' : 'expand_more' }}</mat-icon>
-                </button>
-              </div>
-
-              @if (showEmailFields()) {
-              <form [formGroup]="emailForm" (ngSubmit)="changeEmail()" class="email-form">
-                <!-- Current Email Display -->
-                <div class="current-email">
-                  <mat-icon>email</mat-icon>
-                  <span>Current: {{ currentUser()?.email }}</span>
-                </div>
-
-                <!-- New Email -->
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>New Email Address</mat-label>
-                  <input matInput type="email" formControlName="newEmail" />
-                  <mat-icon matPrefix>alternate_email</mat-icon>
-                  @if (emailForm.get('newEmail')?.invalid && emailForm.get('newEmail')?.touched) {
-                  <mat-error>{{ getErrorMessage('newEmail') }}</mat-error>
-                  }
-                </mat-form-field>
-
-                <!-- Password Confirmation -->
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Confirm Password</mat-label>
-                  <input matInput type="password" formControlName="password" />
-                  <mat-icon matPrefix>lock</mat-icon>
-                  <mat-hint>Enter your password to confirm this change</mat-hint>
-                  @if (emailForm.get('password')?.invalid && emailForm.get('password')?.touched) {
-                  <mat-error>Password is required</mat-error>
-                  }
-                </mat-form-field>
-
-                <button
-                  mat-raised-button
-                  color="primary"
-                  type="submit"
-                  class="full-width"
-                  [disabled]="isLoading() || emailForm.invalid"
-                >
-                  <mat-icon>email</mat-icon>
-                  Update Email
                 </button>
               </form>
               }

@@ -28,7 +28,7 @@ PID_FILE=".pids"
 echo "--- Starting Service Registry (Eureka) ---"
 nohup java -jar service-registry/target/service-registry-*.jar > service-registry.log 2>&1 &
 echo $! >> "$PID_FILE"
-echo "Service Registry starting in background. Waiting 15 seconds for it to initialize..."
+echo "Service Registry starting in background. Waiting 5 seconds for it to initialize..."
 sleep 5
 
 echo "--- Starting User Service ---"
@@ -53,6 +53,6 @@ echo $! >> "$PID_FILE"
 
 echo ""
 echo "--- All services started successfully! ---"
-echo "API Gateway is running on port 8080."
+echo "API Gateway is running on port 8443."
 echo "You can view logs in the *.log files (e.g., 'tail -f api-gateway.log')."
 echo "PIDs of running services are stored in .pids"

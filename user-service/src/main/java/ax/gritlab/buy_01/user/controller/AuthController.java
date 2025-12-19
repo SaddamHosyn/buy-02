@@ -5,6 +5,7 @@ import ax.gritlab.buy_01.user.dto.AuthenticationResponse;
 import ax.gritlab.buy_01.user.dto.RegisterRequest;
 import ax.gritlab.buy_01.user.dto.UserProfileResponse;
 import ax.gritlab.buy_01.user.service.AuthenticationService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,14 +23,14 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<UserProfileResponse> register(
-            @RequestBody RegisterRequest request
+            @Valid @RequestBody RegisterRequest request
     ) {
         return ResponseEntity.status(HttpStatus.CREATED).body(authenticationService.register(request));
     }
 
     @PostMapping("/login")
     public ResponseEntity<AuthenticationResponse> authenticate(
-            @RequestBody AuthenticationRequest request
+            @Valid @RequestBody AuthenticationRequest request
     ) {
         return ResponseEntity.ok(authenticationService.authenticate(request));
     }

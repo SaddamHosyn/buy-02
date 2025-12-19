@@ -54,24 +54,46 @@
             <mat-hint>Minimum 10 characters</mat-hint>
           </mat-form-field>
 
-          <!-- Price -->
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Price</mat-label>
-            <input
-              matInput
-              type="number"
-              formControlName="price"
-              placeholder="0.00"
-              step="0.01"
-              min="0"
-            />
-            <span matPrefix>€&nbsp;</span>
-            <mat-icon matSuffix>attach_money</mat-icon>
-            @if (productForm.get('price')?.invalid && productForm.get('price')?.touched) {
-            <mat-error>{{ getErrorMessage('price') }}</mat-error>
-            }
-            <mat-hint>Enter product price in Euros</mat-hint>
-          </mat-form-field>
+          <!-- Price and Stock Row -->
+          <div class="form-row">
+            <!-- Price -->
+            <mat-form-field appearance="outline" class="half-width">
+              <mat-label>Price</mat-label>
+              <input
+                matInput
+                type="number"
+                formControlName="price"
+                placeholder="0.00"
+                step="0.01"
+                min="0"
+              />
+              <span matPrefix>€&nbsp;</span>
+              <mat-icon matSuffix>attach_money</mat-icon>
+              @if (productForm.get('price')?.invalid && productForm.get('price')?.touched) {
+              <mat-error>{{ getErrorMessage('price') }}</mat-error>
+              }
+              <mat-hint>Enter product price in Euros</mat-hint>
+            </mat-form-field>
+
+            <!-- Stock/Quantity (NEW) -->
+            <mat-form-field appearance="outline" class="half-width">
+              <mat-label>Stock Quantity</mat-label>
+              <input
+                matInput
+                type="number"
+                formControlName="quantity"
+                placeholder="0"
+                min="0"
+                step="1"
+              />
+              <mat-icon matPrefix>inventory</mat-icon>
+              <mat-icon matSuffix>package</mat-icon>
+              @if (productForm.get('quantity')?.invalid && productForm.get('quantity')?.touched) {
+              <mat-error>{{ getErrorMessage('quantity') }}</mat-error>
+              }
+              <mat-hint>Number of units available</mat-hint>
+            </mat-form-field>
+          </div>
 
           <!-- Image Upload Section -->
           <div class="image-upload-section">

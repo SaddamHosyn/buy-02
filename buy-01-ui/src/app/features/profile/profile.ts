@@ -29,7 +29,7 @@ import { validateFile, ValidationPresets } from '../../core/validators/file-uplo
     MatProgressSpinnerModule,
     MatTabsModule,
     MatDividerModule,
-    MatTooltipModule
+    MatTooltipModule,
   ],
   templateUrl: './profile.html',
   styleUrl: './profile.css',
@@ -40,7 +40,7 @@ export class Profile implements OnInit {
   private readonly router = inject(Router);
   private readonly location = inject(Location);
   private readonly notification = inject(NotificationService);
-  
+
   // Signals for state management
   readonly isLoading = signal<boolean>(false);
   readonly selectedFile = signal<File | null>(null);
@@ -48,98 +48,93 @@ export class Profile implements OnInit {
   readonly uploadError = signal<string>('');
   readonly currentUser = this.authService.currentUser;
   readonly showPasswordFields = signal<boolean>(false);
-  readonly showEmailFields = signal<boolean>(false);
-  
+
   // Computed - current avatar or preview
   readonly displayAvatar = computed(() => {
     return this.imagePreview() || this.currentUser()?.avatarUrl || null;
   });
-  
+
   // Profile form
   readonly profileForm: FormGroup = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
-    email: ['', [Validators.required, Validators.email]]
+    email: [{ value: '', disabled: true }],
   });
-  
-  // Change Password form
-  readonly passwordForm: FormGroup = this.fb.group({
-    currentPassword: ['', [Validators.required, Validators.minLength(6)]],
-    newPassword: ['', [Validators.required, Validators.minLength(6)]],
-    confirmPassword: ['', [Validators.required, Validators.minLength(6)]]
-  }, { validators: this.passwordMatchValidator });
-  
-  // Change Email form
-  readonly emailForm: FormGroup = this.fb.group({
-    newEmail: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required]]
-  });
-  
+
+  // Password form
+  readonly passwordForm: FormGroup = this.fb.group(
+    {
+      currentPassword: ['', [Validators.required, Validators.minLength(6)]],
+      newPassword: ['', [Validators.required, Validators.minLength(6)]],
+      confirmPassword: ['', [Validators.required, Validators.minLength(6)]],
+    },
+    { validators: this.passwordMatchValidator }
+  );
+
   ngOnInit(): void {
-    // Load current user data
     const user = this.currentUser();
     if (user) {
-      this.profileForm.patchValue({
-        name: user.name,
-        email: user.email
-      });
-      
-      // Set current avatar if exists
+      this.profileForm.patchValue({ name: user.name, email: user.email });
       if (user.avatarUrl) {
         this.imagePreview.set(user.avatarUrl);
       }
     } else {
-      // Redirect to login if not authenticated
       this.router.navigate(['/auth/login']);
     }
   }
-  
-  /**
-   * Navigate back to previous page
-   */
+
   goBack(): void {
     this.location.back();
   }
-  
+
+  togglePasswordFields(): void {
+    this.showPasswordFields.update((v) => !v);
+    if (!this.showPasswordFields()) {
+      this.passwordForm.reset();
+    }
+  }
+
   /**
    * Custom validator for password match
    */
   passwordMatchValidator(group: FormGroup): { [key: string]: boolean } | null {
     const newPassword = group.get('newPassword')?.value;
     const confirmPassword = group.get('confirmPassword')?.value;
-    
+
     if (newPassword && confirmPassword && newPassword !== confirmPassword) {
       return { passwordMismatch: true };
     }
     return null;
   }
-  
+
   /**
    * Handle file selection with validation
    */
   async onFileSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
-    
+
     // Reset previous state
     this.uploadError.set('');
     this.selectedFile.set(null);
-    
+
     if (!file) {
       return;
     }
-    
-    // Validate file using validator
+
+    // Validate file
     const validation = validateFile(file, ValidationPresets.AVATAR);
-    
+
     if (!validation.valid) {
-      this.uploadError.set(validation.errors[0]);
-      this.notification.fileUploadError(file.name, validation.errors[0]);
+      const errorMsg = validation.errors[0] || 'Invalid file';
+      this.uploadError.set(errorMsg);
+      this.notification.error(errorMsg);
+      input.value = '';
       return;
     }
-    
+
     // Set selected file
     this.selectedFile.set(file);
-    
+
     // Generate preview
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -147,7 +142,29 @@ export class Profile implements OnInit {
     };
     reader.readAsDataURL(file);
   }
-  
+
+  /**
+   * Upload avatar to backend
+   */
+  uploadAvatar(): void {
+    const file = this.selectedFile();
+    if (!file) return;
+
+    this.isLoading.set(true);
+    this.authService.uploadAvatar(file).subscribe({
+      next: () => {
+        this.isLoading.set(false);
+        this.notification.success('Avatar updated successfully!');
+        this.selectedFile.set(null);
+      },
+      error: (err) => {
+        this.isLoading.set(false);
+        this.notification.error('Failed to upload avatar. ' + (err.message || ''));
+        this.imagePreview.set(this.currentUser()?.avatarUrl || null);
+      },
+    });
+  }
+
   /**
    * Remove avatar
    */
@@ -155,62 +172,62 @@ export class Profile implements OnInit {
     this.selectedFile.set(null);
     this.imagePreview.set(null);
     this.uploadError.set('');
-    
+
     // Reset file input
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     if (fileInput) {
       fileInput.value = '';
     }
   }
-  
+
   /**
-   * Save profile changes
+   * Save profile changes (name and avatar if selected)
    */
   onSubmit(): void {
     if (this.profileForm.invalid) {
       this.profileForm.markAllAsTouched();
       return;
     }
-    
+
+    const hasAvatar = this.selectedFile() !== null;
+    const hasNameChange = this.profileForm.dirty;
+
+    if (!hasAvatar && !hasNameChange) {
+      this.notification.info('No changes to save.');
+      return;
+    }
+
     this.isLoading.set(true);
-    
-    // Prepare update data
-    const updateData = {
-      name: this.profileForm.value.name,
-      email: this.profileForm.value.email,
-      avatarUrl: this.imagePreview()
-    };
-    
-    // Simulate API call
-    setTimeout(() => {
-      // Update user data using auth service method
-      this.authService.updateUser(updateData);
-      
+
+    // If avatar is selected, upload it first
+    if (hasAvatar) {
+      this.uploadAvatar();
+    }
+
+    // If name changed, update it
+    if (hasNameChange) {
+      const newName = this.profileForm.get('name')?.value;
+
+      this.authService.updateName(newName).subscribe({
+        next: () => {
+          this.isLoading.set(false);
+          this.notification.success('Profile updated successfully!');
+          this.profileForm.markAsPristine();
+        },
+        error: (err) => {
+          this.isLoading.set(false);
+          const errorMsg = err.error?.message || 'Failed to update profile';
+          this.notification.error(errorMsg);
+          // Revert to original name
+          this.profileForm.patchValue({ name: this.currentUser()?.name });
+        },
+      });
+    } else if (hasAvatar) {
+      // Only avatar was changed, loading is handled by uploadAvatar
       this.isLoading.set(false);
-      this.notification.success('Profile updated successfully!');
-    }, 1000);
-  }
-  
-  /**
-   * Toggle password change section
-   */
-  togglePasswordFields(): void {
-    this.showPasswordFields.update(v => !v);
-    if (!this.showPasswordFields()) {
-      this.passwordForm.reset();
     }
   }
-  
-  /**
-   * Toggle email change section
-   */
-  toggleEmailFields(): void {
-    this.showEmailFields.update(v => !v);
-    if (!this.showEmailFields()) {
-      this.emailForm.reset();
-    }
-  }
-  
+
   /**
    * Change password
    */
@@ -219,115 +236,76 @@ export class Profile implements OnInit {
       this.passwordForm.markAllAsTouched();
       return;
     }
-    
+
     // Check password match
     if (this.passwordForm.hasError('passwordMismatch')) {
       this.notification.error('Passwords do not match');
       return;
     }
-    
+
     this.isLoading.set(true);
-    
-    const currentPassword = this.passwordForm.value.currentPassword;
-    const newPassword = this.passwordForm.value.newPassword;
-    
-    // Simulate API call
-    setTimeout(() => {
-      // In production, verify current password and update
-      // For now, just simulate success
-      
-      this.isLoading.set(false);
-      this.notification.success('Password changed successfully!');
-      this.passwordForm.reset();
-      this.showPasswordFields.set(false);
-    }, 1000);
+    const { currentPassword, newPassword } = this.passwordForm.value;
+
+    this.authService.changePassword(currentPassword, newPassword).subscribe({
+      next: () => {
+        this.isLoading.set(false);
+        this.notification.success('Password changed successfully!');
+        this.passwordForm.reset();
+        this.showPasswordFields.set(false);
+      },
+      error: (err) => {
+        this.isLoading.set(false);
+        const errorMessage = err.error?.message || '';
+        if (errorMessage.includes('Incorrect current password')) {
+          this.passwordForm.get('currentPassword')?.setErrors({ incorrect: true });
+          this.notification.error('Incorrect current password.');
+        } else {
+          this.notification.error('Failed to change password. Please try again.');
+        }
+      },
+    });
   }
-  
-  /**
-   * Change email
-   */
-  changeEmail(): void {
-    if (this.emailForm.invalid) {
-      this.emailForm.markAllAsTouched();
-      return;
-    }
-    
-    this.isLoading.set(true);
-    
-    const newEmail = this.emailForm.value.newEmail;
-    const password = this.emailForm.value.password;
-    
-    // Check if email already exists
-    const registeredUsers = JSON.parse(localStorage.getItem('registered_users') || '[]');
-    const emailExists = registeredUsers.some((u: any) => u.email === newEmail && u.id !== this.currentUser()?.id);
-    
-    if (emailExists) {
-      this.isLoading.set(false);
-      this.notification.error('Email already exists');
-      return;
-    }
-    
-    // Simulate API call
-    setTimeout(() => {
-      // Update email
-      this.authService.updateUser({ email: newEmail });
-      
-      // Update profile form
-      this.profileForm.patchValue({ email: newEmail });
-      
-      // Update in registered users list
-      const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
-      const updatedUsers = users.map((u: any) => 
-        u.id === this.currentUser()?.id ? { ...u, email: newEmail } : u
-      );
-      localStorage.setItem('registered_users', JSON.stringify(updatedUsers));
-      
-      this.isLoading.set(false);
-      this.notification.success('Email changed successfully!');
-      this.emailForm.reset();
-      this.showEmailFields.set(false);
-    }, 1000);
-  }
-  
+
   /**
    * Get form control error message
    */
   getErrorMessage(controlName: string): string {
-    // Check all forms for the control
+    // Check which form contains the control
     let control = this.profileForm.get(controlName);
-    if (!control) control = this.passwordForm.get(controlName);
-    if (!control) control = this.emailForm.get(controlName);
-    
+    if (!control) {
+      control = this.passwordForm.get(controlName);
+    }
+
     if (!control) return '';
-    
+
     if (control.hasError('required')) {
-      return `${this.formatControlName(controlName)} is required`;
+      return `${this.getFieldLabel(controlName)} is required`;
     }
     if (control.hasError('minlength')) {
-      const minLength = control.errors?.['minlength'].requiredLength;
-      return `${this.formatControlName(controlName)} must be at least ${minLength} characters`;
+      const requiredLength = control.errors?.['minlength']?.requiredLength;
+      return `Must be at least ${requiredLength} characters`;
     }
-    if (control.hasError('email')) {
-      return 'Please enter a valid email address';
+    if (control.hasError('passwordMismatch')) {
+      return 'Passwords do not match';
     }
-    
+    if (control.hasError('incorrect')) {
+      return 'Incorrect password';
+    }
+
     return '';
   }
-  
+
   /**
-   * Format control name for display
+   * Get field label for display
    */
-  private formatControlName(name: string): string {
+  private getFieldLabel(controlName: string): string {
     const nameMap: { [key: string]: string } = {
-      name: 'Name',
+      name: 'Full Name',
       email: 'Email',
       currentPassword: 'Current password',
       newPassword: 'New password',
       confirmPassword: 'Confirm password',
-      newEmail: 'New email',
-      password: 'Password'
     };
-    
-    return nameMap[name] || name;
+    return nameMap[controlName] || controlName;
   }
 }

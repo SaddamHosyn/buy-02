@@ -8,15 +8,15 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatSelectModule } from '@angular/material/select';
-import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MediaService, Media, UploadProgress } from '../../../core/services/media.service';
+import { forkJoin } from 'rxjs';
+import { MediaService, Media } from '../../../core/services/media.service';
 import { Auth } from '../../../core/services/auth';
 import { ProductService, Product } from '../../../core/services/product.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { DialogService } from '../../../shared/services/dialog.service';
+import { ValidationPresets } from '../../../core/validators/file-upload.validator';
 
 @Component({
   selector: 'app-media-manager',
@@ -32,14 +32,23 @@ import { DialogService } from '../../../shared/services/dialog.service';
     MatChipsModule,
     MatTooltipModule,
     MatCheckboxModule,
-    MatSelectModule,
-    MatFormFieldModule,
     MatDialogModule
   ],
   templateUrl: './media-manager.html',
   styleUrl: './media-manager.css',
 })
 export class MediaManager implements OnInit {
+    /**
+     * Remove image from UI if it fails to load (404 or other error)
+     */
+    onImageError(mediaId: string): void {
+      this.allMedia.update(media => media.filter(m => m.id !== mediaId));
+      this.selectedMedia.update(selected => {
+        const newSet = new Set(selected);
+        newSet.delete(mediaId);
+        return newSet;
+      });
+    }
   private readonly mediaService = inject(MediaService);
   private readonly productService = inject(ProductService);
   private readonly authService = inject(Auth);
@@ -52,29 +61,21 @@ export class MediaManager implements OnInit {
   readonly isLoading = signal<boolean>(true);
   readonly isUploading = signal<boolean>(false);
   readonly selectedMedia = signal<Set<string>>(new Set());
-  readonly uploadProgress = signal<UploadProgress[]>([]);
   readonly myProducts = signal<Product[]>([]);
   readonly selectedProductId = signal<string | undefined>(undefined);
-  readonly filterByProduct = signal<string>('all');
   
   // Computed signals
   readonly currentUser = this.authService.currentUser;
   readonly hasSelectedMedia = computed(() => this.selectedMedia().size > 0);
   readonly selectedCount = computed(() => this.selectedMedia().size);
   readonly totalSize = computed(() => {
-    return this.filteredMedia().reduce((sum, media) => sum + media.size, 0);
-  });
-  readonly filteredMedia = computed(() => {
-    const filter = this.filterByProduct();
-    if (filter === 'all') return this.allMedia();
-    if (filter === 'unassigned') return this.allMedia().filter(m => !m.productId);
-    return this.allMedia().filter(m => m.productId === filter);
+    return this.allMedia().reduce((sum, media) => sum + media.size, 0);
   });
   
-  // Validation info
-  readonly maxFileSize = this.mediaService.getMaxFileSize();
-  readonly allowedTypes = this.mediaService.getAllowedTypes();
-  readonly allowedExtensions = this.mediaService.getAllowedExtensions();
+  // Validation info from ValidationPresets
+  readonly maxFileSize = ValidationPresets.PRODUCT_IMAGE.maxSize;
+  readonly allowedTypes = ValidationPresets.PRODUCT_IMAGE.allowedTypes;
+  readonly allowedExtensions = ValidationPresets.PRODUCT_IMAGE.allowedExtensions;
   
   ngOnInit(): void {
     this.loadMedia();
@@ -93,10 +94,10 @@ export class MediaManager implements OnInit {
    */
   loadMyProducts(): void {
     this.productService.getSellerProducts().subscribe({
-      next: (products) => {
+      next: (products: Product[]) => {
         this.myProducts.set(products);
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading products:', error);
       }
     });
@@ -107,16 +108,15 @@ export class MediaManager implements OnInit {
    */
   loadMedia(): void {
     this.isLoading.set(true);
-    
     this.mediaService.getAllMedia().subscribe({
-      next: (media) => {
+      next: (media: Media[]) => {
         this.allMedia.set(media);
         this.isLoading.set(false);
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading media:', error);
-        this.notification.error('Failed to load media');
         this.isLoading.set(false);
+        this.notification.error('Failed to load media');
       }
     });
   }
@@ -140,47 +140,66 @@ export class MediaManager implements OnInit {
   }
   
   /**
-   * Upload files with progress tracking
+   * Upload files
    */
   uploadFiles(files: File[]): void {
     this.isUploading.set(true);
-    this.uploadProgress.set([]);
     
-    const productId = this.selectedProductId();
-    
-    this.mediaService.uploadFiles(files, productId).subscribe({
-      next: (progress) => {
-        this.uploadProgress.set(progress);
+    this.mediaService.uploadFiles(files).subscribe({
+      next: (mediaList: Media[]) => {
+        const productId = this.selectedProductId();
         
-        // Check if all uploads are completed
-        const allCompleted = progress.every(p => p.status !== 'uploading');
-        if (allCompleted) {
+        // If a product is selected, associate the uploaded media with it
+        if (productId) {
+          this.associateMediaWithProduct(productId, mediaList);
+        } else {
           this.isUploading.set(false);
+          this.notification.fileUploadSuccess(mediaList.length);
           
-          // Count successful uploads
-          const successful = progress.filter(p => p.status === 'completed').length;
-          const failed = progress.filter(p => p.status === 'error').length;
-          
-          if (successful > 0) {
-            this.notification.fileUploadSuccess(successful, failed > 0 ? failed : undefined);
-            
-            // Reload media
-            this.loadMedia();
-          } else {
-            this.notification.error('All uploads failed');
-          }
-          
-          // Clear progress after 3 seconds
-          setTimeout(() => {
-            this.mediaService.clearAllProgress();
-            this.uploadProgress.set([]);
-          }, 3000);
+          // Add uploaded media to the list
+          this.allMedia.update(current => [...current, ...mediaList]);
         }
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Upload error:', error);
         this.isUploading.set(false);
-        this.notification.error('Upload failed');
+        this.notification.error(error.message || 'Upload failed');
+      }
+    });
+  }
+  
+  /**
+   * Associate uploaded media with a product
+   */
+  private associateMediaWithProduct(productId: string, mediaList: Media[]): void {
+    const mediaIds = mediaList.map(m => m.id);
+    
+    const associationRequests = mediaIds.map(mediaId =>
+      this.productService.associateMedia(productId, mediaId)
+    );
+    
+    forkJoin(associationRequests).subscribe({
+      next: () => {
+        this.isUploading.set(false);
+        this.notification.success(
+          `${mediaList.length} image(s) uploaded and linked to product`,
+          3000
+        );
+        
+        const updatedMedia = mediaList.map(m => ({...m, productId}));
+        this.allMedia.update(current => [...current, ...updatedMedia]);
+        
+        this.selectedProductId.set(undefined);
+      },
+      error: (error: any) => {
+        console.error('Error associating media:', error);
+        this.isUploading.set(false);
+        
+        this.allMedia.update(current => [...current, ...mediaList]);
+        this.notification.warning(
+          `Images uploaded but failed to link to product: ${error.message}`,
+          4000
+        );
       }
     });
   }
@@ -262,13 +281,13 @@ export class MediaManager implements OnInit {
       
       const ids = Array.from(this.selectedMedia());
       
-      this.mediaService.deleteMultipleMedia(ids).subscribe({
+      this.mediaService.deleteMediaFiles(ids).subscribe({
         next: () => {
           this.notification.success(`${count} image(s) deleted successfully`, 2000);
           this.allMedia.update(media => media.filter(m => !ids.includes(m.id)));
           this.deselectAll();
         },
-        error: (error) => {
+        error: (error: any) => {
           console.error('Error deleting media:', error);
           this.notification.error('Failed to delete images');
         }
@@ -316,19 +335,11 @@ export class MediaManager implements OnInit {
   }
   
   /**
-   * Get product name by ID
+   * Get product name by ID (returns null if no product)
    */
-  getProductName(productId?: string): string {
-    if (!productId) return 'Unassigned';
+  getProductName(productId?: string): string | null {
+    if (!productId) return null;
     const product = this.myProducts().find(p => p.id === productId);
-    return product?.name || `Product ${productId}`;
-  }
-  
-  /**
-   * Filter media by product
-   */
-  filterMedia(filter: string): void {
-    this.filterByProduct.set(filter);
+    return product?.name || null;
   }
 }
-

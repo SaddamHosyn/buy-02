@@ -2,16 +2,27 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap, map } from 'rxjs';
 import { Auth } from './auth';
+import { environment } from '../../../environments/environment';
 
 export interface Product {
   id: string;
   name: string;
   description: string;
   price: number;
+  stock?: number;
   sellerId?: string;
+  mediaIds?: string[];
   imageUrls?: string[];
   createdAt?: string;
   updatedAt?: string;
+}
+
+// DTO for creating/updating products (matches backend ProductRequest)
+export interface ProductRequest {
+  name: string;
+  description: string;
+  price: number;
+  quantity: number;
 }
 
 @Injectable({
@@ -21,9 +32,8 @@ export class ProductService {
   private readonly http = inject(HttpClient);
   private readonly authService = inject(Auth);
   
-  // JSON Server for development - using direct /products endpoint
-  private readonly API_URL = 'http://localhost:3000/products';
-  // When backend is ready, change to: 'http://localhost:8080/api/products'
+  // API URL from environment configuration
+  private readonly API_URL = environment.productsUrl;
   
   // Signals for state management
   private readonly productsSignal = signal<Product[]>([]);
@@ -31,6 +41,7 @@ export class ProductService {
   
   /**
    * Get all products (public)
+   * Calls backend API: GET /api/products
    */
   getAllProducts(): Observable<Product[]> {
     return this.http.get<Product[]>(this.API_URL).pipe(
@@ -40,6 +51,7 @@ export class ProductService {
   
   /**
    * Get product by ID
+   * Calls backend API: GET /api/products/{id}
    */
   getProductById(id: string): Observable<Product> {
     return this.http.get<Product>(`${this.API_URL}/${id}`);
@@ -64,56 +76,53 @@ export class ProductService {
   
   /**
    * Create product (sellers only)
+   * Calls backend API: POST /api/products
    */
-  createProduct(product: Product): Observable<Product> {
-    return this.http.post<Product>(this.API_URL, product);
+  createProduct(productRequest: ProductRequest): Observable<Product> {
+    return this.http.post<Product>(this.API_URL, productRequest);
   }
   
   /**
    * Update product (sellers only - own products)
+   * Calls backend API: PUT /api/products/{id}
    */
-  updateProduct(id: string, product: Partial<Product>): Observable<Product> {
-    return this.http.put<Product>(`${this.API_URL}/${id}`, product);
+  updateProduct(id: string, productRequest: Partial<ProductRequest>): Observable<Product> {
+    return this.http.put<Product>(`${this.API_URL}/${id}`, productRequest);
   }
   
   /**
    * Delete product (sellers only - own products)
+   * Calls backend API: DELETE /api/products/{id}
    */
   deleteProduct(id: string): Observable<void> {
     return this.http.delete<void>(`${this.API_URL}/${id}`);
   }
   
   /**
-   * Add images to product
-   * CSR APPROACH: Update product with new imageUrls array
+   * Associate media with product
+   * Calls backend API: POST /api/products/{productId}/media/{mediaId}
    */
-  addProductImages(productId: string, imageUrls: string[]): Observable<string[]> {
-    // Get current product first
-    return this.getProductById(productId).pipe(
-      map(product => {
-        const updatedImageUrls = [...(product.imageUrls || []), ...imageUrls];
-        
-        // Update product with new images
-        this.updateProduct(productId, { imageUrls: updatedImageUrls }).subscribe();
-        
-        return imageUrls;
-      })
-    );
+  associateMedia(productId: string, mediaId: string): Observable<Product> {
+    return this.http.post<Product>(`${this.API_URL}/${productId}/media/${mediaId}`, {});
   }
-  
-  /**
-   * Delete product image
-   * CSR APPROACH: Update product with filtered imageUrls array
+
+
+
+
+ /**
+   * Remove media ID from product's mediaIds array
+   * Calls backend API: DELETE /api/products/{productId}/remove-media/{mediaId}
    */
-  deleteProductImage(productId: string, imageUrl: string): Observable<void> {
-    // Get current product first
-    return this.getProductById(productId).pipe(
-      map(product => {
-        const updatedImageUrls = (product.imageUrls || []).filter(url => url !== imageUrl);
-        
-        // Update product with filtered images
-        this.updateProduct(productId, { imageUrls: updatedImageUrls }).subscribe();
-      })
-    );
+  removeMediaFromProduct(productId: string, mediaId: string): Observable<void> {
+    return this.http.delete<void>(`${this.API_URL}/${productId}/remove-media/${mediaId}`);
   }
+
+
+
+
+
+
+
+
+
 }

@@ -23,13 +23,15 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.GET, "/products", "/products/**").permitAll()
-                        .requestMatchers("/actuator/**").permitAll()
-                        .anyRequest().authenticated()
-                )
-                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                        // Public endpoints
+                        .requestMatchers("/products").permitAll() // Public: Get all products
+                        .requestMatchers("/products/*").permitAll() // Public: Get product by ID
+                        .requestMatchers("/products/*/remove-media/*").permitAll() // Public: Remove media (for Media
+                                                                                   // Service)
+                        .anyRequest().authenticated())
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class); // FIXED: Use jwtAuthFilter
 
         return http.build();
     }

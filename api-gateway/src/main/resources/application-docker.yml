@@ -1,0 +1,28 @@
+server:
+  port: 8080 # Port for Docker (HTTP)
+
+spring:
+  cloud:
+    gateway:
+      globalcors:
+        cors-configurations:
+          "[/**]":
+            allowedOrigins:
+              - "http://localhost:4200"
+              - "https://localhost:4201"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders:
+              - "*"
+            allowCredentials: true
+            maxAge: 3600
+
+eureka:
+  client:
+    service-url:
+      # In Docker, we use the service name 'service-registry' instead of 'localhost'
+      defaultZone: http://service-registry:8761/eureka/

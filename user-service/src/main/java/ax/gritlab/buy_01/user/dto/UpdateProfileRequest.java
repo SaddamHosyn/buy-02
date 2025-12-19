@@ -12,4 +12,6 @@ import lombok.NoArgsConstructor;
 public class UpdateProfileRequest {
     private String name;
     private String avatar;
+    private String password; // Current password for verification
+    private String newPassword; // New password to set
 }

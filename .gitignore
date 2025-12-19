@@ -29,3 +29,77 @@ replay_pid*
 
 # To load env file it manually: `export $(cat .env | xargs)`
 
+# Maven build output
+target/
+**/target/
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Uploads directory
+uploads/
+certs/
+
+# Node modules and frontend dependencies
+node_modules/
+**/node_modules/
+
+# Frontend build output
+dist/
+**/dist/
+build/
+**/build/
+
+# Angular specific
+.angular/
+**/.angular/
+
+# Frontend cache and temp files
+.npm/
+.cache/
+*.tsbuildinfo
+
+# Process ID files
+pids/
+*.pid
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Package lock files (optional - some teams commit these)
+# package-lock.json
+# yarn.lock
+
+# Test coverage
+coverage/
+**/coverage/
+.nyc_output/
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Database files (if using local db files)
+*.db
+db.json
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# Certificates and Keys
+*.crt
+*.key
+*.pem
+server.crt
+server.key

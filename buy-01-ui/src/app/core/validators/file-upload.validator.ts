@@ -129,39 +129,6 @@ export function validateImageDimensions(
 }
 
 /**
- * Format file size for display
- */
-export function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 Bytes';
-  
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  
-  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
-}
-
-/**
- * Get user-friendly file type name
- */
-export function getFileTypeName(mimeType: string): string {
-  const typeMap: Record<string, string> = {
-    'image/jpeg': 'JPEG Image',
-    'image/jpg': 'JPG Image',
-    'image/png': 'PNG Image',
-    'image/gif': 'GIF Image',
-    'image/webp': 'WebP Image',
-    'image/svg+xml': 'SVG Image',
-    'application/pdf': 'PDF Document',
-    'text/plain': 'Text File',
-    'application/json': 'JSON File',
-    'application/zip': 'ZIP Archive'
-  };
-  
-  return typeMap[mimeType] || mimeType;
-}
-
-/**
  * Common validation configurations
  */
 export const ValidationPresets = {
