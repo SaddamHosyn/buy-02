@@ -3,10 +3,9 @@ pipeline {
 
 environment {
     MAVEN_HOME = tool 'Maven'
-    NODEJS_HOME = '/usr/bin'  // Node.js binary path
-    PATH = "${MAVEN_HOME}/bin:${NODEJS_HOME}/bin:${env.PATH}"
+    NODEJS_HOME = '/usr/bin'   // Node.js binaries
+    PATH = "${MAVEN_HOME}/bin:${NODEJS_HOME}:${env.PATH}"
 
-    // Email config
     TEAM_EMAIL = 'othmane.afilali@gritlab.ax,jedi.reston@gritlab.ax'
     EMAIL_JEDI = 'jedi.reston@gritlab.ax'
     EMAIL_OZZY = 'othmane.afilali@gritlab.ax'
