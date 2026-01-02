@@ -293,7 +293,7 @@ pipeline {
                     </body>
                     </html>
                 ''',
-                to: "${TEAM_EMAIL}, ${EMAIL_JEDI}, ${EMAIL_OZZY}",
+                to: "${env.TEAM_EMAIL}, ${env.EMAIL_JEDI}, ${env.EMAIL_OZZY}",
                 recipientProviders: [brokenBuildSuspects(), requestor(), developers()],
                 mimeType: 'text/html'
             )
