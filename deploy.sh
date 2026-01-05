@@ -47,12 +47,18 @@ echo ""
 
 # 2. Save images to tar files
 echo -e "${YELLOW}[2/5] Saving Docker images to tar files...${NC}"
-docker save -o service-registry.tar mr-jenk-service-registry:latest || docker save -o service-registry.tar buy-01-service-registry:latest
-docker save -o api-gateway.tar mr-jenk-api-gateway:latest || docker save -o api-gateway.tar buy-01-api-gateway:latest
-docker save -o user-service.tar mr-jenk-user-service:latest || docker save -o user-service.tar buy-01-user-service:latest
-docker save -o product-service.tar mr-jenk-product-service:latest || docker save -o product-service.tar buy-01-product-service:latest
-docker save -o media-service.tar mr-jenk-media-service:latest || docker save -o media-service.tar buy-01-media-service:latest
-docker save -o frontend.tar mr-jenk-frontend:latest || docker save -o frontend.tar buy-01-frontend:latest
+# Get the actual image prefix (workspace directory name)
+IMAGE_PREFIX=$(docker images --format "{{.Repository}}" | grep -E "(service-registry|api-gateway)" | head -1 | cut -d'-' -f1-2)
+if [ -z "$IMAGE_PREFIX" ]; then
+    IMAGE_PREFIX="buy01-pipeline"  # Default for Jenkins
+fi
+echo "Using image prefix: $IMAGE_PREFIX"
+docker save -o service-registry.tar ${IMAGE_PREFIX}-service-registry:latest
+docker save -o api-gateway.tar ${IMAGE_PREFIX}-api-gateway:latest
+docker save -o user-service.tar ${IMAGE_PREFIX}-user-service:latest
+docker save -o product-service.tar ${IMAGE_PREFIX}-product-service:latest
+docker save -o media-service.tar ${IMAGE_PREFIX}-media-service:latest
+docker save -o frontend.tar ${IMAGE_PREFIX}-frontend:latest
 echo -e "${GREEN}✓ Docker images saved${NC}"
 echo ""
 
