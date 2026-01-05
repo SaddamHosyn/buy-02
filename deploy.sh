@@ -45,44 +45,34 @@ docker-compose build --no-cache --build-arg BUILDPLATFORM=linux/amd64 || \
 echo -e "${GREEN}✓ Docker images built${NC}"
 echo ""
 
-# 2. Save images to tar files
-echo -e "${YELLOW}[2/5] Saving Docker images to tar files...${NC}"
+# 2. Prepare AWS directory
+echo -e "${YELLOW}[2/5] Preparing AWS deployment directory...${NC}"
+ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$DEPLOY_HOST" "mkdir -p $DEPLOY_PATH"
+scp -i "$SSH_KEY" -o StrictHostKeyChecking=no docker-compose.yml "$DEPLOY_HOST:$DEPLOY_PATH/"
+echo -e "${GREEN}✓ AWS directory prepared${NC}"
+echo ""
+
+# 3. Transfer images one by one to save disk space
+echo -e "${YELLOW}[3/5] Transferring Docker images to AWS (one at a time to save disk)...${NC}"
 # Get the actual image prefix (workspace directory name)
 IMAGE_PREFIX=$(docker images --format "{{.Repository}}" | grep -E "(service-registry|api-gateway)" | head -1 | cut -d'-' -f1-2)
 if [ -z "$IMAGE_PREFIX" ]; then
     IMAGE_PREFIX="buy01-pipeline"  # Default for Jenkins
 fi
 echo "Using image prefix: $IMAGE_PREFIX"
-docker save -o service-registry.tar ${IMAGE_PREFIX}-service-registry:latest
-docker save -o api-gateway.tar ${IMAGE_PREFIX}-api-gateway:latest
-docker save -o user-service.tar ${IMAGE_PREFIX}-user-service:latest
-docker save -o product-service.tar ${IMAGE_PREFIX}-product-service:latest
-docker save -o media-service.tar ${IMAGE_PREFIX}-media-service:latest
-docker save -o frontend.tar ${IMAGE_PREFIX}-frontend:latest
-echo -e "${GREEN}✓ Docker images saved${NC}"
-echo ""
 
-# 3. Transfer docker-compose.yml and tar files to AWS
-echo -e "${YELLOW}[3/5] Transferring files to AWS (this may take a few minutes)...${NC}"
-ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$DEPLOY_HOST" "mkdir -p $DEPLOY_PATH"
-scp -i "$SSH_KEY" -o StrictHostKeyChecking=no docker-compose.yml "$DEPLOY_HOST:$DEPLOY_PATH/"
-scp -i "$SSH_KEY" -o StrictHostKeyChecking=no *.tar "$DEPLOY_HOST:$DEPLOY_PATH/"
-echo -e "${GREEN}✓ Files transferred to AWS${NC}"
+for service in service-registry api-gateway user-service product-service media-service frontend; do
+    echo "Transferring ${service}..."
+    docker save ${IMAGE_PREFIX}-${service}:latest | ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$DEPLOY_HOST" "docker load"
+    echo "✓ ${service} transferred"
+done
+echo -e "${GREEN}✓ All images transferred to AWS${NC}"
 echo ""
 
 # 4. Deploy on AWS instance
-echo -e "${YELLOW}[4/5] Loading images and starting containers on AWS...${NC}"
+echo -e "${YELLOW}[4/5] Starting containers on AWS...${NC}"
 ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$DEPLOY_HOST" << 'ENDSSH'
 cd /home/ec2-user/buy-01-app
-
-# Load Docker images
-echo "Loading Docker images..."
-docker load -i service-registry.tar
-docker load -i api-gateway.tar
-docker load -i user-service.tar
-docker load -i product-service.tar
-docker load -i media-service.tar
-docker load -i frontend.tar
 
 # Stop existing containers
 echo "Stopping existing containers..."
@@ -92,20 +82,17 @@ docker-compose down || true
 echo "Starting containers..."
 docker-compose up -d
 
-# Clean up tar files
-rm -f *.tar
-
 # Show running containers
 echo ""
 echo "Running containers:"
 docker-compose ps
     
-    # Clean up old Docker images and containers to free disk space
-    echo ""
-    echo "Cleaning up unused Docker resources..."
-    docker container prune -f
-    docker image prune -a -f --filter "until=24h"
-    echo "Cleanup completed"
+# Clean up old Docker images and containers to free disk space
+echo ""
+echo "Cleaning up unused Docker resources..."
+docker container prune -f
+docker image prune -a -f --filter "until=24h"
+echo "Cleanup completed"
 sleep 10
 
 # Check if services are responding
