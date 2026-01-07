@@ -51,7 +51,49 @@ for service in service-registry api-gateway user-service product-service media-s
 done
 
 if [ $BACKUP_EXISTS -eq 0 ]; then
-    echo "❌ No previous backup found! Cannot rollback."
+    echo "⚠️  No previous backup found. This might be the first deployment."
+    echo "   Attempting to restart current deployment without rollback..."
+    
+    # Just try to restart the current deployment
+    sudo docker-compose up -d
+    
+    # Wait for services to start
+    echo "Waiting for services to start..."
+    sleep 20
+    
+    # Try health checks
+    echo "Checking service health..."
+    
+    # Check service registry
+    if curl -f http://localhost:8761 >/dev/null 2>&1; then
+        echo "✓ Service Registry is running"
+    else
+        echo "❌ Service Registry health check failed"
+    fi
+    
+    # Check API Gateway
+    if curl -f http://localhost:8080/actuator/health >/dev/null 2>&1; then
+        echo "✓ API Gateway is healthy"
+    else
+        echo "❌ API Gateway health check failed"
+    fi
+    
+    # Check Frontend
+    if curl -f http://localhost:4200 >/dev/null 2>&1; then
+        echo "✓ Frontend is accessible"
+    else
+        echo "❌ Frontend health check failed"
+    fi
+    
+    echo ""
+    echo "${RED}============================================${NC}"
+    echo "${RED}   ⚠️  NO ROLLBACK AVAILABLE${NC}"
+    echo "${RED}============================================${NC}"
+    echo ""
+    echo "This appears to be the first deployment with the new rollback system."
+    echo "Current services have been restarted. Manual intervention may be required."
+    echo ""
+    echo "To fix the deployment, resolve the original issue and redeploy."
     exit 1
 fi
 

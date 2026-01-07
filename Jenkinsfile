@@ -92,6 +92,12 @@ environment {
                 echo 'Deploying application to AWS...'
                 script {
                     sh '''
+                        # CRITICAL: Clean up old Docker images BEFORE building new ones to prevent disk full
+                        echo "Pre-deployment cleanup to free disk space..."
+                        docker image prune -a -f --filter "until=30m"
+                        docker builder prune -f
+                        echo "✓ Pre-deployment cleanup completed"
+                        
                         # Build all Docker images with build number tags
                         echo "Building Docker images with build #${BUILD_NUMBER}..."
                         
@@ -123,8 +129,8 @@ environment {
                         if ./deploy.sh ${BUILD_NUMBER}; then
                             echo "✅ Deployment successful"
                             
-                            # Cleanup Jenkins Docker images after successful transfer to save disk space
-                            echo "Cleaning up Jenkins Docker images to save disk space..."
+                            # Post-deployment cleanup on Jenkins to save disk space
+                            echo "Post-deployment cleanup on Jenkins..."
                             docker image prune -a -f --filter "until=1h"
                             echo "✓ Jenkins cleanup completed"
                         else
