@@ -181,11 +181,14 @@ echo ""
 echo "Running containers:"
 docker-compose ps
     
-# Clean up old Docker images to prevent disk from filling up
+# Aggressive cleanup of old Docker resources to prevent disk from filling up
 echo ""
-echo "Cleaning up old Docker images (keeping current + previous)..."
-# Remove images older than 2 hours, keeping the backup
-docker image prune -a -f --filter "until=2h"
+echo "Cleaning up old Docker resources (keeping current + previous)..."
+# Remove images older than 1 hour, keeping the backup
+docker image prune -a -f --filter "until=1h"
+# Clean up build cache and unused volumes
+docker builder prune -f --filter "until=1h"
+docker volume prune -f
 echo "✓ Cleanup completed"
 
 exit 0

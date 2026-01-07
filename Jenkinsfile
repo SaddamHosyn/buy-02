@@ -139,9 +139,11 @@ environment {
                         if ./deploy.sh ${BUILD_NUMBER}; then
                             echo "✅ Deployment successful"
                             
-                            # Post-deployment cleanup on Jenkins to save disk space
+                            # Aggressive post-deployment cleanup on Jenkins to save disk space
                             echo "Post-deployment cleanup on Jenkins..."
-                            docker image prune -a -f --filter "until=1h"
+                            docker image prune -a -f --filter "until=30m"
+                            docker builder prune -f --filter "until=30m"
+                            docker volume prune -f
                             echo "✓ Jenkins cleanup completed"
                         else
                             echo "❌ Deployment failed! Initiating rollback..."
