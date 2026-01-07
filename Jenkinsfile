@@ -92,26 +92,46 @@ environment {
                 echo 'Deploying application to AWS...'
                 script {
                     sh '''
-                        # Build all Docker images with proper tags
-                        echo "Building Docker images..."
+                        # Build all Docker images with build number tags
+                        echo "Building Docker images with build #${BUILD_NUMBER}..."
                         
-                        # Build backend services
-                        docker build -t buy01-pipeline-service-registry:latest ./service-registry
-                        docker build -t buy01-pipeline-api-gateway:latest ./api-gateway
-                        docker build -t buy01-pipeline-user-service:latest ./user-service
-                        docker build -t buy01-pipeline-product-service:latest ./product-service
-                        docker build -t buy01-pipeline-media-service:latest ./media-service
+                        # Build backend services with build number tags
+                        docker build -t buy01-pipeline-service-registry:build-${BUILD_NUMBER} ./service-registry
+                        docker build -t buy01-pipeline-api-gateway:build-${BUILD_NUMBER} ./api-gateway
+                        docker build -t buy01-pipeline-user-service:build-${BUILD_NUMBER} ./user-service
+                        docker build -t buy01-pipeline-product-service:build-${BUILD_NUMBER} ./product-service
+                        docker build -t buy01-pipeline-media-service:build-${BUILD_NUMBER} ./media-service
                         
-                        # Build frontend
-                        docker build -t buy01-pipeline-frontend:latest ./buy-01-ui
+                        # Build frontend with build number tag
+                        docker build -t buy01-pipeline-frontend:build-${BUILD_NUMBER} ./buy-01-ui
                         
-                        echo "✓ All Docker images built"
+                        # Also tag as latest for compatibility
+                        docker tag buy01-pipeline-service-registry:build-${BUILD_NUMBER} buy01-pipeline-service-registry:latest
+                        docker tag buy01-pipeline-api-gateway:build-${BUILD_NUMBER} buy01-pipeline-api-gateway:latest
+                        docker tag buy01-pipeline-user-service:build-${BUILD_NUMBER} buy01-pipeline-user-service:latest
+                        docker tag buy01-pipeline-product-service:build-${BUILD_NUMBER} buy01-pipeline-product-service:latest
+                        docker tag buy01-pipeline-media-service:build-${BUILD_NUMBER} buy01-pipeline-media-service:latest
+                        docker tag buy01-pipeline-frontend:build-${BUILD_NUMBER} buy01-pipeline-frontend:latest
+                        
+                        echo "✓ All Docker images built with build-${BUILD_NUMBER} tags"
                         
                         # Make deploy script executable
                         chmod +x deploy.sh
+                        chmod +x rollback.sh
                         
-                        # Run deployment
-                        ./deploy.sh
+                        # Run deployment with rollback support
+                        if ./deploy.sh ${BUILD_NUMBER}; then
+                            echo "✅ Deployment successful"
+                            
+                            # Cleanup Jenkins Docker images after successful transfer to save disk space
+                            echo "Cleaning up Jenkins Docker images to save disk space..."
+                            docker image prune -a -f --filter "until=1h"
+                            echo "✓ Jenkins cleanup completed"
+                        else
+                            echo "❌ Deployment failed! Initiating rollback..."
+                            ./rollback.sh
+                            exit 1
+                        fi
                     '''
                 }
             }
