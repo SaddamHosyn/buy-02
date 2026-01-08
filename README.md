@@ -1,31 +1,184 @@
-# Buy-01 E-Commerce Platform 🛒
+# MR-Jenk: Jenkins CI/CD Pipeline for Buy-01 Platform 🚀
 
-A production-ready, full-stack microservices-based e-commerce platform built with **Spring Boot** and **Angular**, featuring event-driven architecture with **Apache Kafka**, service discovery, and containerized deployment.
+A fully automated **Jenkins CI/CD pipeline** for the **Buy-01 e-commerce microservices platform**, featuring automated testing, deployment, and comprehensive notifications.
 
-## 🚀 Live Deployment Status
+## 📋 Overview
 
-**Current Version**: Build #28 ✅  
-**Deployment Date**: January 7, 2026  
-**Status**: All services healthy and running
+This project sets up a robust **Continuous Integration and Continuous Deployment (CI/CD)** pipeline using **Jenkins** for the e-commerce platform. The pipeline automatically **builds**, **tests**, and **deploys** your application, ensuring consistent and reliable delivery.
 
-- **Frontend**: http://13.61.234.232:4200
-- **API Gateway**: http://13.61.234.232:8080
-- **Service Registry**: http://13.61.234.232:8761
-- **Jenkins CI/CD**: http://13.62.141.159:8080
+**Your role**: DevOps Engineer - Automating the development workflow with a bulletproof CI/CD system.
 
-### Infrastructure Upgrades
+## ✅ CI/CD Pipeline Features
 
-- ✅ **15GB disk space** on both Jenkins and deployment servers (upgraded from 8GB)
-- ✅ **Aggressive cleanup**: 30min Jenkins, 1h AWS, builder cache + volumes
-- ✅ **68% disk usage** on AWS (was 94%) - 9.2GB free space
+### Automated Build Triggers
+- ✅ **GitHub Webhook Integration** - Automatic builds on every commit push
+- ✅ **Build Status Notifications** - Email alerts with detailed results
+- ✅ **Environment Validation** - Checks for required tools (Maven, Node.js, Docker, etc.)
 
-### CI/CD Pipeline
+### Testing & Reporting
+- ✅ **Backend Testing** - Maven + JUnit test execution with SureFire reports
+- ✅ **Frontend Testing** - Karma + Jasmine test runner for Angular
+- ✅ **Test Reporting** - JUnit XML parsing and artifact archiving
+- ✅ **Coverage Reports** - JaCoCo coverage metrics (when applicable)
 
-- ✅ Automated builds on every commit
-- ✅ Unit & integration tests (JUnit + Karma)
-- ✅ Docker containerization with version tagging
-- ✅ Health checks with automatic rollback
-- ✅ Disk space management & cleanup
+### Deployment & Fallback
+- ✅ **AWS Deployment** - Primary deployment target (SSH-based)
+- ✅ **Docker Fallback** - Automatic Docker deployment if AWS fails
+- ✅ **Health Checks** - Verifies deployment success before cleanup
+- ✅ **Rollback Strategy** - Automatic rollback on deployment failure
+
+### Notifications & Visibility
+- ✅ **Email Notifications** - HTML-formatted status emails with direct links to:
+  - Test results dashboard
+  - Test artifacts
+  - Build logs
+  - Coverage reports
+- ✅ **Multi-Status Alerts** - Success, Failure, and Unstable build emails
+- ✅ **Build Information** - Job name, build number, duration, Git branch
+
+## 🔧 Jenkins Setup & Configuration
+
+### Prerequisites
+
+- **Jenkins** (LTS version) running and accessible
+- **GitHub Account** with access to your repository
+- **SMTP Server** configured for email notifications (e.g., Gmail with app password)
+- **Docker** and **docker-compose** for deployment fallback
+- **Maven 3.6+** and **Node.js 18+** for builds
+
+### Step 1: Configure GitHub Credentials in Jenkins
+
+1. Go to **Manage Jenkins** → **Manage Credentials**
+2. Click **System** → **Global credentials** → **Add Credentials**
+3. Create a **Username with password** credential:
+   - **Username**: Your GitHub username
+   - **Password**: [GitHub Personal Access Token](https://github.com/settings/tokens)
+     - Scopes needed: `repo` and `admin:repo_hook`
+   - **ID**: `github-credentials`
+4. **Create** and verify connection
+
+### Step 2: Set Up GitHub Webhook for Automatic Builds
+
+1. In your GitHub repository → **Settings** → **Webhooks** → **Add webhook**
+2. Configure:
+   - **Payload URL**: `http://your-jenkins-url:8090/github-webhook/` (with trailing slash)
+   - **Content type**: `application/json`
+   - **Events**: Select "Just the push event"
+   - **Active**: ✓ Check this box
+3. **Add webhook**
+
+**For localhost Jenkins**, use [ngrok](https://ngrok.com/) to expose Jenkins:
+```bash
+brew install ngrok
+ngrok http 8090
+# Use the https:// URL provided as your Payload URL
+```
+
+### Step 3: Configure Email Notifications
+
+1. **Manage Jenkins** → **Configure System**
+2. Scroll to **E-mail Notification** section:
+   - **SMTP server**: `smtp.gmail.com`
+   - **SMTP port**: `587`
+   - **Default user e-mail suffix**: `@gmail.com`
+3. Check ☑️ **Use SMTP Authentication**
+   - **Username**: Your Gmail address
+   - **Password**: [Gmail App Password](https://support.google.com/accounts/answer/185833)
+   - **Use TLS**: ✓ Check this box
+4. **Test configuration** and **Save**
+
+### Step 4: Configure Jenkins Job
+
+1. Create a new **Pipeline** job (or copy an existing one)
+2. **Pipeline** section → **Definition**: Select "Pipeline script from SCM"
+3. **SCM**: Select **Git**
+   - **Repository URL**: `https://github.com/jeeeeedi/mr-jenk.git`
+   - **Credentials**: Select the GitHub credentials you created
+   - **Branch**: `*/cleanup` (or your working branch)
+4. **Script Path**: `Jenkinsfile` (default)
+5. Under **Build Triggers** → Check ☑️ **GitHub hook trigger for GITScm polling**
+6. **Save**
+
+### Step 5: Trigger Your First Build
+
+Simply push code to trigger an automatic build:
+
+```bash
+git add .
+git commit -m "Test Jenkins webhook"
+git push origin cleanup
+```
+
+Jenkins will automatically start a build within a few seconds!
+
+### Accessing Build Reports
+
+After a successful build:
+
+1. **Jenkins UI** → Your job → Build #N
+2. **Test Results**: Shows parsed JUnit test results
+3. **Artifacts**: Download archived test reports and coverage files
+4. **Email Notification**: Check your inbox for HTML report with direct links
+
+## 📊 Pipeline Structure
+
+The `Jenkinsfile` defines a multi-stage pipeline with the following flow:
+
+### Pipeline Stages
+
+```
+1. Validate Environment
+   ├─ Check Maven, Node.js, npm, Docker, docker-compose, Git, Chrome
+   └─ Fail if required tools missing
+
+2. Checkout
+   └─ Clone repository from GitHub
+
+3. Build Backend
+   ├─ Compile all Spring Boot microservices
+   └─ Package JAR artifacts
+
+4. Run Tests (Parallel)
+   ├─ Backend Tests
+   │  └─ Execute Maven tests with JUnit reports
+   ├─ Build Frontend
+   │  └─ Build Angular application
+
+5. Test Frontend
+   └─ Run Karma tests for Angular
+
+6. Deploy
+   ├─ Try: Deploy to AWS via SSH
+   ├─ Catch: Fallback to Docker Compose
+   └─ Health checks and verification
+
+7. Post Actions (Always Runs)
+   ├─ Publish test results
+   ├─ Archive artifacts
+   ├─ Success: Send success email with reports
+   ├─ Failure: Send failure email with troubleshooting
+   └─ Unstable: Send unstable build warning
+```
+
+### Environment Variables
+
+The pipeline uses these key variables:
+
+| Variable         | Purpose                              |
+| ---------------- | ------------------------------------ |
+| `JENKINS_SCRIPTS` | Path to Jenkins helper scripts        |
+| `TEAM_EMAIL`     | Team email for notifications         |
+| `AWS_KEY_PATH`   | SSH key for AWS deployment           |
+| `AWS_HOST`       | AWS deployment server address        |
+| `DOCKER_REGISTRY` | Docker registry for image storage    |
+
+### Test Report Files
+
+After build completion, you'll find:
+
+- **Backend Tests**: `**/target/surefire-reports/*.xml`
+- **Frontend Tests**: `buy-01-ui/coverage/` (if coverage is enabled)
+- **Build Artifacts**: Accessible in Jenkins UI under "Artifacts"
 
 ## 🏗️ Architecture Overview
 

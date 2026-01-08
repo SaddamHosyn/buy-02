@@ -59,6 +59,13 @@
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
 
+			<!-- Maven Surefire Plugin -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>3.0.0</version>
+			</plugin>
+
 			<!-- Compiler plugin left default for modules; remove Lombok annotation-processor config to avoid loading Lombok at compile-time when unused -->
 		</plugins>
 	</build>

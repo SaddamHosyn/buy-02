@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-# Get build number from argument
-BUILD_NUMBER=${1:-latest}
+# Get build number from argument with validation
+BUILD_NUMBER=${1:?'BUILD_NUMBER is required. Usage: deploy.sh <BUILD_NUMBER>'}
 
 # AWS Deployment Configuration
 DEPLOY_HOST="ec2-user@13.61.234.232"
