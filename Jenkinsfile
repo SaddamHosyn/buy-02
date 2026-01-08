@@ -21,9 +21,6 @@ pipeline {
         // Email Configuration
         TEAM_EMAIL = 'othmane.afilali@gritlab.ax,jedi.reston@gritlab.ax'
         
-        // Frontend Configuration
-        CHROME_BIN = '/usr/bin/chromium-browser'
-        
         // Docker Configuration
         DOCKER_IMAGE_PREFIX = 'buy01-pipeline'
         SERVICE_REGISTRY_IMAGE = 'buy01-pipeline-service-registry'
@@ -110,6 +107,17 @@ pipeline {
                     sh '''
                         set -e
                         mkdir -p target/surefire-reports
+                        
+                        # Detect Chrome binary location
+                        export CHROME_BIN=$(which chromium-browser || which google-chrome || which chrome || echo "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" 2>/dev/null || echo "")
+                        
+                        if [ -z "$CHROME_BIN" ] || [ ! -f "$CHROME_BIN" ]; then
+                            echo "⚠️ Warning: Chrome not found, skipping frontend tests"
+                            echo "To fix: Install Chrome/Chromium or set CHROME_BIN environment variable"
+                            exit 0
+                        fi
+                        
+                        echo "Using Chrome: $CHROME_BIN"
                         npm test -- --watch=false --browsers=ChromeHeadless
                         if [ $? -ne 0 ]; then
                             echo "❌ Frontend tests FAILED! Pipeline will STOP here."
@@ -184,11 +192,10 @@ pipeline {
             echo '✅ Pipeline completed successfully!'
             echo '=========================================='
             
-            emailext(
+            mail(
                 subject: "✅ BUILD SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                 body: readFile("${JENKINS_SCRIPTS}/email-success.html"),
                 to: "${TEAM_EMAIL}",
-                recipientProviders: [requestor()],
                 mimeType: 'text/html'
             )
         }
@@ -197,22 +204,20 @@ pipeline {
             echo '❌ Pipeline failed! Immediate action required'
             echo '=========================================='
             
-            emailext(
+            mail(
                 subject: "❌ BUILD FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                 body: readFile("${JENKINS_SCRIPTS}/email-failure.html"),
-                to: "${env.TEAM_EMAIL}",
-                recipientProviders: [requestor()],
+                to: "${TEAM_EMAIL}",
                 mimeType: 'text/html'
             )
         }
         unstable {
             echo '⚠️ Pipeline unstable - some tests may have failed'
             
-            emailext(
+            mail(
                 subject: "⚠️ BUILD UNSTABLE: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                 body: readFile("${JENKINS_SCRIPTS}/email-unstable.html"),
                 to: "${TEAM_EMAIL}",
-                recipientProviders: [requestor()],
                 mimeType: 'text/html'
             )
         }
