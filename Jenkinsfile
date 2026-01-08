@@ -1,6 +1,34 @@
 pipeline {
     agent any
     
+    parameters {
+        choice(
+            name: 'DEPLOYMENT_TARGET',
+            choices: ['AWS', 'Local Docker', 'Both'],
+            description: 'Choose deployment target'
+        )
+        booleanParam(
+            name: 'SKIP_TESTS',
+            defaultValue: false,
+            description: 'Skip test execution (not recommended for production)'
+        )
+        booleanParam(
+            name: 'SKIP_FRONTEND_BUILD',
+            defaultValue: false,
+            description: 'Skip frontend build (backend changes only)'
+        )
+        booleanParam(
+            name: 'FORCE_REBUILD',
+            defaultValue: false,
+            description: 'Force clean rebuild (ignore cache)'
+        )
+        string(
+            name: 'CUSTOM_TAG',
+            defaultValue: '',
+            description: 'Custom Docker tag (leave empty for build number)'
+        )
+    }
+    
     triggers {
         githubPush()  // Trigger on GitHub webhook push
     }
@@ -57,11 +85,20 @@ pipeline {
             }
             steps {
                 echo 'Building backend services...'
-                sh 'mvn clean install -DskipTests'
+                script {
+                    if (params.FORCE_REBUILD) {
+                        sh 'mvn clean install -DskipTests -U'  // Force update dependencies
+                    } else {
+                        sh 'mvn clean install -DskipTests'
+                    }
+                }
             }
         }
         
         stage('Run Tests') {
+            when {
+                expression { !params.SKIP_TESTS }
+            }
             options {
                 timeout(time: 45, unit: 'MINUTES')
             }
@@ -86,6 +123,9 @@ pipeline {
                 }
                 
                 stage('Build Frontend') {
+                    when {
+                        expression { !params.SKIP_FRONTEND_BUILD }
+                    }
                     steps {
                         echo 'Building frontend...'
                         dir('buy-01-ui') {

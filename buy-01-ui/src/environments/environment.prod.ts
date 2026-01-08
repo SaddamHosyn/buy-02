@@ -9,5 +9,5 @@ export const environment = {
   productsUrl: 'http://13.61.234.232:8080/api/products',
   mediaUrl: 'http://13.61.234.232:8080/api/media',
   enableDebugLogging: false,
-  buildTimestamp: '2026-01-08T13:00:00Z'
+  buildTimestamp: '2026-01-08T13:00:00Z',
 };

@@ -11,23 +11,27 @@ This project sets up a robust **Continuous Integration and Continuous Deployment
 ## ✅ CI/CD Pipeline Features
 
 ### Automated Build Triggers
+
 - ✅ **GitHub Webhook Integration** - Automatic builds on every commit push
 - ✅ **Build Status Notifications** - Email alerts with detailed results
 - ✅ **Environment Validation** - Checks for required tools (Maven, Node.js, Docker, etc.)
 
 ### Testing & Reporting
+
 - ✅ **Backend Testing** - Maven + JUnit test execution with SureFire reports
 - ✅ **Frontend Testing** - Karma + Jasmine test runner for Angular
 - ✅ **Test Reporting** - JUnit XML parsing and artifact archiving
 - ✅ **Coverage Reports** - JaCoCo coverage metrics (when applicable)
 
 ### Deployment & Fallback
+
 - ✅ **AWS Deployment** - Primary deployment target (SSH-based)
 - ✅ **Docker Fallback** - Automatic Docker deployment if AWS fails
 - ✅ **Health Checks** - Verifies deployment success before cleanup
 - ✅ **Rollback Strategy** - Automatic rollback on deployment failure
 
 ### Notifications & Visibility
+
 - ✅ **Email Notifications** - HTML-formatted status emails with direct links to:
   - Test results dashboard
   - Test artifacts
@@ -68,6 +72,7 @@ This project sets up a robust **Continuous Integration and Continuous Deployment
 3. **Add webhook**
 
 **For localhost Jenkins**, use [ngrok](https://ngrok.com/) to expose Jenkins:
+
 ```bash
 brew install ngrok
 ngrok http 8090
@@ -164,13 +169,13 @@ The `Jenkinsfile` defines a multi-stage pipeline with the following flow:
 
 The pipeline uses these key variables:
 
-| Variable         | Purpose                              |
-| ---------------- | ------------------------------------ |
-| `JENKINS_SCRIPTS` | Path to Jenkins helper scripts        |
-| `TEAM_EMAIL`     | Team email for notifications         |
-| `AWS_KEY_PATH`   | SSH key for AWS deployment           |
-| `AWS_HOST`       | AWS deployment server address        |
-| `DOCKER_REGISTRY` | Docker registry for image storage    |
+| Variable          | Purpose                           |
+| ----------------- | --------------------------------- |
+| `JENKINS_SCRIPTS` | Path to Jenkins helper scripts    |
+| `TEAM_EMAIL`      | Team email for notifications      |
+| `AWS_KEY_PATH`    | SSH key for AWS deployment        |
+| `AWS_HOST`        | AWS deployment server address     |
+| `DOCKER_REGISTRY` | Docker registry for image storage |
 
 ### Test Report Files
 
@@ -907,5 +912,3 @@ This project is developed for educational purposes as part of a university proje
 **Built with ❤️ using Spring Boot, Angular, Kafka, and MongoDB**
 
 _For questions or issues, please open an issue on GitHub._
-
-
