@@ -71,7 +71,7 @@ for service in service-registry api-gateway user-service product-service media-s
 done
 
 # Tag new images as latest on AWS (and backup old latest as previous)
-ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$DEPLOY_HOST" << TAGLATEST
+ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$DEPLOY_HOST" bash << TAGLATEST
     echo "Backing up current latest images as previous..."
     for service in service-registry api-gateway user-service product-service media-service frontend; do
         # First, backup current latest as previous (if it exists)
