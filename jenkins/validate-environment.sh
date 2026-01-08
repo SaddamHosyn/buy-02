@@ -75,8 +75,8 @@ fi
 
 # Check docker-compose
 echo -n "Checking docker-compose... "
-if command -v docker-compose &> /dev/null; then
-    COMPOSE_VERSION=$(docker-compose -v)
+if command -v docker-compose &> /dev/null || [ -x /usr/local/bin/docker-compose ]; then
+    COMPOSE_VERSION=$(/usr/local/bin/docker-compose -v 2>/dev/null || docker-compose -v)
     echo -e "${GREEN}✓${NC} ($COMPOSE_VERSION)"
 else
     echo -e "${RED}✗ NOT FOUND${NC}"
