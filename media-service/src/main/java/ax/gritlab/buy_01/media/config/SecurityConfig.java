@@ -24,8 +24,8 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints - anyone can VIEW images
-                        .requestMatchers(HttpMethod.GET, "/media/images/**").permitAll()
+                        // Public endpoints - anyone can VIEW images and list them
+                        .requestMatchers(HttpMethod.GET, "/media/images", "/media/images/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
 
                         // Protected endpoints - authenticated users can upload/modify images
