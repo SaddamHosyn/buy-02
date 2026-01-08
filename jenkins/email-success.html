@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+        .header { background-color: #28a745; color: white; padding: 20px; text-align: center; }
+        .content { margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; background-color: #f0f0f0; border-left: 5px solid #28a745; }
+        .section-title { font-weight: bold; color: #28a745; font-size: 16px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #28a745; color: white; }
+        tr:nth-child(even) { background-color: #fafafa; }
+        .success-badge { display: inline-block; background-color: #28a745; color: white; padding: 5px 10px; border-radius: 3px; margin-right: 10px; }
+        .footer { margin-top: 30px; padding-top: 20px; border-top: 2px solid #ddd; font-size: 12px; color: #666; text-align: center; }
+        a { color: #007bff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>✅ Build Successful</h1>
+        <p>Build #${BUILD_NUMBER} completed successfully</p>
+    </div>
+    
+    <div class="content">
+        <div class="section">
+            <p><span class="section-title">📋 Build Information</span></p>
+            <table>
+                <tr><th>Build Number</th><td><span class="success-badge">#${BUILD_NUMBER}</span></td></tr>
+                <tr><th>Job Name</th><td>${JOB_NAME}</td></tr>
+                <tr><th>Build Status</th><td><span class="success-badge">SUCCESS</span></td></tr>
+                <tr><th>Duration</th><td>${BUILD_DURATION}</td></tr>
+                <tr><th>Timestamp</th><td>${BUILD_TIMESTAMP}</td></tr>
+                <tr><th>Git Branch</th><td>${GIT_BRANCH}</td></tr>
+            </table>
+        </div>
+        
+        <div class="section">
+            <p><span class="section-title">✅ Completed Stages</span></p>
+            <table>
+                <tr><td style="width: 50px; text-align: center;">✅</td><td>Checkout</td></tr>
+                <tr><td style="text-align: center;">✅</td><td>Build Backend (Maven)</td></tr>
+                <tr><td style="text-align: center;">✅</td><td>Test Backend (JUnit)</td></tr>
+                <tr><td style="text-align: center;">✅</td><td>Build Frontend (Angular)</td></tr>
+                <tr><td style="text-align: center;">✅</td><td>Test Frontend (Jasmine/Karma)</td></tr>
+                <tr><td style="text-align: center;">✅</td><td>Deploy to Production</td></tr>
+            </table>
+        </div>
+        
+        <div class="section">
+            <p><span class="section-title">📊 Test Results</span></p>
+            <p>All tests passed successfully!</p>
+            <p><a href="${BUILD_URL}testReport/">View Detailed Test Report</a></p>
+        </div>
+        
+        <div class="section">
+            <p><span class="section-title">🚀 Deployment Status</span></p>
+            <p>Your application has been successfully deployed to production.</p>
+            <p><strong>Next Steps:</strong></p>
+            <ul>
+                <li>Monitor application health and performance</li>
+                <li>Review deployment logs for any warnings</li>
+                <li>Notify QA team for final verification</li>
+            </ul>
+        </div>
+        
+        <div class="section">
+            <p><span class="section-title">📎 Useful Links</span></p>
+            <p>
+                <a href="${BUILD_URL}console">📄 View Console Output</a> | 
+                <a href="${BUILD_URL}testReport/">📊 View Test Report</a> | 
+                <a href="${BUILD_URL}">🔗 Build Details</a>
+            </p>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>This is an automated message from the Jenkins CI/CD Pipeline</p>
+        <p>Build URL: <a href="${BUILD_URL}">${BUILD_URL}</a></p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .header { background-color: #ffc107; color: black; padding: 20px; text-align: center; }
+        .content { margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; background-color: #fff3cd; border-left: 5px solid #ffc107; }
+        .section-title { font-weight: bold; color: #ffc107; font-size: 16px; }
+        a { color: #007bff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="header"><h2>⚠️ Build Unstable</h2></div>
+    <div class="content">
+        <div class="section">
+            <p><strong>Build:</strong> ${JOB_NAME} #${BUILD_NUMBER}</p>
+            <p><strong>Status:</strong> Unstable (Build completed but with test failures or warnings)</p>
+            <p><strong>Duration:</strong> ${BUILD_DURATION}</p>
+            <p><a href="${BUILD_URL}testReport/">View Test Report for details</a></p>
+        </div>
+    </div>
+</body>
+</html>
