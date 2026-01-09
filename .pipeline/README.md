@@ -40,12 +40,12 @@
 
    | ID                    | Type            | Value                                               |
    | --------------------- | --------------- | --------------------------------------------------- |
-   | `team-email`          | Secret text     | `othmane.afilali@gritlab.ax,jedi.reston@gritlab.ax` |
+   | `team-email`          | Secret text     | `othmane,jedi` |
    | `aws-deploy-host`     | Secret text     | `13.61.234.232`                                     |
    | `aws-deploy-user`     | Secret text     | `ec2-user`                                          |
    | `aws-ssh-key-file`    | **Secret file** | Upload `lastreal.pem`                               |
-   | `mongo-root-username` | Secret text     | `admin`                                             |
-   | `mongo-root-password` | Secret text     | `gritlab25`                                         |
+   | `mongo-root-username` | Secret text     | `root`                                             |
+   | `mongo-root-password` | Secret text     | `example`                                         |
 
 2. **Create Jenkins Pipeline Job**:
 
@@ -121,8 +121,7 @@ git push origin main
    └───┬───┘└──┬───┘└───┬───┘└───────┘
        │       │        │
    ┌───▼───────▼────────▼───┐
-   │     MongoDB            │
-   │  (gritlab25 secured)   │
+   │        MongoDB         │
    └────────────────────────┘
 ```
 
@@ -151,8 +150,8 @@ The pipeline uses these environment variables (auto-loaded from credentials):
 AWS_DEPLOY_HOST      // 13.61.234.232
 AWS_DEPLOY_USER      // ec2-user
 AWS_SSH_KEY_FILE     // /tmp/secretFiles.*/key.pem
-MONGO_ROOT_USERNAME  // admin
-MONGO_ROOT_PASSWORD  // gritlab25
+MONGO_ROOT_USERNAME  // root
+MONGO_ROOT_PASSWORD  // example
 API_GATEWAY_URL      // http://13.61.234.232:8080
 TEAM_EMAIL           // notification recipients
 ```
@@ -278,9 +277,9 @@ Old (previous)           New (build-N)
     │                         │
     │ 3. Health checks        │
     ├─────────────────────────►
-    │   ✅ Healthy             │
+    │   ✅ Healthy            │
     │                         │
-    │ 4. Stop old            │
+    │ 4. Stop old             │
     └─────────────────────────X
                               │
                       ✅ New running
@@ -415,10 +414,7 @@ Jenkins archives:
 
 ### Notification Recipients
 
-Configured via Jenkins credential `team-email`:
-
-- othmane.afilali@gritlab.ax
-- jedi.reston@gritlab.ax
+Configured via Jenkins credential `team-email`
 
 ---
 
@@ -552,8 +548,8 @@ echo "AWS_DEPLOY_USER: ${AWS_DEPLOY_USER}"
 
 **Team Contacts**:
 
-- othmane.afilali@gritlab.ax
-- jedi.reston@gritlab.ax
+- othmane
+- jedi
 
 ---
 
