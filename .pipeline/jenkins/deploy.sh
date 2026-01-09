@@ -95,6 +95,12 @@ echo "Using image prefix: $IMAGE_PREFIX with build-${BUILD_NUMBER}"
 
 for service in service-registry api-gateway user-service product-service media-service frontend; do
     echo "Transferring ${service}:build-${BUILD_NUMBER}..."
+    # Verify image exists before attempting transfer
+    if ! docker images "${IMAGE_PREFIX}-${service}:build-${BUILD_NUMBER}" | grep -q "build-${BUILD_NUMBER}"; then
+        echo "ERROR: Image ${IMAGE_PREFIX}-${service}:build-${BUILD_NUMBER} not found!"
+        docker images | grep "${IMAGE_PREFIX}-${service}"
+        exit 1
+    fi
     docker save ${IMAGE_PREFIX}-${service}:build-${BUILD_NUMBER} | ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$DEPLOY_HOST" "docker load"
     echo "✓ ${service} transferred"
 done
