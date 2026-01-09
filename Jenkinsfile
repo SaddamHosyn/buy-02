@@ -52,7 +52,7 @@ pipeline {
         // AWS Configuration - Use credentials for sensitive data
         AWS_DEPLOY_HOST = credentials('aws-deploy-host')  // Store in Jenkins Credentials
         AWS_DEPLOY_USER = credentials('aws-deploy-user')  // Store in Jenkins Credentials
-        AWS_SSH_KEY = credentials('aws-ssh-key-file')  // Store SSH key as secret file
+        // AWS_SSH_KEY is handled via withCredentials block for proper Secret File binding
         
         // MongoDB Credentials - Use credentials for sensitive data
         MONGO_ROOT_USERNAME = credentials('mongo-root-username')  // Store in Jenkins Credentials
@@ -199,24 +199,31 @@ pipeline {
                     
                     // Try AWS deployment first
                     def awsDeploymentSuccessful = false
-                    try {
-                        echo '=========================================='
-                        echo '🚀 Attempting AWS Deployment...'
-                        echo '=========================================='
-                        sh '''
-                            echo "DEBUG: AWS_SSH_KEY = ${AWS_SSH_KEY}"
-                            ls -la "${AWS_SSH_KEY}" || echo "SSH key file not found"
-                            ${JENKINS_SCRIPTS}/deploy.sh ${BUILD_NUMBER}
-                            echo "✅ AWS Deployment successful"
-                        '''
-                        awsDeploymentSuccessful = true
-                        
-                        // Post-deployment cleanup on success
-                        sh '${JENKINS_SCRIPTS}/post-deployment-cleanup.sh'
-                    } catch (Exception e) {
-                        echo "⚠️ AWS Deployment failed: ${e.message}"
-                        echo "Reason: Typically SSH key not found or AWS credentials unavailable"
-                        awsDeploymentSuccessful = false
+                    
+                    // Use withCredentials to properly bind the SSH key file
+                    withCredentials([file(credentialsId: 'aws-ssh-key-file', variable: 'AWS_SSH_KEY_FILE')]) {
+                        try {
+                            echo '=========================================='
+                            echo '🚀 Attempting AWS Deployment...'
+                            echo '=========================================='
+                            sh '''
+                                echo "Setting up SSH key..."
+                                export AWS_SSH_KEY="${AWS_SSH_KEY_FILE}"
+                                chmod 600 "${AWS_SSH_KEY}"
+                                ls -la "${AWS_SSH_KEY}"
+                                
+                                ${JENKINS_SCRIPTS}/deploy.sh ${BUILD_NUMBER}
+                                echo "✅ AWS Deployment successful"
+                            '''
+                            awsDeploymentSuccessful = true
+                            
+                            // Post-deployment cleanup on success
+                            sh '${JENKINS_SCRIPTS}/post-deployment-cleanup.sh'
+                        } catch (Exception e) {
+                            echo "⚠️ AWS Deployment failed: ${e.message}"
+                            echo "Reason: Typically SSH key not found or AWS credentials unavailable"
+                            awsDeploymentSuccessful = false
+                        }
                     }
                     
                     // If AWS deployment fails, pipeline fails (no local fallback on Jenkins server)
