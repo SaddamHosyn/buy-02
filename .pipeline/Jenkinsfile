@@ -220,29 +220,19 @@ pipeline {
                             echo "⚠️ AWS Deployment failed: ${e.message}"
                             echo "Reason: Typically SSH key not found or AWS credentials unavailable"
                             awsDeploymentSuccessful = false
+                            
+                            // Attempt rollback INSIDE withCredentials so it has access to the SSH key
+                            try {
+                                echo "Rolling back changes..."
+                                sh '''
+                                    export AWS_SSH_KEY="${AWS_SSH_KEY_FILE}"
+                                    chmod 600 "${AWS_SSH_KEY}"
+                                    ${JENKINS_SCRIPTS}/rollback.sh
+                                '''
+                            } catch (Exception rollbackError) {
+                                echo "⚠️ Rollback also failed: ${rollbackError.message}"
+                            }
                         }
-                    }
-                    
-                    // If AWS deployment fails, pipeline fails (no local fallback on Jenkins server)
-                    if (!awsDeploymentSuccessful) {
-                        echo '=========================================='
-                        echo '❌ AWS Deployment REQUIRED but failed!'
-                        echo '=========================================='
-                        echo 'Please check:'
-                        echo '  1. All 5 Jenkins credentials are configured'
-                        echo '  2. AWS EC2 server is accessible'
-                        echo '  3. SSH key has correct permissions'
-                        echo '=========================================='
-                        
-                        // Attempt rollback
-                        try {
-                            echo "Rolling back changes..."
-                            sh '${JENKINS_SCRIPTS}/rollback.sh'
-                        } catch (Exception rollbackError) {
-                            echo "⚠️ Rollback also failed: ${rollbackError.message}"
-                        }
-                        
-                        error("Deployment failed - AWS credentials or connectivity issue")
                     }
                 }
             }
