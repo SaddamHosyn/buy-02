@@ -134,7 +134,7 @@ services:
       - "4200:80"   # HTTP (legacy)
       - "4201:443"  # HTTPS (recommended)
     volumes:
-      - ./certs:/etc/nginx/certs:ro  # Mount SSL certificates (Expected in deployment dir)
+      - ./certs:/etc/nginx/certs:ro  # Consistent relative path for local and AWS
     depends_on:
       - api-gateway
     networks:

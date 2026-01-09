@@ -121,10 +121,6 @@ pipeline {
                         sh '''
                             set -e
                             mvn test
-                            if [ $? -ne 0 ]; then
-                                echo "❌ Backend tests FAILED! Pipeline will STOP here."
-                                exit 1
-                            fi
                         '''
                     }
                     post {
@@ -134,15 +130,16 @@ pipeline {
                     }
                 }
                 
-                stage('Build Frontend') {
+                stage('Frontend Pre-check') {
                     when {
                         expression { !params.SKIP_FRONTEND_BUILD }
                     }
                     steps {
-                        echo 'Building frontend...'
+                        echo 'Checking frontend dependencies...'
                         dir('buy-01-ui') {
-                            sh 'npm install'
-                            sh 'npm run build'
+                            // Only run install if we need it for tests later, 
+                            // but Docker handles the main build
+                            sh 'npm install --legacy-peer-deps'
                         }
                     }
                 }

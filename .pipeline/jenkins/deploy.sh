@@ -64,8 +64,8 @@ echo -e "${YELLOW}[2/6] Preparing AWS deployment directory...${NC}"
 ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$DEPLOY_HOST" "mkdir -p $DEPLOY_PATH/certs"
 
 # Backup current docker-compose.yml BEFORE transferring new one
-ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$DEPLOY_HOST" bash <<'BACKUP_FIRST'
-    cd /home/ec2-user/buy-01-app
+ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$DEPLOY_HOST" bash -s <<BACKUP_FIRST
+    cd "$DEPLOY_PATH"
     if [ -f docker-compose.yml ]; then
         cp docker-compose.yml docker-compose.yml.previous
         echo "✓ Backed up current docker-compose.yml"
