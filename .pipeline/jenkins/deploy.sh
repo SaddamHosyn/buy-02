@@ -79,8 +79,12 @@ scp -i "$SSH_KEY" -o StrictHostKeyChecking=no .pipeline/docker-compose.yml "$DEP
 # Transfer .env file with secrets
 if [ -f ".pipeline/.env.production" ]; then
     echo "Transferring production environment configuration..."
+    echo "[DEBUG] Contents of local .env.production:"
+    cat .pipeline/.env.production | sed 's/PASSWORD=.*/PASSWORD=***REDACTED***/'
     scp -i "$SSH_KEY" -o StrictHostKeyChecking=no .pipeline/.env.production "$DEPLOY_HOST:$DEPLOY_PATH/.env"
     echo "✓ Environment configuration transferred"
+    echo "[DEBUG] Verifying transferred .env on AWS:"
+    ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$DEPLOY_HOST" "cat $DEPLOY_PATH/.env | sed 's/PASSWORD=.*/PASSWORD=***REDACTED***/'"
 fi
 
 echo -e "${GREEN}✓ AWS directory prepared${NC}"
@@ -220,7 +224,64 @@ if [ $HEALTH_CHECK_FAILED -eq 1 ]; then
     exit 1
 fi
 
-echo "✓ All health checks passed"
+echo "✓ Initial health checks passed"
+
+# CRITICAL: Verify ALL 9 containers are running (not just health checks)
+echo ""
+echo "Verifying all containers are running..."
+RUNNING_COUNT=\$(docker-compose ps --filter "status=running" --format json 2>/dev/null | grep -c '"Name"' || docker-compose ps | grep -c "Up")
+EXPECTED_COUNT=9
+
+if [ "\$RUNNING_COUNT" -lt "\$EXPECTED_COUNT" ]; then
+    echo "❌ ERROR: Only \$RUNNING_COUNT/\$EXPECTED_COUNT containers running!"
+    echo ""
+    echo "Container status:"
+    docker-compose ps
+    echo ""
+    echo "Checking for crashed services..."
+    
+    # Check each critical service
+    for service in user-service product-service media-service api-gateway service-registry; do
+        STATUS=\$(docker-compose ps \$service --format "table {{.State}}" 2>/dev/null | tail -1)
+        if [ "\$STATUS" != "running" ] && [ "\$STATUS" != "Up" ]; then
+            echo ""
+            echo "❌ \$service is NOT running (Status: \$STATUS)"
+            echo "Last 30 lines of logs:"
+            docker-compose logs --tail=30 \$service
+        fi
+    done
+    
+    echo ""
+    echo "❌ DEPLOYMENT FAILED: Not all services are running"
+    exit 1
+fi
+
+echo "✓ All \$RUNNING_COUNT/\$EXPECTED_COUNT containers verified running"
+
+# Wait extra time then verify containers STAYED running
+echo ""
+echo "Waiting 15 seconds then verifying containers stayed healthy..."
+sleep 15
+
+FINAL_RUNNING_COUNT=\$(docker-compose ps --filter "status=running" --format json 2>/dev/null | grep -c '"Name"' || docker-compose ps | grep -c "Up")
+if [ "\$FINAL_RUNNING_COUNT" -lt "\$EXPECTED_COUNT" ]; then
+    echo "❌ ERROR: Container(s) crashed after startup! (\$FINAL_RUNNING_COUNT/\$EXPECTED_COUNT running)"
+    echo ""
+    
+    # Show which services crashed
+    for service in user-service product-service media-service api-gateway service-registry frontend mongodb kafka zookeeper; do
+        STATUS=\$(docker-compose ps \$service --format "table {{.State}}" 2>/dev/null | tail -1)
+        if [ "\$STATUS" != "running" ] && [ "\$STATUS" != "Up" ]; then
+            echo "❌ \$service crashed! Last 50 lines:"
+            docker-compose logs --tail=50 \$service
+            echo ""
+        fi
+    done
+    
+    exit 1
+fi
+
+echo "✓ All containers stayed healthy (\$FINAL_RUNNING_COUNT/\$EXPECTED_COUNT running)"
 
 # Show running containers
 echo ""
