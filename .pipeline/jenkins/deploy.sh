@@ -81,6 +81,10 @@ if [ -f ".pipeline/.env.production" ]; then
     echo "Transferring production environment configuration..."
     echo "[DEBUG] Contents of local .env.production:"
     cat .pipeline/.env.production | sed 's/PASSWORD=.*/PASSWORD=***REDACTED***/'
+    
+    # Force remove old .env to ensure fresh file
+    ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$DEPLOY_HOST" "rm -f $DEPLOY_PATH/.env"
+    
     scp -i "$SSH_KEY" -o StrictHostKeyChecking=no .pipeline/.env.production "$DEPLOY_HOST:$DEPLOY_PATH/.env"
     echo "✓ Environment configuration transferred"
     echo "[DEBUG] Verifying transferred .env on AWS:"
@@ -229,11 +233,11 @@ echo "✓ Initial health checks passed"
 # CRITICAL: Verify ALL 9 containers are running (not just health checks)
 echo ""
 echo "Verifying all containers are running..."
-RUNNING_COUNT=\\$(docker-compose ps | grep -c "Up" || echo 0)
+RUNNING_COUNT=$(docker-compose ps | grep -c "Up" || echo 0)
 EXPECTED_COUNT=9
 
-if [ "\\$RUNNING_COUNT" -lt "\\$EXPECTED_COUNT" ]; then
-    echo "❌ ERROR: Only \\$RUNNING_COUNT/\\$EXPECTED_COUNT containers running!"
+if [ "$RUNNING_COUNT" -lt "$EXPECTED_COUNT" ]; then
+    echo "❌ ERROR: Only $RUNNING_COUNT/$EXPECTED_COUNT containers running!"
     echo ""
     echo "Container status:"
     docker-compose ps
@@ -242,11 +246,11 @@ if [ "\\$RUNNING_COUNT" -lt "\\$EXPECTED_COUNT" ]; then
     
     # Check each critical service
     for service in user-service product-service media-service api-gateway service-registry; do
-        if ! docker-compose ps \\$service | grep -q "Up"; then
+        if ! docker-compose ps $service | grep -q "Up"; then
             echo ""
-            echo "❌ \\$service is NOT running"
+            echo "❌ $service is NOT running"
             echo "Last 30 lines of logs:"
-            docker-compose logs --tail=30 \\$service
+            docker-compose logs --tail=30 $service
         fi
     done
     
@@ -255,23 +259,23 @@ if [ "\\$RUNNING_COUNT" -lt "\\$EXPECTED_COUNT" ]; then
     exit 1
 fi
 
-echo "✓ All \\$RUNNING_COUNT/\\$EXPECTED_COUNT containers verified running"
+echo "✓ All $RUNNING_COUNT/$EXPECTED_COUNT containers verified running"
 
 # Wait extra time then verify containers STAYED running
 echo ""
 echo "Waiting 15 seconds then verifying containers stayed healthy..."
 sleep 15
 
-FINAL_RUNNING_COUNT=\\$(docker-compose ps | grep -c "Up" || echo 0)
-if [ "\\$FINAL_RUNNING_COUNT" -lt "\\$EXPECTED_COUNT" ]; then
-    echo "❌ ERROR: Container(s) crashed after startup! (\\$FINAL_RUNNING_COUNT/\\$EXPECTED_COUNT running)"
+FINAL_RUNNING_COUNT=$(docker-compose ps | grep -c "Up" || echo 0)
+if [ "$FINAL_RUNNING_COUNT" -lt "$EXPECTED_COUNT" ]; then
+    echo "❌ ERROR: Container(s) crashed after startup! ($FINAL_RUNNING_COUNT/$EXPECTED_COUNT running)"
     echo ""
     
     # Show which services crashed
     for service in user-service product-service media-service api-gateway service-registry frontend mongodb kafka zookeeper; do
-        if ! docker-compose ps \\$service | grep -q "Up"; then
-            echo "❌ \\$service crashed! Last 50 lines:"
-            docker-compose logs --tail=50 \\$service
+        if ! docker-compose ps $service | grep -q "Up"; then
+            echo "❌ $service crashed! Last 50 lines:"
+            docker-compose logs --tail=50 $service
             echo ""
         fi
     done
@@ -279,7 +283,7 @@ if [ "\\$FINAL_RUNNING_COUNT" -lt "\\$EXPECTED_COUNT" ]; then
     exit 1
 fi
 
-echo "✓ All containers stayed healthy (\\$FINAL_RUNNING_COUNT/\\$EXPECTED_COUNT running)"
+echo "✓ All containers stayed healthy ($FINAL_RUNNING_COUNT/$EXPECTED_COUNT running)"
 
 # Show running containers
 echo ""
