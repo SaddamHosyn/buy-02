@@ -9,7 +9,10 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+    properties = {"spring.profiles.active=test"}
+)
 @AutoConfigureWebTestClient
 @DisplayName("API Gateway Integration Tests")
 public class ApiGatewayApplicationTest {

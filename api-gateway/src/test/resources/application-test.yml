@@ -1,0 +1,4 @@
+server:
+  port: 0 # Random port for tests
+  ssl:
+    enabled: false # Disable SSL for tests
