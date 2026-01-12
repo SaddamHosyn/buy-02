@@ -12,7 +12,7 @@
 2. **Push code** → Automatic build & deploy via webhook
 3. **Access app**: http://13.61.234.232:4200
 
-## 📊 Current Status
+## 📊 Current Status 
 
 - ✅ **Build #54**: Deployed successfully
 - ✅ **Audit Score**: 12/12 (100% compliance)
