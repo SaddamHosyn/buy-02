@@ -2,6 +2,7 @@ import { ApplicationConfig, provideZoneChangeDetection, ErrorHandler } from '@an
 import { provideRouter, withComponentInputBinding, withViewTransitions } from '@angular/router';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
+import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
 
 import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors/auth-interceptor';
@@ -20,14 +21,14 @@ export const appConfig: ApplicationConfig = {
   providers: [
     // Zone.js configuration with event coalescing for better performance
     provideZoneChangeDetection({ eventCoalescing: true }),
-    
+
     // Router with modern features
     provideRouter(
       routes,
       withComponentInputBinding(), // Bind route params to component inputs
       withViewTransitions() // Smooth page transitions
     ),
-    
+
     // HTTP Client with fetch API and interceptors
     provideHttpClient(
       withFetch(), // Use modern Fetch API instead of XMLHttpRequest
@@ -36,10 +37,13 @@ export const appConfig: ApplicationConfig = {
         errorInterceptor // Handle HTTP errors globally
       ])
     ),
-    
+
     // Angular Material animations
     provideAnimationsAsync(),
-    
+
+    // Charts configuration
+    provideCharts(withDefaultRegisterables()),
+
     // Global error handler for unhandled exceptions
     { provide: ErrorHandler, useClass: GlobalErrorHandler }
   ]

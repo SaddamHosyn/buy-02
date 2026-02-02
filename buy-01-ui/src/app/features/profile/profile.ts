@@ -14,6 +14,9 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { Auth } from '../../core/services/auth';
 import { NotificationService } from '../../core/services/notification.service';
 import { validateFile, ValidationPresets } from '../../core/validators/file-upload.validator';
+import { BaseChartDirective } from 'ng2-charts';
+import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
+import { OrderService, BuyerStats } from '../../core/services/order.service';
 
 @Component({
   selector: 'app-profile',
@@ -30,6 +33,7 @@ import { validateFile, ValidationPresets } from '../../core/validators/file-uplo
     MatTabsModule,
     MatDividerModule,
     MatTooltipModule,
+    BaseChartDirective,
   ],
   templateUrl: './profile.html',
   styleUrl: './profile.css',
@@ -40,6 +44,7 @@ export class Profile implements OnInit {
   private readonly router = inject(Router);
   private readonly location = inject(Location);
   private readonly notification = inject(NotificationService);
+  private readonly orderService = inject(OrderService);
 
   // Signals for state management
   readonly isLoading = signal<boolean>(false);
@@ -48,6 +53,68 @@ export class Profile implements OnInit {
   readonly uploadError = signal<string>('');
   readonly currentUser = this.authService.currentUser;
   readonly showPasswordFields = signal<boolean>(false);
+
+  // Dashboard Stats
+  readonly buyerStats = signal<BuyerStats | null>(null);
+  readonly statsLoading = signal<boolean>(false);
+
+  // Charts Configuration
+  public pieChartOptions: ChartConfiguration['options'] = {
+    responsive: true,
+    plugins: {
+      legend: {
+        display: true,
+        position: 'right', // Legend on the right
+      },
+    },
+  };
+
+  public pieChartType: ChartType = 'pie';
+
+  // Most Bought Products (Bar Chart)
+  public barChartOptions: ChartConfiguration['options'] = {
+    responsive: true,
+    scales: {
+      x: {},
+      y: {
+        min: 0,
+        ticks: { stepSize: 1 }
+      },
+    },
+    plugins: {
+      legend: { display: false },
+    },
+  };
+  public barChartType: ChartType = 'bar';
+
+  // Chart Data Signals
+  readonly categoryChartData = computed<ChartData<'pie'> | undefined>(() => {
+    const stats = this.buyerStats();
+    if (!stats) return undefined;
+
+    return {
+      labels: stats.topCategories.map(c => c.name),
+      datasets: [{
+        data: stats.topCategories.map(c => c.percentage),
+        backgroundColor: ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e'],
+      }]
+    };
+  });
+
+  readonly productsChartData = computed<ChartData<'bar'> | undefined>(() => {
+    const stats = this.buyerStats();
+    if (!stats) return undefined;
+
+    return {
+      labels: stats.mostBoughtProducts.map(p => p.name),
+      datasets: [{
+        data: stats.mostBoughtProducts.map(p => p.count),
+        label: 'Quantity Purchased',
+        backgroundColor: '#3b82f6',
+        barThickness: 40
+      }]
+    };
+  });
 
   // Computed - current avatar or preview
   readonly displayAvatar = computed(() => {
@@ -77,9 +144,24 @@ export class Profile implements OnInit {
       if (user.avatarUrl) {
         this.imagePreview.set(user.avatarUrl);
       }
+      this.loadDashboardStats();
     } else {
       this.router.navigate(['/auth/login']);
     }
+  }
+
+  loadDashboardStats(): void {
+    this.statsLoading.set(true);
+    this.orderService.getBuyerStats().subscribe({
+      next: (stats) => {
+        this.buyerStats.set(stats);
+        this.statsLoading.set(false);
+      },
+      error: (err) => {
+        console.error('Failed to load stats', err);
+        this.statsLoading.set(false);
+      }
+    });
   }
 
   goBack(): void {

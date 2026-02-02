@@ -12,6 +12,9 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { Auth } from '../../../core/services/auth';
 import { ProductService, Product } from '../../../core/services/product.service';
 import { DialogService } from '../../../shared/services/dialog.service';
+import { BaseChartDirective } from 'ng2-charts';
+import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
+import { OrderService, SellerStats } from '../../../core/services/order.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -26,7 +29,9 @@ import { DialogService } from '../../../shared/services/dialog.service';
     MatTableModule,
     MatChipsModule,
     MatProgressSpinnerModule,
-    MatTooltipModule
+    MatProgressSpinnerModule,
+    MatTooltipModule,
+    BaseChartDirective
   ],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
@@ -34,15 +39,16 @@ import { DialogService } from '../../../shared/services/dialog.service';
 export class Dashboard implements OnInit {
   private readonly authService = inject(Auth);
   private readonly productService = inject(ProductService);
+  private readonly orderService = inject(OrderService);
   private readonly router = inject<Router>(Router);
   private readonly dialogService = inject(DialogService);
-  
+
   // Signals for reactive state
   readonly currentUser = this.authService.currentUser;
   readonly myProducts = signal<Product[]>([]);
   readonly isLoading = signal<boolean>(true);
   readonly errorMessage = signal<string>('');
-  
+
   // Computed signals for stats
   readonly totalProducts = computed(() => this.myProducts().length);
   readonly totalRevenue = computed(() => {
@@ -52,21 +58,112 @@ export class Dashboard implements OnInit {
     const total = this.totalProducts();
     return total > 0 ? (this.totalRevenue() / total) : 0;
   });
-  
+
+  // Dashboard Stats
+  readonly sellerStats = signal<SellerStats | null>(null);
+  readonly statsLoading = signal<boolean>(false);
+
+  // Charts Configuration
+  public lineChartOptions: ChartConfiguration['options'] = {
+    elements: {
+      line: {
+        tension: 0.5,
+      },
+    },
+    scales: {
+      y: {
+        position: 'left',
+      },
+      y1: {
+        position: 'right',
+        grid: {
+          color: 'rgba(255,0,0,0.3)',
+        },
+        display: false
+      }
+    },
+    plugins: {
+      legend: { display: true },
+    }
+  };
+  public lineChartType: ChartType = 'line';
+
+  public bestSellersChartOptions: ChartConfiguration['options'] = {
+    responsive: true,
+    indexAxis: 'y',
+    plugins: { legend: { display: false } }
+  };
+  public bestSellersChartType: ChartType = 'bar';
+
+  // Chart Data Signals
+  readonly revenueChartData = computed<ChartData<'line'> | undefined>(() => {
+    const stats = this.sellerStats();
+    if (!stats) return undefined;
+
+    return {
+      labels: stats.revenueByMonth.map(d => d.month),
+      datasets: [
+        {
+          data: stats.revenueByMonth.map(d => d.amount),
+          label: 'Revenue (€)',
+          backgroundColor: 'rgba(148,159,177,0.2)',
+          borderColor: 'rgba(148,159,177,1)',
+          pointBackgroundColor: 'rgba(148,159,177,1)',
+          pointBorderColor: '#fff',
+          pointHoverBackgroundColor: '#fff',
+          pointHoverBorderColor: 'rgba(148,159,177,0.8)',
+          fill: 'origin',
+        }
+      ]
+    };
+  });
+
+  readonly bestSellersChartData = computed<ChartData<'bar'> | undefined>(() => {
+    const stats = this.sellerStats();
+    if (!stats) return undefined;
+
+    return {
+      labels: stats.bestSellingProducts.map(p => p.name),
+      datasets: [
+        {
+          data: stats.bestSellingProducts.map(p => p.revenue),
+          label: 'Revenue (€)',
+          backgroundColor: '#4caf50',
+          barThickness: 20
+        }
+      ]
+    };
+  });
+
   // Table columns
   readonly displayedColumns = ['image', 'name', 'price', 'stock', 'createdAt', 'actions'];
-  
+
   ngOnInit(): void {
     this.loadMyProducts();
+    this.loadDashboardStats();
   }
-  
+
+  loadDashboardStats(): void {
+    this.statsLoading.set(true);
+    this.orderService.getSellerStats().subscribe({
+      next: (stats) => {
+        this.sellerStats.set(stats);
+        this.statsLoading.set(false);
+      },
+      error: (err) => {
+        console.error('Failed to load seller stats', err);
+        this.statsLoading.set(false);
+      }
+    });
+  }
+
   /**
    * Navigate to home page (products list)
    */
   goBack(): void {
     this.router.navigate(['/products']);
   }
-  
+
   /**
    * Logout user and redirect to login page
    */
@@ -74,14 +171,14 @@ export class Dashboard implements OnInit {
     this.authService.logout();
     this.router.navigate(['/auth/login']);
   }
-  
+
   /**
    * Load seller's products
    */
   loadMyProducts(): void {
     this.isLoading.set(true);
     this.errorMessage.set('');
-    
+
     // getSellerProducts() automatically uses current authenticated user
     this.productService.getSellerProducts().subscribe({
       next: (products) => {
@@ -95,37 +192,37 @@ export class Dashboard implements OnInit {
       }
     });
   }
-  
+
   /**
    * Navigate to create product page
    */
   createProduct(): void {
     this.router.navigate(['/seller/product-form']);
   }
-  
+
   /**
    * Navigate to edit product page
    */
   editProduct(productId: string): void {
     this.router.navigate(['/seller/product-form', productId]);
   }
-  
+
   /**
    * Delete product
    */
   deleteProduct(productId: string): void {
     const product = this.myProducts().find(p => p.id === productId);
     const productName = product?.name || 'this product';
-    
+
     this.dialogService.confirmDelete(productName).subscribe(confirmed => {
       if (!confirmed) {
         return;
       }
-      
+
       this.productService.deleteProduct(productId).subscribe({
         next: () => {
           // Remove from local state
-          this.myProducts.update(products => 
+          this.myProducts.update(products =>
             products.filter(p => p.id !== productId)
           );
         },
@@ -136,7 +233,7 @@ export class Dashboard implements OnInit {
       });
     });
   }
-  
+
   /**
    * Format date for display
    */
@@ -149,9 +246,9 @@ export class Dashboard implements OnInit {
     if (isNaN(date.getTime())) {
       return 'Invalid Date';
     }
-    return date.toLocaleString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
+    return date.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',

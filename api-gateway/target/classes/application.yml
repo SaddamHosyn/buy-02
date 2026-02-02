@@ -1,5 +1,5 @@
 server:
-  port: ${SERVER_PORT:8443}
+  port: ${SERVER_PORT:8090}
   ssl:
     enabled: ${SSL_ENABLED:true}
     key-store: ${SSL_KEY_STORE:file:/app/certs/localhost.p12}
@@ -43,6 +43,14 @@ spring:
           uri: lb://MEDIA-SERVICE
           predicates:
             - Path=/api/media/**
+          filters:
+            - RewritePath=/api/(?<segment>.*), /$\{segment}
+
+        # --- Order Service Routes ---
+        - id: order-service-api
+          uri: lb://ORDER-SERVICE
+          predicates:
+            - Path=/api/orders/**
           filters:
             - RewritePath=/api/(?<segment>.*), /$\{segment}
 
