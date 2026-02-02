@@ -6,6 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Auth } from '../../../core/services/auth';
 import { ProductService, Product } from '../../../core/services/product.service';
 import { ProductCardSkeleton } from '../../../shared/components/product-card-skeleton/product-card-skeleton';
@@ -21,6 +22,7 @@ import { ProductCardSkeleton } from '../../../shared/components/product-card-ske
     MatProgressSpinnerModule,
     MatToolbarModule,
     MatIconModule,
+    MatTooltipModule,
     ProductCardSkeleton
   ],
   templateUrl: './product-list.html',

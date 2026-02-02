@@ -1,0 +1,139 @@
+<mat-toolbar color="primary" class="app-toolbar">
+  <button mat-icon-button (click)="goHome()">
+    <mat-icon>arrow_back</mat-icon>
+  </button>
+  <span class="toolbar-title">My Orders</span>
+  <span class="spacer"></span>
+  
+  @if (authService.isAuthenticated()) {
+    <button mat-icon-button routerLink="/cart" matBadge="0" matBadgeColor="accent">
+      <mat-icon>shopping_cart</mat-icon>
+    </button>
+    <button mat-icon-button routerLink="/profile">
+      <mat-icon>account_circle</mat-icon>
+    </button>
+    <button mat-icon-button (click)="logout()">
+      <mat-icon>logout</mat-icon>
+    </button>
+  }
+</mat-toolbar>
+
+<div class="container">
+  <!-- View Mode Tabs (for Sellers) -->
+  @if (isSeller()) {
+    <mat-tab-group (selectedTabChange)="switchViewMode($event.index === 0 ? 'seller' : 'buyer')">
+      <mat-tab label="Sales (Seller View)"></mat-tab>
+      <mat-tab label="Purchases (Buyer View)"></mat-tab>
+    </mat-tab-group>
+  }
+  
+  <!-- Search & Filters -->
+  <div class="filters-section">
+    <div class="search-row">
+      <mat-form-field appearance="outline" class="search-field">
+        <mat-label>Search orders</mat-label>
+        <input matInput 
+               [value]="searchQuery()"
+               (input)="searchQuery.set($any($event.target).value)"
+               placeholder="Order number or product name">
+        <mat-icon matPrefix>search</mat-icon>
+      </mat-form-field>
+      
+      <mat-form-field appearance="outline" class="status-field">
+        <mat-label>Status</mat-label>
+        <mat-select [value]="selectedStatus()" 
+                    (selectionChange)="selectedStatus.set($event.value); applyFilters()">
+          @for (option of statusOptions; track option.value) {
+            <mat-option [value]="option.value">{{ option.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      
+      <button mat-stroked-button (click)="clearFilters()" class="clear-btn">
+        <mat-icon>clear</mat-icon>
+        Clear
+      </button>
+    </div>
+  </div>
+  
+  <!-- Orders List -->
+  @if (isLoading()) {
+    <div class="loading-container">
+      <mat-spinner diameter="50"></mat-spinner>
+      <p>Loading orders...</p>
+    </div>
+  } @else if (filteredOrders().length === 0) {
+    <div class="empty-state">
+      <mat-icon>receipt_long</mat-icon>
+      <h2>No orders found</h2>
+      <p>{{ searchQuery() || selectedStatus() ? 'Try adjusting your filters' : 'Start shopping to see your orders here' }}</p>
+      <button mat-raised-button color="primary" routerLink="/products">
+        <mat-icon>shopping_bag</mat-icon>
+        Start Shopping
+      </button>
+    </div>
+  } @else {
+    <div class="orders-list">
+      @for (order of filteredOrders(); track order.id) {
+        <mat-card class="order-card" (click)="viewOrder(order.id)">
+          <div class="order-header">
+            <div class="order-info">
+              <span class="order-number">{{ order.orderNumber }}</span>
+              <span class="order-date">{{ formatDate(order.createdAt) }}</span>
+            </div>
+            <mat-chip [class]="'status-' + order.status.toLowerCase()">
+              {{ getStatusLabel(order.status) }}
+            </mat-chip>
+          </div>
+          
+          <mat-divider></mat-divider>
+          
+          <div class="order-items">
+            @for (item of order.items.slice(0, 3); track item.productId) {
+              <div class="order-item">
+                <span class="item-name">{{ item.productName }}</span>
+                <span class="item-qty">x{{ item.quantity }}</span>
+                <span class="item-price">${{ item.subtotal.toFixed(2) }}</span>
+              </div>
+            }
+            @if (order.items.length > 3) {
+              <div class="more-items">
+                +{{ order.items.length - 3 }} more item(s)
+              </div>
+            }
+          </div>
+          
+          <mat-divider></mat-divider>
+          
+          <div class="order-footer">
+            <div class="order-total">
+              <span class="total-label">Total:</span>
+              <span class="total-value">${{ order.totalAmount.toFixed(2) }}</span>
+            </div>
+            
+            <div class="order-actions">
+              @if (canCancel(order)) {
+                <button mat-button color="warn" (click)="cancelOrder(order, $event)">
+                  <mat-icon>cancel</mat-icon>
+                  Cancel
+                </button>
+              }
+              @if (canRedo(order)) {
+                <button mat-button color="primary" (click)="redoOrder(order, $event)">
+                  <mat-icon>refresh</mat-icon>
+                  Redo
+                </button>
+              }
+              <button mat-stroked-button (click)="removeOrder(order, $event)">
+                <mat-icon>delete_outline</mat-icon>
+              </button>
+              <button mat-raised-button color="primary" (click)="viewOrder(order.id)">
+                View Details
+              </button>
+            </div>
+          </div>
+        </mat-card>
+      }
+    </div>
+  }
+</div>

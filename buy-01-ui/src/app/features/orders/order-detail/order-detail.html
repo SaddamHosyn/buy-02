@@ -1,0 +1,227 @@
+<mat-toolbar color="primary" class="app-toolbar">
+  <button mat-icon-button (click)="goBack()">
+    <mat-icon>arrow_back</mat-icon>
+  </button>
+  <span class="toolbar-title">Order Details</span>
+  <span class="spacer"></span>
+  
+  @if (authService.isAuthenticated()) {
+    <button mat-icon-button routerLink="/cart">
+      <mat-icon>shopping_cart</mat-icon>
+    </button>
+    <button mat-icon-button (click)="logout()">
+      <mat-icon>logout</mat-icon>
+    </button>
+  }
+</mat-toolbar>
+
+<div class="container">
+  @if (isLoading()) {
+    <div class="loading-container">
+      <mat-spinner diameter="50"></mat-spinner>
+      <p>Loading order details...</p>
+    </div>
+  } @else if (order()) {
+    <div class="order-detail-layout">
+      <!-- Order Header -->
+      <mat-card class="order-header-card">
+        <div class="order-header">
+          <div class="order-info">
+            <h1>{{ order()!.orderNumber }}</h1>
+            <p class="order-date">Placed on {{ formatDate(order()!.createdAt) }}</p>
+          </div>
+          <mat-chip [class]="'status-' + order()!.status.toLowerCase()" class="status-chip">
+            <mat-icon>{{ getStatusIcon(order()!.status) }}</mat-icon>
+            {{ getStatusLabel(order()!.status) }}
+          </mat-chip>
+        </div>
+        
+        <!-- Status Timeline -->
+        @if (!isCancelled() && !isReturned()) {
+          <div class="status-timeline">
+            @for (step of statusSteps; track step; let i = $index) {
+              <div class="timeline-step" 
+                   [class.completed]="isStepCompleted(step)"
+                   [class.active]="isStepActive(step)">
+                <div class="step-icon">
+                  @if (isStepCompleted(step)) {
+                    <mat-icon>check</mat-icon>
+                  } @else {
+                    <span>{{ i + 1 }}</span>
+                  }
+                </div>
+                <span class="step-label">{{ getStatusLabel(step) }}</span>
+              </div>
+              @if (i < statusSteps.length - 1) {
+                <div class="timeline-line" [class.completed]="isStepCompleted(statusSteps[i + 1])"></div>
+              }
+            }
+          </div>
+        } @else {
+          <div class="status-message" [class.cancelled]="isCancelled()">
+            <mat-icon>{{ isCancelled() ? 'cancel' : 'undo' }}</mat-icon>
+            <span>This order has been {{ isCancelled() ? 'cancelled' : 'returned' }}</span>
+          </div>
+        }
+        
+        <!-- Order Actions -->
+        <div class="order-actions">
+          @if (canCancel()) {
+            <button mat-raised-button 
+                    color="warn" 
+                    (click)="cancelOrder()"
+                    [disabled]="isActioning()">
+              <mat-icon>cancel</mat-icon>
+              Cancel Order
+            </button>
+          }
+          @if (canRedo()) {
+            <button mat-raised-button 
+                    color="primary" 
+                    (click)="redoOrder()"
+                    [disabled]="isActioning()">
+              <mat-icon>refresh</mat-icon>
+              Reorder
+            </button>
+          }
+        </div>
+      </mat-card>
+      
+      <div class="order-content">
+        <!-- Order Items -->
+        <mat-card class="order-items-card">
+          <mat-card-header>
+            <mat-card-title>Order Items ({{ order()!.items.length }})</mat-card-title>
+          </mat-card-header>
+          
+          <mat-card-content>
+            <div class="items-list">
+              @for (item of order()!.items; track item.productId) {
+                <div class="order-item">
+                  <div class="item-details">
+                    <h4 class="item-name">{{ item.productName }}</h4>
+                    @if (item.productDescription) {
+                      <p class="item-description">{{ item.productDescription }}</p>
+                    }
+                    <p class="item-seller">Sold by: {{ item.sellerName || 'Seller' }}</p>
+                  </div>
+                  <div class="item-pricing">
+                    <span class="item-price">${{ item.priceAtPurchase.toFixed(2) }} × {{ item.quantity }}</span>
+                    <span class="item-subtotal">${{ item.subtotal.toFixed(2) }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          </mat-card-content>
+        </mat-card>
+        
+        <!-- Order Summary & Address -->
+        <div class="order-sidebar">
+          <!-- Order Summary -->
+          <mat-card class="summary-card">
+            <mat-card-header>
+              <mat-card-title>Order Summary</mat-card-title>
+            </mat-card-header>
+            
+            <mat-card-content>
+              <div class="summary-row">
+                <span>Subtotal</span>
+                <span>${{ order()!.subtotal.toFixed(2) }}</span>
+              </div>
+              <div class="summary-row">
+                <span>Shipping</span>
+                <span>{{ order()!.shippingCost === 0 ? 'Free' : '$' + order()!.shippingCost.toFixed(2) }}</span>
+              </div>
+              @if (order()!.taxAmount > 0) {
+                <div class="summary-row">
+                  <span>Tax</span>
+                  <span>${{ order()!.taxAmount.toFixed(2) }}</span>
+                </div>
+              }
+              @if (order()!.discountAmount > 0) {
+                <div class="summary-row discount">
+                  <span>Discount</span>
+                  <span>-${{ order()!.discountAmount.toFixed(2) }}</span>
+                </div>
+              }
+              
+              <mat-divider></mat-divider>
+              
+              <div class="summary-row total">
+                <span>Total</span>
+                <span>${{ order()!.totalAmount.toFixed(2) }}</span>
+              </div>
+              
+              <div class="payment-info">
+                <mat-icon>local_shipping</mat-icon>
+                <span>{{ order()!.paymentMethod === 'PAY_ON_DELIVERY' ? 'Pay on Delivery' : order()!.paymentMethod }}</span>
+              </div>
+            </mat-card-content>
+          </mat-card>
+          
+          <!-- Shipping Address -->
+          <mat-card class="address-card">
+            <mat-card-header>
+              <mat-card-title>Shipping Address</mat-card-title>
+            </mat-card-header>
+            
+            <mat-card-content>
+              @if (order()!.shippingAddress) {
+                <div class="address-content">
+                  <p><strong>{{ order()!.shippingAddress.fullName }}</strong></p>
+                  <p>{{ order()!.shippingAddress.addressLine1 }}</p>
+                  @if (order()!.shippingAddress.addressLine2) {
+                    <p>{{ order()!.shippingAddress.addressLine2 }}</p>
+                  }
+                  <p>{{ order()!.shippingAddress.city }}, {{ order()!.shippingAddress.postalCode }}</p>
+                  <p>{{ order()!.shippingAddress.country }}</p>
+                  @if (order()!.shippingAddress.phoneNumber) {
+                    <p class="phone">
+                      <mat-icon>phone</mat-icon>
+                      {{ order()!.shippingAddress.phoneNumber }}
+                    </p>
+                  }
+                </div>
+              }
+              
+              @if (order()!.deliveryNotes) {
+                <div class="delivery-notes">
+                  <strong>Delivery Notes:</strong>
+                  <p>{{ order()!.deliveryNotes }}</p>
+                </div>
+              }
+            </mat-card-content>
+          </mat-card>
+          
+          <!-- Status History -->
+          @if (order()!.statusHistory && order()!.statusHistory.length > 0) {
+            <mat-card class="history-card">
+              <mat-card-header>
+                <mat-card-title>Status History</mat-card-title>
+              </mat-card-header>
+              
+              <mat-card-content>
+                <div class="history-list">
+                  @for (history of order()!.statusHistory; track $index) {
+                    <div class="history-item">
+                      <div class="history-icon">
+                        <mat-icon>{{ getStatusIcon(history.newStatus) }}</mat-icon>
+                      </div>
+                      <div class="history-content">
+                        <span class="history-status">{{ getStatusLabel(history.newStatus) }}</span>
+                        <span class="history-date">{{ formatShortDate(history.changedAt) }}</span>
+                        @if (history.reason) {
+                          <span class="history-reason">{{ history.reason }}</span>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              </mat-card-content>
+            </mat-card>
+          }
+        </div>
+      </div>
+    </div>
+  }
+</div>
