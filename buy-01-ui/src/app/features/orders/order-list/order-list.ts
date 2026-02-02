@@ -175,23 +175,59 @@ export class OrderListPage implements OnInit {
   }
   
   /**
-   * Cancel order
+   * Cancel order with reason
    */
   cancelOrder(order: Order, event: Event): void {
     event.stopPropagation();
     
-    if (!confirm(`Are you sure you want to cancel order ${order.orderNumber}?`)) {
+    // Show dialog to get cancellation reason
+    const reason = prompt(`Why do you want to cancel order ${order.orderNumber}?\n\nPlease provide a reason (minimum 5 characters):`);
+    
+    if (reason === null) {
+      // User clicked cancel
       return;
     }
     
-    this.orderService.cancelOrder(order.id, 'Cancelled by user').subscribe({
-      next: () => {
-        this.snackBar.open('Order cancelled successfully', 'Close', { duration: 3000 });
+    if (!reason || reason.trim().length < 5) {
+      this.snackBar.open('Cancellation reason must be at least 5 characters', 'Close', { 
+        duration: 4000,
+        panelClass: ['error-snackbar']
+      });
+      return;
+    }
+    
+    this.orderService.cancelOrder(order.id, reason.trim()).subscribe({
+      next: (response: any) => {
+        if (response.message) {
+          let message = response.message;
+          if (response.refundStatus) {
+            message += `. ${response.refundStatus}`;
+          }
+          this.snackBar.open(message, 'Close', { 
+            duration: 6000,
+            panelClass: ['success-snackbar']
+          });
+        } else {
+          this.snackBar.open('Order cancelled successfully', 'Close', { duration: 3000 });
+        }
         this.loadOrders();
       },
       error: (error) => {
         console.error('Error cancelling order:', error);
-        this.snackBar.open('Failed to cancel order', 'Close', { duration: 3000 });
+        
+        // Show detailed error message from backend
+        let errorMessage = 'Failed to cancel order';
+        if (error.error?.error) {
+          errorMessage = error.error.error;
+          if (error.error.reason) {
+            errorMessage += `: ${error.error.reason}`;
+          }
+        }
+        
+        this.snackBar.open(errorMessage, 'Close', { 
+          duration: 5000,
+          panelClass: ['error-snackbar']
+        });
       }
     });
   }
@@ -202,42 +238,100 @@ export class OrderListPage implements OnInit {
   redoOrder(order: Order, event: Event): void {
     event.stopPropagation();
     
-    if (!confirm(`Create a new order with the same items as ${order.orderNumber}?`)) {
+    const confirmMessage = `Create a new order with the same items as ${order.orderNumber}?\n\n` +
+      `Note: Prices and availability will be checked at checkout.`;
+    
+    if (!confirm(confirmMessage)) {
       return;
     }
     
     this.orderService.redoOrder(order.id).subscribe({
-      next: (newOrder) => {
-        this.snackBar.open('New order created!', 'View', { duration: 5000 })
-          .onAction().subscribe(() => {
-            this.router.navigate(['/orders', newOrder.id]);
-          });
+      next: (response: any) => {
+        const newOrder = response.order || response;
+        const message = response.message || 'New order created!';
+        const note = response.note || '';
+        
+        this.snackBar.open(`${message}${note ? ' - ' + note : ''}`, 'View Order', { 
+          duration: 7000,
+          panelClass: ['success-snackbar']
+        }).onAction().subscribe(() => {
+          this.router.navigate(['/orders', newOrder.id]);
+        });
+        
         this.loadOrders();
       },
       error: (error) => {
         console.error('Error redoing order:', error);
-        this.snackBar.open('Failed to redo order', 'Close', { duration: 3000 });
+        
+        let errorMessage = 'Failed to recreate order';
+        if (error.error?.error) {
+          errorMessage = error.error.error;
+          if (error.error.reason) {
+            errorMessage += `: ${error.error.reason}`;
+          }
+        }
+        
+        this.snackBar.open(errorMessage, 'Close', { 
+          duration: 5000,
+          panelClass: ['error-snackbar']
+        });
       }
     });
   }
   
   /**
-   * Remove order from view
+   * Remove order from view (only allowed for completed orders)
    */
   removeOrder(order: Order, event: Event): void {
     event.stopPropagation();
     
-    if (!confirm(`Remove order ${order.orderNumber} from your list?`)) {
+    // Check if order can be removed
+    const removableStatuses = ['CANCELLED', 'DELIVERED', 'RETURNED'];
+    if (!removableStatuses.includes(order.status)) {
+      this.snackBar.open(
+        `Cannot remove ${order.status} orders. Only cancelled, delivered, or returned orders can be archived.`,
+        'Close',
+        { 
+          duration: 5000,
+          panelClass: ['error-snackbar']
+        }
+      );
+      return;
+    }
+    
+    const confirmMessage = `Archive order ${order.orderNumber}?\n\n` +
+      `This will hide the order from your list but won't delete it permanently. ` +
+      `You can still access it through order history if needed.`;
+    
+    if (!confirm(confirmMessage)) {
       return;
     }
     
     this.orderService.removeOrder(order.id).subscribe({
-      next: () => {
-        this.snackBar.open('Order removed', 'Close', { duration: 3000 });
+      next: (response: any) => {
+        const message = response?.message || 'Order archived successfully';
+        const note = response?.note || '';
+        
+        this.snackBar.open(`${message}${note ? ' - ' + note : ''}`, 'Close', { 
+          duration: 4000,
+          panelClass: ['success-snackbar']
+        });
       },
       error: (error) => {
         console.error('Error removing order:', error);
-        this.snackBar.open('Failed to remove order', 'Close', { duration: 3000 });
+        
+        let errorMessage = 'Failed to archive order';
+        if (error.error?.error) {
+          errorMessage = error.error.error;
+          if (error.error.reason) {
+            errorMessage += `: ${error.error.reason}`;
+          }
+        }
+        
+        this.snackBar.open(errorMessage, 'Close', { 
+          duration: 5000,
+          panelClass: ['error-snackbar']
+        });
       }
     });
   }

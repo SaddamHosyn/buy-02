@@ -4,7 +4,7 @@
   </button>
   <span class="toolbar-title">Order Details</span>
   <span class="spacer"></span>
-  
+
   @if (authService.isAuthenticated()) {
     <button mat-icon-button routerLink="/cart">
       <mat-icon>shopping_cart</mat-icon>
@@ -35,14 +35,16 @@
             {{ getStatusLabel(order()!.status) }}
           </mat-chip>
         </div>
-        
+
         <!-- Status Timeline -->
         @if (!isCancelled() && !isReturned()) {
           <div class="status-timeline">
             @for (step of statusSteps; track step; let i = $index) {
-              <div class="timeline-step" 
-                   [class.completed]="isStepCompleted(step)"
-                   [class.active]="isStepActive(step)">
+              <div
+                class="timeline-step"
+                [class.completed]="isStepCompleted(step)"
+                [class.active]="isStepActive(step)"
+              >
                 <div class="step-icon">
                   @if (isStepCompleted(step)) {
                     <mat-icon>check</mat-icon>
@@ -53,7 +55,10 @@
                 <span class="step-label">{{ getStatusLabel(step) }}</span>
               </div>
               @if (i < statusSteps.length - 1) {
-                <div class="timeline-line" [class.completed]="isStepCompleted(statusSteps[i + 1])"></div>
+                <div
+                  class="timeline-line"
+                  [class.completed]="isStepCompleted(statusSteps[i + 1])"
+                ></div>
               }
             }
           </div>
@@ -63,37 +68,41 @@
             <span>This order has been {{ isCancelled() ? 'cancelled' : 'returned' }}</span>
           </div>
         }
-        
+
         <!-- Order Actions -->
         <div class="order-actions">
           @if (canCancel()) {
-            <button mat-raised-button 
-                    color="warn" 
-                    (click)="cancelOrder()"
-                    [disabled]="isActioning()">
+            <button
+              mat-raised-button
+              color="warn"
+              (click)="cancelOrder()"
+              [disabled]="isActioning()"
+            >
               <mat-icon>cancel</mat-icon>
               Cancel Order
             </button>
           }
           @if (canRedo()) {
-            <button mat-raised-button 
-                    color="primary" 
-                    (click)="redoOrder()"
-                    [disabled]="isActioning()">
+            <button
+              mat-raised-button
+              color="primary"
+              (click)="redoOrder()"
+              [disabled]="isActioning()"
+            >
               <mat-icon>refresh</mat-icon>
               Reorder
             </button>
           }
         </div>
       </mat-card>
-      
+
       <div class="order-content">
         <!-- Order Items -->
         <mat-card class="order-items-card">
           <mat-card-header>
             <mat-card-title>Order Items ({{ order()!.items.length }})</mat-card-title>
           </mat-card-header>
-          
+
           <mat-card-content>
             <div class="items-list">
               @for (item of order()!.items; track item.productId) {
@@ -106,7 +115,9 @@
                     <p class="item-seller">Sold by: {{ item.sellerName || 'Seller' }}</p>
                   </div>
                   <div class="item-pricing">
-                    <span class="item-price">${{ item.priceAtPurchase.toFixed(2) }} × {{ item.quantity }}</span>
+                    <span class="item-price"
+                      >${{ item.priceAtPurchase.toFixed(2) }} × {{ item.quantity }}</span
+                    >
                     <span class="item-subtotal">${{ item.subtotal.toFixed(2) }}</span>
                   </div>
                 </div>
@@ -114,7 +125,7 @@
             </div>
           </mat-card-content>
         </mat-card>
-        
+
         <!-- Order Summary & Address -->
         <div class="order-sidebar">
           <!-- Order Summary -->
@@ -122,7 +133,7 @@
             <mat-card-header>
               <mat-card-title>Order Summary</mat-card-title>
             </mat-card-header>
-            
+
             <mat-card-content>
               <div class="summary-row">
                 <span>Subtotal</span>
@@ -130,7 +141,9 @@
               </div>
               <div class="summary-row">
                 <span>Shipping</span>
-                <span>{{ order()!.shippingCost === 0 ? 'Free' : '$' + order()!.shippingCost.toFixed(2) }}</span>
+                <span>{{
+                  order()!.shippingCost === 0 ? 'Free' : '$' + order()!.shippingCost.toFixed(2)
+                }}</span>
               </div>
               @if (order()!.taxAmount > 0) {
                 <div class="summary-row">
@@ -144,36 +157,44 @@
                   <span>-${{ order()!.discountAmount.toFixed(2) }}</span>
                 </div>
               }
-              
+
               <mat-divider></mat-divider>
-              
+
               <div class="summary-row total">
                 <span>Total</span>
                 <span>${{ order()!.totalAmount.toFixed(2) }}</span>
               </div>
-              
+
               <div class="payment-info">
                 <mat-icon>local_shipping</mat-icon>
-                <span>{{ order()!.paymentMethod === 'PAY_ON_DELIVERY' ? 'Pay on Delivery' : order()!.paymentMethod }}</span>
+                <span>{{
+                  order()!.paymentMethod === 'PAY_ON_DELIVERY'
+                    ? 'Pay on Delivery'
+                    : order()!.paymentMethod
+                }}</span>
               </div>
             </mat-card-content>
           </mat-card>
-          
+
           <!-- Shipping Address -->
           <mat-card class="address-card">
             <mat-card-header>
               <mat-card-title>Shipping Address</mat-card-title>
             </mat-card-header>
-            
+
             <mat-card-content>
               @if (order()!.shippingAddress) {
                 <div class="address-content">
-                  <p><strong>{{ order()!.shippingAddress.fullName }}</strong></p>
+                  <p>
+                    <strong>{{ order()!.shippingAddress.fullName }}</strong>
+                  </p>
                   <p>{{ order()!.shippingAddress.addressLine1 }}</p>
                   @if (order()!.shippingAddress.addressLine2) {
                     <p>{{ order()!.shippingAddress.addressLine2 }}</p>
                   }
-                  <p>{{ order()!.shippingAddress.city }}, {{ order()!.shippingAddress.postalCode }}</p>
+                  <p>
+                    {{ order()!.shippingAddress.city }}, {{ order()!.shippingAddress.postalCode }}
+                  </p>
                   <p>{{ order()!.shippingAddress.country }}</p>
                   @if (order()!.shippingAddress.phoneNumber) {
                     <p class="phone">
@@ -183,7 +204,7 @@
                   }
                 </div>
               }
-              
+
               @if (order()!.deliveryNotes) {
                 <div class="delivery-notes">
                   <strong>Delivery Notes:</strong>
@@ -192,14 +213,14 @@
               }
             </mat-card-content>
           </mat-card>
-          
+
           <!-- Status History -->
           @if (order()!.statusHistory && order()!.statusHistory.length > 0) {
             <mat-card class="history-card">
               <mat-card-header>
                 <mat-card-title>Status History</mat-card-title>
               </mat-card-header>
-              
+
               <mat-card-content>
                 <div class="history-list">
                   @for (history of order()!.statusHistory; track $index) {

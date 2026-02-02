@@ -3,77 +3,165 @@
   <span class="spacer"></span>
 
   @if (authService.isAuthenticated()) {
-  <span class="user-info">Welcome, {{ authService.currentUser()?.name }}</span>
+    <span class="user-info">Welcome, {{ authService.currentUser()?.name }}</span>
 
-  @if (authService.isSeller()) {
-  <button mat-button (click)="goToDashboard()">
-    <mat-icon>dashboard</mat-icon>
-    Dashboard
-  </button>
-  }
+    @if (authService.isSeller()) {
+      <button mat-button (click)="goToDashboard()">
+        <mat-icon>dashboard</mat-icon>
+        Dashboard
+      </button>
+    }
 
-  <button mat-icon-button routerLink="/cart" matTooltip="Cart">
-    <mat-icon>shopping_cart</mat-icon>
-  </button>
+    <button mat-icon-button routerLink="/cart" matTooltip="Cart">
+      <mat-icon>shopping_cart</mat-icon>
+    </button>
 
-  <button mat-icon-button routerLink="/orders" matTooltip="My Orders">
-    <mat-icon>receipt_long</mat-icon>
-  </button>
+    <button mat-icon-button routerLink="/orders" matTooltip="My Orders">
+      <mat-icon>receipt_long</mat-icon>
+    </button>
 
-  <button mat-button routerLink="/profile">
-    <mat-icon>account_circle</mat-icon>
-    Profile
-  </button>
+    <button mat-button routerLink="/profile">
+      <mat-icon>account_circle</mat-icon>
+      Profile
+    </button>
 
-  <button mat-button (click)="logout()">
-    <mat-icon>logout</mat-icon>
-    Logout
-  </button>
+    <button mat-button (click)="logout()">
+      <mat-icon>logout</mat-icon>
+      Logout
+    </button>
   } @else {
-  <button mat-button routerLink="/auth/login">
-    <mat-icon>login</mat-icon>
-    Login
-  </button>
-  <button mat-raised-button color="accent" routerLink="/auth/register">Register</button>
+    <button mat-button routerLink="/auth/login">
+      <mat-icon>login</mat-icon>
+      Login
+    </button>
+    <button mat-raised-button color="accent" routerLink="/auth/register">Register</button>
   }
 </mat-toolbar>
 
 <div class="container">
+  <!-- Search and Filters -->
+  <div class="filters-section">
+    <h1>Featured Products</h1>
+
+    <div class="search-filters">
+      <!-- Search Bar -->
+      <mat-form-field appearance="outline" class="search-field">
+        <mat-label>Search products</mat-label>
+        <input
+          matInput
+          [value]="searchQuery()"
+          (input)="searchQuery.set($any($event.target).value)"
+          placeholder="Search by name or description"
+        />
+        <mat-icon matPrefix>search</mat-icon>
+      </mat-form-field>
+
+      <!-- Category Filter -->
+      <mat-form-field appearance="outline" class="category-field">
+        <mat-label>Category</mat-label>
+        <mat-select
+          [value]="selectedCategory()"
+          (selectionChange)="selectedCategory.set($event.value)"
+        >
+          @for (category of categories(); track category) {
+            <mat-option [value]="category">
+              {{ category === 'all' ? 'All Categories' : category }}
+            </mat-option>
+          }
+        </mat-select>
+        <mat-icon matPrefix>category</mat-icon>
+      </mat-form-field>
+
+      <!-- Clear Filters Button -->
+      <button
+        mat-stroked-button
+        (click)="clearFilters()"
+        class="clear-btn"
+        matTooltip="Clear all filters"
+      >
+        <mat-icon>clear</mat-icon>
+        Clear
+      </button>
+    </div>
+
+    <!-- Price Range Filter -->
+    <div class="price-filter">
+      <h3>Price Range: ${{ minPrice() }} - ${{ maxPrice() }}</h3>
+      <div class="price-sliders">
+        <mat-form-field appearance="outline" class="price-input">
+          <mat-label>Min Price</mat-label>
+          <input
+            matInput
+            type="number"
+            [value]="minPrice()"
+            (input)="minPrice.set(+$any($event.target).value)"
+            min="0"
+            [max]="maxPrice()"
+          />
+          <span matPrefix>$</span>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="price-input">
+          <mat-label>Max Price</mat-label>
+          <input
+            matInput
+            type="number"
+            [value]="maxPrice()"
+            (input)="maxPrice.set(+$any($event.target).value)"
+            [min]="minPrice()"
+            max="10000"
+          />
+          <span matPrefix>$</span>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <!-- Results Count -->
+    <div class="results-count">
+      <p>Showing {{ filteredProducts().length }} of {{ products().length }} products</p>
+    </div>
+  </div>
+
   <h1>Featured Products</h1>
 
   @if (isLoading()) {
-  <!-- Skeleton Loaders -->
-  <div class="products-grid">
-    @for (i of [1,2,3,4,5,6]; track i) {
-    <app-product-card-skeleton />
-    }
-  </div>
-  } @else {
-  <div class="products-grid">
-    @for (product of products(); track product.id) {
-    <mat-card class="product-card">
-      @if (product.imageUrls && product.imageUrls.length > 0) {
-      <img mat-card-image [src]="product.imageUrls[0]" [alt]="product.name" class="product-image" />
+    <!-- Skeleton Loaders -->
+    <div class="products-grid">
+      @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+        <app-product-card-skeleton />
       }
+    </div>
+  } @else {
+    <div class="products-grid">
+      @for (product of filteredProducts(); track product.id) {
+        <mat-card class="product-card">
+          @if (product.imageUrls && product.imageUrls.length > 0) {
+            <img
+              mat-card-image
+              [src]="product.imageUrls[0]"
+              [alt]="product.name"
+              class="product-image"
+            />
+          }
 
-      <mat-card-header>
-        <mat-card-title>{{ product.name }}</mat-card-title>
-        <mat-card-subtitle>${{ product.price.toFixed(2) }}</mat-card-subtitle>
-      </mat-card-header>
+          <mat-card-header>
+            <mat-card-title>{{ product.name }}</mat-card-title>
+            <mat-card-subtitle>${{ product.price.toFixed(2) }}</mat-card-subtitle>
+          </mat-card-header>
 
-      <mat-card-content>
-        <p>{{ product.description }}</p>
-      </mat-card-content>
+          <mat-card-content>
+            <p>{{ product.description }}</p>
+          </mat-card-content>
 
-      <mat-card-actions>
-        <button mat-raised-button color="primary" (click)="viewProduct(product.id)">
-          View Details
-        </button>
-      </mat-card-actions>
-    </mat-card>
-    } @empty {
-    <p class="no-products">No products available</p>
-    }
-  </div>
+          <mat-card-actions>
+            <button mat-raised-button color="primary" (click)="viewProduct(product.id)">
+              View Details
+            </button>
+          </mat-card-actions>
+        </mat-card>
+      } @empty {
+        <p class="no-products">No products available</p>
+      }
+    </div>
   }
 </div>

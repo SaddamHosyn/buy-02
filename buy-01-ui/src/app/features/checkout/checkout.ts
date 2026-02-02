@@ -15,6 +15,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { CartService, Cart } from '../../core/services/cart.service';
 import { OrderService, ShippingAddress } from '../../core/services/order.service';
 import { Auth } from '../../core/services/auth';
+import { FormValidationHelper } from '../../core/helpers/form-validation.helper';
 
 @Component({
   selector: 'app-checkout',

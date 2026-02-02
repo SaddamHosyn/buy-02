@@ -88,9 +88,14 @@ export class CartService {
   }
   
   /**
-   * Add item to cart
+   * Add item to cart with optimistic UI update
    */
   addToCart(request: AddToCartRequest): Observable<Cart> {
+    // Optimistic update
+    const currentCart = this.cartSignal();
+    const optimisticCart = this.createOptimisticCart(currentCart, 'add', request);
+    this.cartSignal.set(optimisticCart);
+    
     this.loadingSignal.set(true);
     return this.http.post<Cart>(`${this.API_URL}/items`, request).pipe(
       tap(cart => {
@@ -98,6 +103,8 @@ export class CartService {
         this.loadingSignal.set(false);
       }),
       catchError(error => {
+        // Revert optimistic update on error
+        this.cartSignal.set(currentCart);
         this.loadingSignal.set(false);
         return throwError(() => error);
       })
@@ -105,9 +112,14 @@ export class CartService {
   }
   
   /**
-   * Update item quantity
+   * Update item quantity with optimistic UI update
    */
   updateItemQuantity(productId: string, quantity: number): Observable<Cart> {
+    // Optimistic update
+    const currentCart = this.cartSignal();
+    const optimisticCart = this.createOptimisticCart(currentCart, 'update', { productId, quantity });
+    this.cartSignal.set(optimisticCart);
+    
     this.loadingSignal.set(true);
     return this.http.put<Cart>(`${this.API_URL}/items/${productId}`, { quantity }).pipe(
       tap(cart => {
@@ -115,6 +127,8 @@ export class CartService {
         this.loadingSignal.set(false);
       }),
       catchError(error => {
+        // Revert optimistic update on error
+        this.cartSignal.set(currentCart);
         this.loadingSignal.set(false);
         return throwError(() => error);
       })
@@ -122,9 +136,14 @@ export class CartService {
   }
   
   /**
-   * Remove item from cart
+   * Remove item from cart with optimistic UI update
    */
   removeItem(productId: string): Observable<Cart> {
+    // Optimistic update
+    const currentCart = this.cartSignal();
+    const optimisticCart = this.createOptimisticCart(currentCart, 'remove', { productId });
+    this.cartSignal.set(optimisticCart);
+    
     this.loadingSignal.set(true);
     return this.http.delete<Cart>(`${this.API_URL}/items/${productId}`).pipe(
       tap(cart => {
@@ -132,6 +151,8 @@ export class CartService {
         this.loadingSignal.set(false);
       }),
       catchError(error => {
+        // Revert optimistic update on error
+        this.cartSignal.set(currentCart);
         this.loadingSignal.set(false);
         return throwError(() => error);
       })
@@ -139,20 +160,98 @@ export class CartService {
   }
   
   /**
-   * Clear entire cart
+   * Clear entire cart with optimistic UI update
    */
   clearCart(): Observable<void> {
+    // Optimistic update
+    const currentCart = this.cartSignal();
+    const emptyCart: Cart = {
+      userId: currentCart?.userId || '',
+      status: 'ACTIVE',
+      items: [],
+      totalItems: 0,
+      cachedSubtotal: 0
+    };
+    this.cartSignal.set(emptyCart);
+    
     this.loadingSignal.set(true);
     return this.http.delete<void>(this.API_URL).pipe(
       tap(() => {
-        this.cartSignal.set(null);
         this.loadingSignal.set(false);
       }),
       catchError(error => {
+        // Revert optimistic update on error
+        this.cartSignal.set(currentCart);
         this.loadingSignal.set(false);
         return throwError(() => error);
       })
     );
+  }
+  
+  /**
+   * Create optimistic cart state for UI updates
+   */
+  private createOptimisticCart(
+    currentCart: Cart | null,
+    action: 'add' | 'update' | 'remove',
+    data: any
+  ): Cart {
+    if (!currentCart) {
+      return {
+        userId: this.authService.currentUser()?.id || '',
+        status: 'ACTIVE',
+        items: [],
+        totalItems: 0,
+        cachedSubtotal: 0
+      };
+    }
+
+    const cart = { ...currentCart, items: [...currentCart.items] };
+
+    switch (action) {
+      case 'add':
+        const existingItemIndex = cart.items.findIndex(i => i.productId === data.productId);
+        if (existingItemIndex >= 0) {
+          cart.items[existingItemIndex] = {
+            ...cart.items[existingItemIndex],
+            quantity: cart.items[existingItemIndex].quantity + data.quantity
+          };
+        } else {
+          cart.items.push({
+            productId: data.productId,
+            quantity: data.quantity,
+            sellerId: data.sellerId,
+            cachedProductName: data.cachedProductName,
+            cachedPrice: data.cachedPrice,
+            addedAt: new Date().toISOString()
+          });
+        }
+        break;
+
+      case 'update':
+        const updateIndex = cart.items.findIndex(i => i.productId === data.productId);
+        if (updateIndex >= 0) {
+          cart.items[updateIndex] = {
+            ...cart.items[updateIndex],
+            quantity: data.quantity,
+            updatedAt: new Date().toISOString()
+          };
+        }
+        break;
+
+      case 'remove':
+        cart.items = cart.items.filter(i => i.productId !== data.productId);
+        break;
+    }
+
+    // Recalculate totals
+    cart.totalItems = cart.items.reduce((sum, item) => sum + item.quantity, 0);
+    cart.cachedSubtotal = cart.items.reduce(
+      (sum, item) => sum + ((item.cachedPrice || 0) * item.quantity),
+      0
+    );
+
+    return cart;
   }
   
   /**

@@ -4,7 +4,7 @@
   </button>
   <span class="toolbar-title">Shopping Cart</span>
   <span class="spacer"></span>
-  
+
   @if (authService.isAuthenticated()) {
     <span class="user-info">{{ authService.currentUser()?.name }}</span>
     <button mat-button routerLink="/profile">
@@ -43,7 +43,7 @@
             Clear All
           </button>
         </div>
-        
+
         @for (item of items(); track item.productId) {
           <mat-card class="cart-item" [class.updating]="isItemUpdating(item.productId)">
             <div class="item-content">
@@ -51,34 +51,40 @@
                 <h3 class="item-name">{{ item.cachedProductName || 'Product' }}</h3>
                 <p class="item-price">${{ (item.cachedPrice ?? 0).toFixed(2) }} each</p>
               </div>
-              
+
               <div class="quantity-controls">
-                <button mat-icon-button 
-                        (click)="decrementQuantity(item)" 
-                        [disabled]="isItemUpdating(item.productId)">
+                <button
+                  mat-icon-button
+                  (click)="decrementQuantity(item)"
+                  [disabled]="isItemUpdating(item.productId)"
+                >
                   <mat-icon>remove</mat-icon>
                 </button>
                 <span class="quantity">{{ item.quantity }}</span>
-                <button mat-icon-button 
-                        (click)="incrementQuantity(item)" 
-                        [disabled]="isItemUpdating(item.productId)">
+                <button
+                  mat-icon-button
+                  (click)="incrementQuantity(item)"
+                  [disabled]="isItemUpdating(item.productId)"
+                >
                   <mat-icon>add</mat-icon>
                 </button>
               </div>
-              
+
               <div class="item-subtotal">
                 <span class="subtotal-label">Subtotal:</span>
                 <span class="subtotal-value">${{ getItemSubtotal(item).toFixed(2) }}</span>
               </div>
-              
-              <button mat-icon-button 
-                      color="warn" 
-                      (click)="removeItem(item)"
-                      [disabled]="isItemUpdating(item.productId)">
+
+              <button
+                mat-icon-button
+                color="warn"
+                (click)="removeItem(item)"
+                [disabled]="isItemUpdating(item.productId)"
+              >
                 <mat-icon>delete</mat-icon>
               </button>
             </div>
-            
+
             @if (isItemUpdating(item.productId)) {
               <div class="item-loading">
                 <mat-spinner diameter="20"></mat-spinner>
@@ -87,39 +93,39 @@
           </mat-card>
         }
       </div>
-      
+
       <!-- Order Summary -->
       <div class="order-summary">
         <mat-card>
           <mat-card-header>
             <mat-card-title>Order Summary</mat-card-title>
           </mat-card-header>
-          
+
           <mat-card-content>
             <div class="summary-row">
               <span>Items ({{ totalItems() }})</span>
               <span>${{ subtotal().toFixed(2) }}</span>
             </div>
-            
+
             <mat-divider></mat-divider>
-            
+
             <div class="summary-row total">
               <span>Total</span>
               <span>${{ subtotal().toFixed(2) }}</span>
             </div>
           </mat-card-content>
-          
+
           <mat-card-actions>
-            <button mat-raised-button 
-                    color="primary" 
-                    class="checkout-btn"
-                    (click)="proceedToCheckout()">
+            <button
+              mat-raised-button
+              color="primary"
+              class="checkout-btn"
+              (click)="proceedToCheckout()"
+            >
               <mat-icon>payment</mat-icon>
               Proceed to Checkout
             </button>
-            <button mat-button (click)="continueShopping()">
-              Continue Shopping
-            </button>
+            <button mat-button (click)="continueShopping()">Continue Shopping</button>
           </mat-card-actions>
         </mat-card>
       </div>
