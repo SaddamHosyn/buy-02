@@ -39,6 +39,7 @@ certs/
 secrets/
 .secrets
 *.secret
+mongodb-atlas-cred.txt
 
 # Temporary files and logs
 deployment.log
