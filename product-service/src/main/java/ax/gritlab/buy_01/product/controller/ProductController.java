@@ -15,6 +15,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/products")
+@CrossOrigin(origins = "http://localhost:4200")
 @RequiredArgsConstructor
 public class ProductController {
 
@@ -41,7 +42,8 @@ public class ProductController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('SELLER')")
-    public ResponseEntity<ProductResponse> updateProduct(@PathVariable String id, @Valid @RequestBody ProductRequest request,
+    public ResponseEntity<ProductResponse> updateProduct(@PathVariable String id,
+            @Valid @RequestBody ProductRequest request,
             Authentication authentication) {
         String userId = ((User) authentication.getPrincipal()).getId();
         ProductResponse updatedProduct = productService.updateProduct(id, request, userId);
