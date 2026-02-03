@@ -7,6 +7,7 @@ export const environment = {
   authUrl: 'http://localhost:8090/api/auth',
   usersUrl: 'http://localhost:8090/api/users',
   productsUrl: 'http://localhost:8090/api/products',
+  ordersUrl: 'http://localhost:8090/api/orders',
   mediaUrl: 'http://localhost:8090/api/media',
   enableDebugLogging: true
 };

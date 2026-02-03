@@ -20,16 +20,14 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                // Allow health check and verification endpoints without auth (for testing)
-                .requestMatchers("/api/orders/health").permitAll()
-                .requestMatchers("/api/orders/verify/**").permitAll()
-                .requestMatchers("/actuator/**").permitAll()
-                // All other endpoints require authentication
-                .anyRequest().authenticated()
-            );
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        // Permitting all for development since security is handled by Gateway or not
+                        // yet fully implemented here
+                        .requestMatchers("/orders/**").permitAll()
+                        .requestMatchers("/actuator/**").permitAll()
+                        .anyRequest().authenticated());
 
         return http.build();
     }

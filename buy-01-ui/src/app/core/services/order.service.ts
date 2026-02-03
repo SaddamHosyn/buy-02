@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Auth } from './auth';
+import { environment } from '../../../environments/environment';
 
 export interface Order {
   id: string;
@@ -44,8 +45,8 @@ export class OrderService {
   private readonly http = inject(HttpClient);
   private readonly authService = inject(Auth);
 
-  // API URL - connects to API Gateway
-  private readonly API_URL = '/api/orders';
+  // API URL from environment configuration
+  private readonly API_URL = environment.ordersUrl;
 
   constructor() { }
 
