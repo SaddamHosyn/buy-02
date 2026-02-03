@@ -4,7 +4,8 @@
 > **Framework:** Angular 19 (Standalone Components)  
 > **State Management:** Signals  
 > **UI Library:** Angular Material  
-> **Last Updated:** February 2, 2026
+> **Architecture:** Microservices with API Gateway Pattern  
+> **Last Updated:** February 3, 2026
 
 ---
 
@@ -198,15 +199,15 @@ return this.http.post(...).pipe(
 
 **Backend API Endpoints:**
 
-**Base:** `order-service` (Port 8084)
+**Base:** `API Gateway` (Port 8080) → Routes to `order-service` (Port 8084)
 
-| Method | Endpoint                           | Description          |
-| ------ | ---------------------------------- | -------------------- |
-| GET    | `/cart/{userId}`                   | Get user's cart      |
-| POST   | `/cart/{userId}/items`             | Add item to cart     |
-| PUT    | `/cart/{userId}/items/{productId}` | Update item quantity |
-| DELETE | `/cart/{userId}/items/{productId}` | Remove item          |
-| DELETE | `/cart/{userId}`                   | Clear entire cart    |
+| Method | Endpoint                               | Description          | Routes To     |
+| ------ | -------------------------------------- | -------------------- | ------------- |
+| GET    | `/api/cart/{userId}`                   | Get user's cart      | ORDER-SERVICE |
+| POST   | `/api/cart/{userId}/items`             | Add item to cart     | ORDER-SERVICE |
+| PUT    | `/api/cart/{userId}/items/{productId}` | Update item quantity | ORDER-SERVICE |
+| DELETE | `/api/cart/{userId}/items/{productId}` | Remove item          | ORDER-SERVICE |
+| DELETE | `/api/cart/{userId}`                   | Clear entire cart    | ORDER-SERVICE |
 
 **State Management:**
 
@@ -402,14 +403,16 @@ if (reason && reason.length >= 5) {
 
 **Backend API Endpoints:**
 
-| Method | Endpoint                           | Description                     |
-| ------ | ---------------------------------- | ------------------------------- |
-| GET    | `/orders/my-orders/{userId}`       | Get buyer's orders              |
-| GET    | `/orders/seller-orders/{sellerId}` | Get seller's orders             |
-| GET    | `/orders/{orderId}`                | Get order details               |
-| PUT    | `/orders/{orderId}/cancel`         | Cancel order with reason        |
-| POST   | `/orders/{orderId}/redo`           | Create new order from cancelled |
-| DELETE | `/orders/{orderId}`                | Archive order (soft delete)     |
+**Base:** `API Gateway` (Port 8080) → Routes to `order-service` (Port 8084)
+
+| Method | Endpoint                               | Description                     | Routes To     |
+| ------ | -------------------------------------- | ------------------------------- | ------------- |
+| GET    | `/api/orders/my-orders/{userId}`       | Get buyer's orders              | ORDER-SERVICE |
+| GET    | `/api/orders/seller-orders/{sellerId}` | Get seller's orders             | ORDER-SERVICE |
+| GET    | `/api/orders/{orderId}`                | Get order details               | ORDER-SERVICE |
+| PUT    | `/api/orders/{orderId}/cancel`         | Cancel order with reason        | ORDER-SERVICE |
+| POST   | `/api/orders/{orderId}/redo`           | Create new order from cancelled | ORDER-SERVICE |
+| DELETE | `/api/orders/{orderId}`                | Archive order (soft delete)     | ORDER-SERVICE |
 
 **Order Status Flow:**
 
@@ -582,6 +585,51 @@ passwordForm = this.fb.group(
 
 ## 🏗️ Architecture Overview
 
+### API Gateway Pattern
+
+**All frontend requests go through the API Gateway** at `http://localhost:8080/api/*`
+
+**Benefits:**
+
+- ✅ Single entry point for all API calls
+- ✅ Centralized routing and load balancing
+- ✅ CORS configuration in one place
+- ✅ Easier to add authentication/rate limiting
+- ✅ Frontend doesn't need to know service ports
+- ✅ Service discovery via Eureka
+
+**Environment Configuration:**
+
+```typescript
+// Development (environment.ts)
+export const environment = {
+  production: false,
+  apiUrl: "http://localhost:8080/api",
+  apiGatewayUrl: "http://localhost:8080",
+  authUrl: "http://localhost:8080/api/auth",
+  usersUrl: "http://localhost:8080/api/users",
+  productsUrl: "http://localhost:8080/api/products",
+  ordersUrl: "http://localhost:8080/api/orders",
+  cartUrl: "http://localhost:8080/api/cart",
+  mediaUrl: "http://localhost:8080/api/media",
+  enableDebugLogging: true,
+};
+
+// Production (environment.prod.ts)
+export const environment = {
+  production: true,
+  apiUrl: `https://\${window.location.hostname}:8443/api`,
+  apiGatewayUrl: `https://\${window.location.hostname}:8443`,
+  authUrl: `https://\${window.location.hostname}:8443/api/auth`,
+  usersUrl: `https://\${window.location.hostname}:8443/api/users`,
+  productsUrl: `https://\${window.location.hostname}:8443/api/products`,
+  ordersUrl: `https://\${window.location.hostname}:8443/api/orders`,
+  cartUrl: `https://\${window.location.hostname}:8443/api/cart`,
+  mediaUrl: `https://\${window.location.hostname}:8443/api/media`,
+  enableDebugLogging: false,
+};
+```
+
 ### Frontend Stack
 
 **Framework:** Angular 19 (Standalone Components)  
@@ -634,15 +682,28 @@ buy-01-ui/
 ### Backend Microservices
 
 **Spring Boot Version:** 3.5.6  
-**Database:** MongoDB Atlas
+**Database:** MongoDB Atlas  
+**Architecture:** Microservices with API Gateway Pattern
 
-| Service          | Port | Responsibility                  |
-| ---------------- | ---- | ------------------------------- |
-| Service Registry | 8761 | Eureka server                   |
-| User Service     | 8081 | Authentication, user management |
-| Product Service  | 8082 | Product CRUD operations         |
-| Order Service    | 8084 | Cart + Orders management        |
-| Media Service    | 8083 | File uploads (images)           |
+| Service          | Port | Responsibility                        |
+| ---------------- | ---- | ------------------------------------- |
+| **API Gateway**  | 8080 | **Single entry point, routing, CORS** |
+| Service Registry | 8761 | Eureka server (service discovery)     |
+| User Service     | 8081 | Authentication, user management       |
+| Product Service  | 8082 | Product CRUD operations               |
+| Order Service    | 8084 | Cart + Orders management              |
+| Media Service    | 8083 | File uploads (images)                 |
+
+**API Gateway Routes (`/api/*`):**
+
+| Route Pattern      | Target Service  | Description              |
+| ------------------ | --------------- | ------------------------ |
+| `/api/auth/**`     | USER-SERVICE    | Authentication endpoints |
+| `/api/users/**`    | USER-SERVICE    | User management          |
+| `/api/products/**` | PRODUCT-SERVICE | Product operations       |
+| `/api/orders/**`   | ORDER-SERVICE   | Order management         |
+| `/api/cart/**`     | ORDER-SERVICE   | Shopping cart operations |
+| `/api/media/**`    | MEDIA-SERVICE   | File upload/download     |
 
 ### Database Schema (MongoDB)
 
@@ -908,21 +969,25 @@ Start in this order:
 # Navigate to project root
 cd D:\Projects\buy-02
 
-# 1. Service Registry (Eureka)
+# 1. Service Registry (Eureka) - Port 8761
 cd service-registry
 mvn spring-boot:run
 
-# Wait 30 seconds, then start other services...
+# Wait 30 seconds for Eureka to start...
 
-# 2. User Service (Port 8081)
+# 2. API Gateway - Port 8080 (IMPORTANT: Start after Eureka)
+cd ..\api-gateway
+mvn spring-boot:run
+
+# 3. User Service (Port 8081)
 cd ..\user-service
 mvn spring-boot:run
 
-# 3. Product Service (Port 8082)
+# 4. Product Service (Port 8082)
 cd ..\product-service
 mvn spring-boot:run
 
-# 4. Order Service (Port 8084) - Cart + Orders
+# 5. Order Service (Port 8084) - Cart + Orders
 cd ..\order-service
 mvn spring-boot:run
 
@@ -934,15 +999,32 @@ mvn spring-boot:run
 **Verify Services:**
 
 ```powershell
-# Check health endpoints
-@(8761,8081,8082,8084) | ForEach-Object {
+# Check health endpoints (including API Gateway)
+@(8761,8080,8081,8082,8084,8083) | ForEach-Object {
   $port = $_
+  $name = switch ($port) {
+    8761 { "Service Registry" }
+    8080 { "API Gateway" }
+    8081 { "User Service" }
+    8082 { "Product Service" }
+    8084 { "Order Service" }
+    8083 { "Media Service" }
+  }
   try {
     $response = Invoke-WebRequest -Uri "http://localhost:$port/actuator/health" -UseBasicParsing
-    Write-Host "✓ Port $port is UP" -ForegroundColor Green
+    Write-Host "✓ $name (Port $port) is UP" -ForegroundColor Green
   } catch {
-    Write-Host "✗ Port $port is DOWN" -ForegroundColor Red
+    Write-Host "✗ $name (Port $port) is DOWN" -ForegroundColor Red
   }
+}
+
+# Verify API Gateway routes
+Write-Host "`nTesting API Gateway routes..." -ForegroundColor Cyan
+try {
+  Invoke-WebRequest -Uri "http://localhost:8080/api/products" -UseBasicParsing | Out-Null
+  Write-Host "✓ API Gateway routing works" -ForegroundColor Green
+} catch {
+  Write-Host "✗ API Gateway routing failed" -ForegroundColor Red
 }
 ```
 
@@ -1050,13 +1132,15 @@ All frontend features for **Shopping Cart, Checkout, Orders Management, Product 
 ✅ 3-step checkout wizard with validation  
 ✅ Full orders management (cancel, redo, remove)  
 ✅ Product search and price filtering  
+✅ **API Gateway pattern** for all backend requests  
 ✅ Global error handling for all HTTP errors  
 ✅ Optimistic UI for instant feedback  
 ✅ Consistent form validation across app  
 ✅ User-friendly error messages  
 ✅ Responsive Material UI design  
 ✅ Signal-based reactive state  
-✅ Clean code architecture
+✅ Clean code architecture  
+✅ Centralized routing and service discovery
 
 ### Production Ready:
 
@@ -1071,7 +1155,8 @@ All frontend features for **Shopping Cart, Checkout, Orders Management, Product 
 
 ---
 
-**Documentation Last Updated:** February 2, 2026  
+**Documentation Last Updated:** February 3, 2026  
 **Author:** Saddam  
 **Project:** Buy-02 E-Commerce Platform  
-**Framework:** Angular 19 + Spring Boot 3.5.6 + MongoDB Atlas
+**Framework:** Angular 19 + Spring Boot 3.5.6 + MongoDB Atlas  
+**Architecture:** Microservices with API Gateway (Spring Cloud Gateway + Eureka)
