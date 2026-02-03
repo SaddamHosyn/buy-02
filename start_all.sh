@@ -14,6 +14,14 @@ NC='\033[0m' # No Color
 
 PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
 
+# Ensure we use a stable Java version (17 or 21) if available
+if [ -x "/usr/libexec/java_home" ]; then
+    export JAVA_HOME=$(/usr/libexec/java_home -v 17 2>/dev/null || /usr/libexec/java_home -v 21 2>/dev/null || echo $JAVA_HOME)
+    export PATH="$JAVA_HOME/bin:$PATH"
+    echo -e "${GREEN}Using Java Version:${NC}"
+    java -version 2>&1 | head -n 1
+fi
+
 # Ensure logs and pids directories exist
 mkdir -p "$PROJECT_ROOT/logs"
 mkdir -p "$PROJECT_ROOT/pids"
@@ -28,19 +36,25 @@ echo -e "${YELLOW}[1/8] Checking MongoDB...${NC}"
 if ! pgrep -x "mongod" > /dev/null; then
     echo -e "${YELLOW}MongoDB is not running. Starting it via brew...${NC}"
     brew services start mongodb-community
-    
-    # Wait for MongoDB to start
-    echo -e "${YELLOW}Waiting for MongoDB to initialize...${NC}"
-    sleep 5
-    
-    if ! pgrep -x "mongod" > /dev/null; then
-        echo -e "${RED}❌ Failed to start MongoDB! Please start it manually.${NC}"
-        exit 1
-    fi
-    echo -e "${GREEN}✓ MongoDB started successfully${NC}"
-else
-    echo -e "${GREEN}✓ MongoDB is already running${NC}"
+    sleep 2
 fi
+echo -e "${GREEN}✓ MongoDB is running${NC}"
+
+# Check if Zookeeper is running
+echo -e "${YELLOW}[1.5/8] Checking Zookeeper & Kafka...${NC}"
+if ! pgrep -f "org.apache.zookeeper.server.quorum.QuorumPeerMain" > /dev/null; then
+    echo -e "${YELLOW}Zookeeper is not running. Starting it via brew...${NC}"
+    brew services start zookeeper
+    sleep 5
+fi
+
+# Check if Kafka is running
+if ! pgrep -f "kafka.Kafka" > /dev/null; then
+    echo -e "${YELLOW}Kafka is not running. Starting it via brew...${NC}"
+    brew services start kafka
+    sleep 5
+fi
+echo -e "${GREEN}✓ Kafka/Zookeeper check complete${NC}"
 echo ""
 
 # Start Service Registry (Eureka)
