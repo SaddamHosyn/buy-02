@@ -1,11 +1,14 @@
 package ax.gritlab.buy_01.product.controller;
 
+import ax.gritlab.buy_01.product.dto.PagedResponse;
 import ax.gritlab.buy_01.product.dto.ProductRequest;
 import ax.gritlab.buy_01.product.dto.ProductResponse;
 import ax.gritlab.buy_01.product.model.User;
 import ax.gritlab.buy_01.product.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -25,9 +28,24 @@ public class ProductController {
         return ResponseEntity.ok(productService.getAllProducts());
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<PagedResponse<ProductResponse>> searchProducts(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) Double minPrice,
+            @RequestParam(required = false) Double maxPrice,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(productService.searchProducts(keyword, category, minPrice, maxPrice, pageable));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ProductResponse> getProductById(@PathVariable String id) {
         return ResponseEntity.ok(productService.getProductById(id));
+    }
+
+    @GetMapping("/categories")
+    public ResponseEntity<List<String>> getCategories() {
+        return ResponseEntity.ok(productService.getCategories());
     }
 
     @PostMapping
@@ -41,7 +59,8 @@ public class ProductController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('SELLER')")
-    public ResponseEntity<ProductResponse> updateProduct(@PathVariable String id, @Valid @RequestBody ProductRequest request,
+    public ResponseEntity<ProductResponse> updateProduct(@PathVariable String id,
+            @Valid @RequestBody ProductRequest request,
             Authentication authentication) {
         String userId = ((User) authentication.getPrincipal()).getId();
         ProductResponse updatedProduct = productService.updateProduct(id, request, userId);

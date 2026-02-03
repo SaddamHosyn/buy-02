@@ -19,6 +19,14 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.TextCriteria;
+import ax.gritlab.buy_01.product.dto.PagedResponse;
 
 @Service
 @RequiredArgsConstructor
@@ -34,7 +42,8 @@ public class ProductService {
                 node.put("id", product.getId());
                 ArrayNode arr = node.putArray("mediaIds");
                 if (mediaIds != null) {
-                    for (String m : mediaIds) arr.add(m);
+                    for (String m : mediaIds)
+                        arr.add(m);
                 }
                 kafkaTemplate.send("product.deleted", objectMapper.writeValueAsString(node));
             } catch (Exception e) {
@@ -47,6 +56,7 @@ public class ProductService {
     private final RestTemplate restTemplate;
     private final org.springframework.kafka.core.KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
+    private final MongoTemplate mongoTemplate;
 
     @Value("${media.service.url:http://media-service:8083/media}")
     private String mediaServiceUrl;
@@ -60,10 +70,68 @@ public class ProductService {
                 .collect(Collectors.toList());
     }
 
+    public PagedResponse<ProductResponse> searchProducts(
+            String keyword,
+            String category,
+            Double minPrice,
+            Double maxPrice,
+            Pageable pageable) {
+
+        Query query = new Query().with(pageable);
+        List<Criteria> criteria = new ArrayList<>();
+
+        if (keyword != null && !keyword.isEmpty()) {
+            query.addCriteria(TextCriteria.forDefaultLanguage().matchingAny(keyword));
+        }
+
+        if (category != null && !category.isEmpty()) {
+            criteria.add(Criteria.where("category").is(category));
+        }
+
+        if (minPrice != null || maxPrice != null) {
+            Criteria priceCriteria = Criteria.where("price");
+            if (minPrice != null)
+                priceCriteria.gte(minPrice);
+            if (maxPrice != null)
+                priceCriteria.lte(maxPrice);
+            criteria.add(priceCriteria);
+        }
+
+        if (!criteria.isEmpty()) {
+            query.addCriteria(new Criteria().andOperator(criteria.toArray(new Criteria[0])));
+        }
+
+        long total = mongoTemplate.count(query.skip(-1).limit(-1), Product.class);
+        List<Product> products = mongoTemplate.find(query, Product.class);
+
+        List<ProductResponse> content = products.stream()
+                .map(this::toProductResponse)
+                .collect(Collectors.toList());
+
+        Page<ProductResponse> page = new PageImpl<>(content, pageable, total);
+
+        return PagedResponse.<ProductResponse>builder()
+                .content(page.getContent())
+                .pageNumber(page.getNumber())
+                .pageSize(page.getSize())
+                .totalElements(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .last(page.isLast())
+                .build();
+    }
+
     public ProductResponse getProductById(String id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
         return toProductResponse(product);
+    }
+
+    public List<String> getCategories() {
+        return productRepository.findDistinctCategories().stream()
+                .map(Product::getCategory)
+                .filter(c -> c != null && !c.isEmpty())
+                .distinct()
+                .collect(Collectors.toList());
     }
 
     public ProductResponse createProduct(ProductRequest request, String userId) {
@@ -110,7 +178,8 @@ public class ProductService {
             node.put("id", id);
             ArrayNode arr = node.putArray("mediaIds");
             if (mediaIds != null) {
-                for (String m : mediaIds) arr.add(m);
+                for (String m : mediaIds)
+                    arr.add(m);
             }
             kafkaTemplate.send("product.deleted", objectMapper.writeValueAsString(node));
         } catch (Exception e) {
