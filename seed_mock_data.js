@@ -86,12 +86,13 @@ db.orders.insertMany([
                 priceAtPurchase: 19.99,
                 subtotal: 19.99,
                 sellerId: seller_id,
+                category: "Electronics",
                 _class: "ax.gritlab.buy_01.order.model.OrderItem"
             }
         ],
         sellerIds: [seller_id],
-        subtotal: 999.0,
-        totalAmount: 999.0,
+        subtotal: 19.99,
+        totalAmount: 19.99,
         status: "DELIVERED",
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -111,12 +112,13 @@ db.orders.insertMany([
                 priceAtPurchase: 0.99,
                 subtotal: 1.98,
                 sellerId: seller_id,
+                category: "Food",
                 _class: "ax.gritlab.buy_01.order.model.OrderItem"
             }
         ],
         sellerIds: [seller_id],
-        subtotal: 700.0,
-        totalAmount: 700.0,
+        subtotal: 1.98,
+        totalAmount: 1.98,
         status: "DELIVERED",
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -136,6 +138,7 @@ db.orders.insertMany([
                 priceAtPurchase: 2.59,
                 subtotal: 2.59,
                 sellerId: seller_id,
+                category: "Electronics",
                 _class: "ax.gritlab.buy_01.order.model.OrderItem"
             }
         ],

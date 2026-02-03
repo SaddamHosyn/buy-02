@@ -51,12 +51,13 @@ export class Dashboard implements OnInit {
 
   // Computed signals for stats
   readonly totalProducts = computed(() => this.myProducts().length);
-  readonly totalRevenue = computed(() => {
-    return this.myProducts().reduce((sum, product) => sum + product.price, 0);
+  readonly totalInventoryValue = computed(() => {
+    return this.myProducts().reduce((sum, product) => sum + (product.price * (product.stock || 0)), 0);
   });
   readonly avgPrice = computed(() => {
     const total = this.totalProducts();
-    return total > 0 ? (this.totalRevenue() / total) : 0;
+    const inventoryVal = this.totalInventoryValue();
+    return total > 0 ? (inventoryVal / total) : 0;
   });
 
   // Dashboard Stats
