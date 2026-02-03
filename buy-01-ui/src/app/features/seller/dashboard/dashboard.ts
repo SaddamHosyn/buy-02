@@ -92,7 +92,7 @@ export class Dashboard implements OnInit {
   public bestSellersChartOptions: ChartConfiguration['options'] = {
     responsive: true,
     indexAxis: 'y',
-    plugins: { legend: { display: false } }
+    plugins: { legend: { display: true } }
   };
   public bestSellersChartType: ChartType = 'bar';
 
@@ -127,9 +127,17 @@ export class Dashboard implements OnInit {
       labels: stats.bestSellingProducts.map(p => p.name),
       datasets: [
         {
+          data: stats.bestSellingProducts.map(p => p.units),
+          label: 'Units Sold',
+          backgroundColor: '#2196f3',
+          borderColor: '#2196f3',
+          barThickness: 20
+        },
+        {
           data: stats.bestSellingProducts.map(p => p.revenue),
           label: 'Revenue (€)',
           backgroundColor: '#4caf50',
+          borderColor: '#4caf50',
           barThickness: 20
         }
       ]

@@ -119,7 +119,12 @@ public class OrderService {
                 List<SellerStats.ProductRevenue> bestSelling = productRevenue.entrySet().stream()
                                 .map(e -> new SellerStats.ProductRevenue(e.getKey(), e.getValue(),
                                                 productUnits.get(e.getKey())))
-                                .sorted((a, b) -> Double.compare(b.getRevenue(), a.getRevenue()))
+                                .sorted((a, b) -> {
+                                        int unitCompare = Integer.compare(b.getUnits(), a.getUnits());
+                                        if (unitCompare != 0)
+                                                return unitCompare;
+                                        return Double.compare(b.getRevenue(), a.getRevenue());
+                                })
                                 .limit(5)
                                 .collect(Collectors.toList());
 
