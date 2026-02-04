@@ -12,7 +12,7 @@
 2. **Push code** → Automatic build & deploy via webhook
 3. **Access app**: http://13.61.234.232:4200
 
-## 📊 Current Status 
+## 📊 Current Status
 
 - ✅ **Build #54**: Deployed successfully
 - ✅ **Audit Score**: 12/12 (100% compliance)
@@ -219,7 +219,6 @@ This project implements a modern microservices architecture with the following c
 ### Frontend
 
 - **Angular 20** (Ports 4201) - Modern SPA with Angular Material Design
-
   - HTTPS on port 4201 (with self-signed certificates)
 
 ### Infrastructure
@@ -253,12 +252,15 @@ This project implements a modern microservices architecture with the following c
 - 🖼️ **Image Management** with preview and lightbox
 - 📊 **Media Analytics** and tracking
 
-### User Experience
+### User Experience & High-End Tech
 
-- 🎨 **Modern Material UI** with responsive design
-- ⚡ **Reactive Forms** with real-time validation
-- 🔔 **Notification System** for user feedback
-- 🛡️ **Client-Side Guards** for route protection
+- 🎨 **Modern Material UI** with responsive design (Mobile & Desktop)
+- ⚡ **Reactive Forms** with multi-level validation & custom rules
+- 🛡️ **Functional Route Guards** for robust role-based security
+- 📡 **HTTP Interceptor Pipeline** for JWT management & global error handling
+- 🔔 **Intelligent Notification System** with Material Snackbars
+- � **Dynamic Analytics Dashboards** for both Buyers and Sellers (Chart.js)
+- 🔍 **Advanced Search Engine** with regex partial matching & dynamic filters
 - 🌓 **Dark/Light Theme** support (Material theming)
 
 ## 🚀 Quick Start
@@ -337,13 +339,11 @@ npm start
 After starting the application, you can:
 
 1. **Register a new account:**
-
    - Navigate to http://localhost:4200
    - Click "Register" and create an account
    - Choose role: SELLER (to sell products) or CLIENT (to buy products)
 
 2. **Verify services:**
-
    - Check Eureka dashboard: http://localhost:8761
    - All services should show as "UP"
 
@@ -887,12 +887,10 @@ curl -X POST http://localhost:8080/api/media/upload \
 
 ## 🚧 Future Enhancements
 
-- 🛒 Shopping cart functionality
+- 🛒 Shopping cart functionality (Refinement)
 - 💳 Payment integration
 - 📧 Email notifications
-- 🔍 Advanced search and filtering
 - ⭐ Product reviews and ratings
-- 📊 Seller analytics dashboard
 - 🌐 Multi-language support
 - 📱 Mobile app (React Native)
 
