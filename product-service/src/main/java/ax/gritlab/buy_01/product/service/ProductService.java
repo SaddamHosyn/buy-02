@@ -25,7 +25,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.TextCriteria;
 import ax.gritlab.buy_01.product.dto.PagedResponse;
 
 @Service
@@ -81,7 +80,9 @@ public class ProductService {
         List<Criteria> criteria = new ArrayList<>();
 
         if (keyword != null && !keyword.isEmpty()) {
-            query.addCriteria(TextCriteria.forDefaultLanguage().matchingAny(keyword));
+            criteria.add(new Criteria().orOperator(
+                    Criteria.where("name").regex(keyword, "i"),
+                    Criteria.where("description").regex(keyword, "i")));
         }
 
         if (category != null && !category.isEmpty()) {
