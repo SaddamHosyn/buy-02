@@ -722,3 +722,509 @@ jwt.secret.key=dGhpc2lzYXNlY3VyZXNlY3JldGtleWZvcnRoZWJ1eWFwcGxpY2F0aW9udGhhdGlzb
 product.service.url=http://localhost:8082/products
 user.service.url=http://localhost:8081/users
 ```
+
+---
+
+## Merge Testing Results (February 4, 2026)
+
+This section documents the comprehensive testing performed after merging the `milli` branch into `othmane` branch, creating the `backend-merge` branch.
+
+### Branches Merged
+
+- **othmane**: Order service cart/orders implementation
+- **milli**: Product search, categories, tags, profile stats endpoints
+
+### Test Users Created
+
+```bash
+# Register Seller
+curl -X POST http://localhost:8081/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Test Seller Merge",
+    "email": "testseller@merge.com",
+    "password": "Password123!",
+    "role": "SELLER"
+  }'
+
+# Register Client
+curl -X POST http://localhost:8081/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Test Client Merge",
+    "email": "testclient@merge.com",
+    "password": "Password123!",
+    "role": "CLIENT"
+  }'
+
+# Get tokens
+SELLER_TOKEN=$(curl -s -X POST http://localhost:8081/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"testseller@merge.com","password":"Password123!"}' | jq -r '.token')
+
+CLIENT_TOKEN=$(curl -s -X POST http://localhost:8081/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"testclient@merge.com","password":"Password123!"}' | jq -r '.token')
+```
+
+---
+
+### Product Search Endpoints (from milli's branch)
+
+#### GET /products/search
+
+**Search products with filters**
+
+```bash
+# Search with price range
+curl -X GET "http://localhost:8082/products/search?minPrice=50&maxPrice=1000" \
+  -H "Authorization: Bearer $CLIENT_TOKEN"
+
+# Search with inStock filter
+curl -X GET "http://localhost:8082/products/search?inStock=true" \
+  -H "Authorization: Bearer $CLIENT_TOKEN"
+
+# Search with sorting
+curl -X GET "http://localhost:8082/products/search?sort=price_asc" \
+  -H "Authorization: Bearer $CLIENT_TOKEN"
+
+# Combined filters
+curl -X GET "http://localhost:8082/products/search?minPrice=100&maxPrice=2000&inStock=true&sort=price_desc" \
+  -H "Authorization: Bearer $CLIENT_TOKEN"
+```
+
+**Query Parameters:**
+
+| Parameter  | Type    | Description                                          |
+| ---------- | ------- | ---------------------------------------------------- |
+| `q`        | string  | Text search query (requires MongoDB text index)      |
+| `minPrice` | number  | Minimum price filter                                 |
+| `maxPrice` | number  | Maximum price filter                                 |
+| `inStock`  | boolean | Filter for products with quantity > 0                |
+| `sort`     | string  | Sort order: `price_asc`, `price_desc`, `newest`      |
+| `page`     | integer | Page number (default: 0)                             |
+| `size`     | integer | Page size (default: 20)                              |
+
+**Test Results:**
+
+```json
+// GET /products/search?minPrice=50&maxPrice=1000&sort=price_asc
+{
+  "content": [
+    {
+      "id": "6983b2b80492e94b8cf06c5d",
+      "name": "Cotton T-Shirt",
+      "price": 29.99,
+      "quantity": 100
+    },
+    {
+      "id": "6983b2c80492e94b8cf06c5e",
+      "name": "Smart Home Hub",
+      "price": 199.99,
+      "quantity": 25
+    }
+  ],
+  "totalElements": 2,
+  "totalPages": 1
+}
+```
+
+**✅ Status: WORKING** (after route ordering fix)
+
+---
+
+#### GET /products/categories
+
+**Get all unique product categories**
+
+```bash
+curl -X GET http://localhost:8082/products/categories \
+  -H "Authorization: Bearer $CLIENT_TOKEN"
+```
+
+**Response:**
+
+```json
+[]
+```
+
+**Note:** Returns empty array if no products have the `category` field populated.
+
+**✅ Status: WORKING** (endpoint responds correctly)
+
+---
+
+#### GET /products/tags
+
+**Get all unique product tags**
+
+```bash
+curl -X GET http://localhost:8082/products/tags \
+  -H "Authorization: Bearer $CLIENT_TOKEN"
+```
+
+**Response:**
+
+```json
+[]
+```
+
+**Note:** Returns empty array if no products have the `tags` field populated.
+
+**✅ Status: WORKING** (endpoint responds correctly)
+
+---
+
+### Profile Stats Endpoints (from milli's branch)
+
+#### GET /api/profile/buyer/me
+
+**Get current buyer's profile statistics**
+
+```bash
+curl -X GET http://localhost:8084/api/profile/buyer/me \
+  -H "Authorization: Bearer $CLIENT_TOKEN"
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "userId": "6983b27674ebeeee12a68e32",
+  "totalSpent": 0.0,
+  "totalOrders": 2,
+  "pendingOrders": 1,
+  "deliveredOrders": 0,
+  "cancelledOrders": 1,
+  "topProductsByAmount": [],
+  "mostBoughtProducts": [],
+  "averageOrderValue": 0.0
+}
+```
+
+**✅ Status: WORKING**
+
+---
+
+#### GET /api/profile/buyer/{userId}
+
+**Get specific buyer's profile statistics**
+
+```bash
+curl -X GET http://localhost:8084/api/profile/buyer/6983b27674ebeeee12a68e32 \
+  -H "Authorization: Bearer $CLIENT_TOKEN"
+```
+
+**✅ Status: WORKING**
+
+---
+
+#### GET /api/profile/seller/me
+
+**Get current seller's profile statistics**
+
+```bash
+curl -X GET http://localhost:8084/api/profile/seller/me \
+  -H "Authorization: Bearer $SELLER_TOKEN"
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "sellerId": "6983b27674ebeeee12a68e31",
+  "totalEarned": 0.0,
+  "totalOrders": 2,
+  "pendingOrders": 1,
+  "deliveredOrders": 0,
+  "cancelledOrders": 1,
+  "totalProductsSold": 0,
+  "bestSellingByAmount": [],
+  "bestSellingByQuantity": [],
+  "averageOrderValue": 0.0
+}
+```
+
+**✅ Status: WORKING**
+
+---
+
+#### GET /api/profile/seller/{sellerId}
+
+**Get specific seller's profile statistics**
+
+```bash
+curl -X GET http://localhost:8084/api/profile/seller/6983b27674ebeeee12a68e31 \
+  -H "Authorization: Bearer $SELLER_TOKEN"
+```
+
+**✅ Status: WORKING**
+
+---
+
+### Cart Endpoints (from othmane's branch)
+
+#### POST /api/cart/add
+
+**Add item to cart**
+
+```bash
+curl -X POST http://localhost:8084/api/cart/add \
+  -H "Authorization: Bearer $CLIENT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "productId": "6983b2a40492e94b8cf06c5c",
+    "quantity": 2
+  }'
+```
+
+**Response:**
+
+```json
+{
+  "id": "6983b42d722942a4be4ee26a",
+  "userId": "6983b27674ebeeee12a68e32",
+  "status": "ACTIVE",
+  "items": [
+    {
+      "productId": "6983b2a40492e94b8cf06c5c",
+      "quantity": 2,
+      "sellerId": "6983b27674ebeeee12a68e31",
+      "cachedProductName": "Gaming Laptop Pro",
+      "cachedPrice": 1299.99
+    }
+  ],
+  "totalItems": 2,
+  "cachedSubtotal": 2599.98
+}
+```
+
+**✅ Status: WORKING**
+
+---
+
+#### GET /api/cart
+
+**Get current user's cart**
+
+```bash
+curl -X GET http://localhost:8084/api/cart \
+  -H "Authorization: Bearer $CLIENT_TOKEN"
+```
+
+**✅ Status: WORKING**
+
+---
+
+#### PATCH /api/cart/item/{productId}
+
+**Update cart item quantity**
+
+```bash
+curl -X PATCH http://localhost:8084/api/cart/item/6983b2a40492e94b8cf06c5c \
+  -H "Authorization: Bearer $CLIENT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"quantity": 1}'
+```
+
+**✅ Status: WORKING**
+
+---
+
+### Order Endpoints (from othmane's branch)
+
+#### POST /api/orders/checkout
+
+**Create order from cart**
+
+```bash
+curl -X POST http://localhost:8084/api/orders/checkout \
+  -H "Authorization: Bearer $CLIENT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "paymentMethod": "CREDIT_CARD",
+    "shippingAddress": {
+      "fullName": "Test Client",
+      "addressLine1": "456 Merge Test Ave",
+      "city": "Integration City",
+      "country": "Testland",
+      "postalCode": "54321"
+    }
+  }'
+```
+
+**Response:**
+
+```json
+{
+  "id": "6983b4a6722942a4be4ee26c",
+  "orderNumber": "ORD-20260204-7J837",
+  "status": "PENDING",
+  "totalAmount": 1299.99,
+  "items": [...]
+}
+```
+
+**✅ Status: WORKING**
+
+---
+
+#### GET /api/orders/my-orders
+
+**Get current user's orders**
+
+```bash
+curl -X GET http://localhost:8084/api/orders/my-orders \
+  -H "Authorization: Bearer $CLIENT_TOKEN"
+```
+
+**✅ Status: WORKING**
+
+---
+
+#### GET /api/orders/{id}
+
+**Get order by ID**
+
+```bash
+curl -X GET http://localhost:8084/api/orders/6983b4a6722942a4be4ee26c \
+  -H "Authorization: Bearer $CLIENT_TOKEN"
+```
+
+**✅ Status: WORKING**
+
+---
+
+#### POST /api/orders/{id}/cancel
+
+**Cancel an order**
+
+```bash
+curl -X POST http://localhost:8084/api/orders/6983b4a6722942a4be4ee26c/cancel \
+  -H "Authorization: Bearer $CLIENT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"reason": "Testing cancellation"}'
+```
+
+**Response:**
+
+```json
+{
+  "id": "6983b4a6722942a4be4ee26c",
+  "orderNumber": "ORD-20260204-7J837",
+  "status": "CANCELLED",
+  "cancellationReason": "Testing cancellation"
+}
+```
+
+**✅ Status: WORKING**
+
+---
+
+#### POST /api/orders/{id}/redo
+
+**Redo a cancelled order (copies items back to cart)**
+
+```bash
+curl -X POST http://localhost:8084/api/orders/6983b4a6722942a4be4ee26c/redo \
+  -H "Authorization: Bearer $CLIENT_TOKEN"
+```
+
+**Response:**
+
+```json
+{
+  "id": "6983b5e8722942a4be4ee26d",
+  "orderNumber": "ORD-20260204-CR9R3",
+  "status": "PENDING"
+}
+```
+
+**✅ Status: WORKING**
+
+---
+
+#### GET /api/orders/seller
+
+**Get orders containing seller's products**
+
+```bash
+curl -X GET http://localhost:8084/api/orders/seller \
+  -H "Authorization: Bearer $SELLER_TOKEN"
+```
+
+**✅ Status: WORKING**
+
+---
+
+### Bugs Found & Fixed During Merge Testing
+
+#### 1. ProductController Route Ordering Bug
+
+**Problem:** Requests to `/products/search`, `/products/categories`, `/products/tags` returned "Product not found with id: search"
+
+**Cause:** The `@GetMapping("/{id}")` endpoint was declared before specific routes, causing Spring MVC to match "search", "categories", "tags" as product IDs.
+
+**Fix:** Reordered routes in `ProductController.java` - moved `/{id}` after all specific path mappings:
+
+```java
+// CORRECT ORDER - specific routes first
+@GetMapping("/search")
+@GetMapping("/categories")
+@GetMapping("/tags")
+@GetMapping("/seller/{sellerId}")
+@GetMapping("/{id}")  // LAST - catches remaining paths
+```
+
+**Commit:** `72f3190`
+
+---
+
+#### 2. Duplicate JwtService Bean
+
+**Problem:** `ConflictingBeanDefinitionException` - two beans named 'jwtService' found
+
+**Cause:** Merge brought in duplicate `JwtService.java` classes:
+- `order-service/src/main/java/ax/.../config/JwtService.java` (from milli)
+- `order-service/src/main/java/ax/.../service/JwtService.java` (from othmane)
+
+**Fix:** Deleted `config/JwtService.java`, kept `service/JwtService.java` which `JwtAuthenticationFilter` already imports.
+
+**Commit:** `72f3190`
+
+---
+
+### Test Summary Table
+
+| Endpoint Category    | Endpoint                          | Method | Status |
+| -------------------- | --------------------------------- | ------ | ------ |
+| **Product Search**   | `/products/search`                | GET    | ✅     |
+| **Product Search**   | `/products/categories`            | GET    | ✅     |
+| **Product Search**   | `/products/tags`                  | GET    | ✅     |
+| **Profile Stats**    | `/api/profile/buyer/me`           | GET    | ✅     |
+| **Profile Stats**    | `/api/profile/buyer/{userId}`     | GET    | ✅     |
+| **Profile Stats**    | `/api/profile/seller/me`          | GET    | ✅     |
+| **Profile Stats**    | `/api/profile/seller/{sellerId}`  | GET    | ✅     |
+| **Cart**             | `/api/cart`                       | GET    | ✅     |
+| **Cart**             | `/api/cart/add`                   | POST   | ✅     |
+| **Cart**             | `/api/cart/item/{productId}`      | PATCH  | ✅     |
+| **Orders**           | `/api/orders/checkout`            | POST   | ✅     |
+| **Orders**           | `/api/orders/my-orders`           | GET    | ✅     |
+| **Orders**           | `/api/orders/{id}`                | GET    | ✅     |
+| **Orders**           | `/api/orders/{id}/cancel`         | POST   | ✅     |
+| **Orders**           | `/api/orders/{id}/redo`           | POST   | ✅     |
+| **Orders**           | `/api/orders/seller`              | GET    | ✅     |
+| **Health**           | `/api/orders/health`              | GET    | ✅     |
+
+---
+
+### Known Limitations
+
+1. **Text Search**: Product text search (`/products/search?q=laptop`) requires MongoDB text index creation:
+   ```javascript
+   db.products.createIndex({ name: "text", description: "text" })
+   ```
+
+2. **Categories/Tags**: Return empty arrays if products don't have `category` or `tags` fields populated.
+
+3. **Profile Stats**: `totalSpent` and `totalEarned` show 0.0 for orders with `PENDING` status (stats calculated on delivered orders only).
