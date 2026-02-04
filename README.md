@@ -2,7 +2,7 @@
 
 **Production-ready CI/CD pipeline with automated testing, deployment, and zero-downtime rollback capability.**
 
-[![Build Status](http://13.62.141.159:8080/job/buy01-pipeline/badge/icon)](http://13.62.141.159:8080/job/buy01-pipeline/)
+[![Build Status](http://13.62.141.159:8090/job/buy01-pipeline/badge/icon)](http://13.62.141.159:8090/job/buy01-pipeline/)
 ![Security](https://img.shields.io/badge/security-100%25-success)
 ![Tests](https://img.shields.io/badge/tests-passing-success)
 
@@ -210,7 +210,7 @@ This project implements a modern microservices architecture with the following c
 
 ### Backend Services (Spring Boot 3.5.6 + Java 17)
 
-- **API Gateway** (Port 8080) - HTTP entry point with routing and CORS configuration
+- **API Gateway** (Port 8090) - HTTP entry point with routing and CORS configuration
 - **Service Registry** (Port 8761) - Eureka service discovery for dynamic service registration
 - **User Service** (Port 8081) - User authentication, JWT management, and profile handling
 - **Product Service** (Port 8082) - Product catalog, inventory, and seller management
@@ -298,7 +298,7 @@ docker-compose ps
 **Access the application:**
 
 - 🔒 **Frontend (HTTPS)**: https://localhost:4201 (self-signed certificate)
-- 🔌 **API Gateway**: http://localhost:8080
+- 🔌 **API Gateway**: http://localhost:8090
 - 📊 **Eureka Dashboard**: http://localhost:8761
 - 🗄️ **MongoDB**: mongodb://root:example@localhost:27017
 
@@ -356,7 +356,7 @@ After starting the application, you can:
 | Service          | Port  | Protocol | URL                       | Description           |
 | ---------------- | ----- | -------- | ------------------------- | --------------------- |
 | Frontend (HTTPS) | 4201  | HTTPS    | https://localhost:4201    | Secure frontend       |
-| API Gateway      | 8080  | HTTP     | http://localhost:8080     | Main API entry point  |
+| API Gateway      | 8090  | HTTP     | http://localhost:8090     | Main API entry point  |
 | Service Registry | 8761  | HTTP     | http://localhost:8761     | Eureka dashboard      |
 | User Service     | 8081  | HTTP     | Internal                  | User management       |
 | Product Service  | 8082  | HTTP     | Internal                  | Product management    |
@@ -484,7 +484,7 @@ buy-01/
 │   │   └── resources/
 │   │       ├── application.properties
 │   │       ├── application-docker.yml
-│   │       └── application.yml           # Route definitions
+│   │       └── application.yml           # Route definitions (Port 8090)
 │   ├── Dockerfile
 │   └── pom.xml
 │
@@ -719,7 +719,7 @@ docker-compose up -d
 
 **Frontend can't reach backend:**
 
-- Ensure API Gateway is running: http://localhost:8080
+- Ensure API Gateway is running: http://localhost:8090
 - Check browser console for CORS errors
 - Verify environment configuration in `buy-01-ui/src/environments/`
 
@@ -743,10 +743,10 @@ docker-compose up -d
 
 ```bash
 # Find process using port (Windows)
-netstat -ano | findstr :8080
+netstat -ano | findstr :8090
 
 # Find process using port (Mac/Linux)
-lsof -i :8080
+lsof -i :8090
 
 # Kill process or change port in docker-compose.yml
 ```
@@ -765,7 +765,7 @@ lsof -i :8080
 **Via API:**
 
 ```bash
-curl -X POST http://localhost:8080/api/auth/register \
+curl -X POST http://localhost:8090/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "name": "John Seller",
@@ -783,7 +783,7 @@ curl -X POST http://localhost:8080/api/auth/register \
 
 ## 📚 API Documentation
 
-All API endpoints are accessed through the API Gateway: `http://localhost:8080`
+All API endpoints are accessed through the API Gateway: `http://localhost:8090`
 
 ### Authentication Endpoints
 
@@ -831,7 +831,7 @@ All API endpoints are accessed through the API Gateway: `http://localhost:8080`
 **Login:**
 
 ```bash
-curl -X POST http://localhost:8080/api/auth/login \
+curl -X POST http://localhost:8090/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "seller@example.com",
@@ -842,7 +842,7 @@ curl -X POST http://localhost:8080/api/auth/login \
 **Create Product (requires JWT token):**
 
 ```bash
-curl -X POST http://localhost:8080/api/products \
+curl -X POST http://localhost:8090/api/products \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
@@ -857,7 +857,7 @@ curl -X POST http://localhost:8080/api/products \
 **Upload Media:**
 
 ```bash
-curl -X POST http://localhost:8080/api/media/upload \
+curl -X POST http://localhost:8090/api/media/upload \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -F "file=@/path/to/image.jpg"
 ```

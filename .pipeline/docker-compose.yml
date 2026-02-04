@@ -57,7 +57,7 @@ services:
     image: buy01-pipeline-api-gateway:latest
     container_name: buy-01-api-gateway
     ports:
-      - "8080:8080"   # HTTP (always available)
+      - "8090:8090"   # HTTP (always available)
       - "8443:8443"   # HTTPS (when enabled)
     volumes:
       - ./certs:/app/certs:ro

@@ -199,7 +199,7 @@ return this.http.post(...).pipe(
 
 **Backend API Endpoints:**
 
-**Base:** `API Gateway` (Port 8080) → Routes to `order-service` (Port 8084)
+**Base:** `API Gateway` (Port 8090) → Routes to `order-service` (Port 8084)
 
 | Method | Endpoint                               | Description          | Routes To     |
 | ------ | -------------------------------------- | -------------------- | ------------- |
@@ -403,7 +403,7 @@ if (reason && reason.length >= 5) {
 
 **Backend API Endpoints:**
 
-**Base:** `API Gateway` (Port 8080) → Routes to `order-service` (Port 8084)
+**Base:** `API Gateway` (Port 8090) → Routes to `order-service` (Port 8084)
 
 | Method | Endpoint                               | Description                     | Routes To     |
 | ------ | -------------------------------------- | ------------------------------- | ------------- |
@@ -587,7 +587,7 @@ passwordForm = this.fb.group(
 
 ### API Gateway Pattern
 
-**All frontend requests go through the API Gateway** at `http://localhost:8080/api/*`
+**All frontend requests go through the API Gateway** at `http://localhost:8090/api/*`
 
 **Benefits:**
 
@@ -604,14 +604,14 @@ passwordForm = this.fb.group(
 // Development (environment.ts)
 export const environment = {
   production: false,
-  apiUrl: "http://localhost:8080/api",
-  apiGatewayUrl: "http://localhost:8080",
-  authUrl: "http://localhost:8080/api/auth",
-  usersUrl: "http://localhost:8080/api/users",
-  productsUrl: "http://localhost:8080/api/products",
-  ordersUrl: "http://localhost:8080/api/orders",
-  cartUrl: "http://localhost:8080/api/cart",
-  mediaUrl: "http://localhost:8080/api/media",
+  apiUrl: "http://localhost:8090/api",
+  apiGatewayUrl: "http://localhost:8090",
+  authUrl: "http://localhost:8090/api/auth",
+  usersUrl: "http://localhost:8090/api/users",
+  productsUrl: "http://localhost:8090/api/products",
+  ordersUrl: "http://localhost:8090/api/orders",
+  cartUrl: "http://localhost:8090/api/cart",
+  mediaUrl: "http://localhost:8090/api/media",
   enableDebugLogging: true,
 };
 
@@ -687,7 +687,7 @@ buy-01-ui/
 
 | Service          | Port | Responsibility                        |
 | ---------------- | ---- | ------------------------------------- |
-| **API Gateway**  | 8080 | **Single entry point, routing, CORS** |
+| **API Gateway**  | 8090 | **Single entry point, routing, CORS** |
 | Service Registry | 8761 | Eureka server (service discovery)     |
 | User Service     | 8081 | Authentication, user management       |
 | Product Service  | 8082 | Product CRUD operations               |
@@ -975,7 +975,7 @@ mvn spring-boot:run
 
 # Wait 30 seconds for Eureka to start...
 
-# 2. API Gateway - Port 8080 (IMPORTANT: Start after Eureka)
+# 2. API Gateway - Port 8090 (IMPORTANT: Start after Eureka)
 cd ..\api-gateway
 mvn spring-boot:run
 
@@ -1000,11 +1000,11 @@ mvn spring-boot:run
 
 ```powershell
 # Check health endpoints (including API Gateway)
-@(8761,8080,8081,8082,8084,8083) | ForEach-Object {
+@(8761,8090,8081,8082,8084,8083) | ForEach-Object {
   $port = $_
   $name = switch ($port) {
     8761 { "Service Registry" }
-    8080 { "API Gateway" }
+    8090 { "API Gateway" }
     8081 { "User Service" }
     8082 { "Product Service" }
     8084 { "Order Service" }
@@ -1021,7 +1021,7 @@ mvn spring-boot:run
 # Verify API Gateway routes
 Write-Host "`nTesting API Gateway routes..." -ForegroundColor Cyan
 try {
-  Invoke-WebRequest -Uri "http://localhost:8080/api/products" -UseBasicParsing | Out-Null
+  Invoke-WebRequest -Uri "http://localhost:8090/api/products" -UseBasicParsing | Out-Null
   Write-Host "✓ API Gateway routing works" -ForegroundColor Green
 } catch {
   Write-Host "✗ API Gateway routing failed" -ForegroundColor Red

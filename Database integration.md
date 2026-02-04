@@ -239,7 +239,7 @@ mvn -pl api-gateway spring-boot:run
 
 ### 🎨 Frontend Team
 
-**API Gateway URL:** `http://localhost:8080/api`
+**API Gateway URL:** `http://localhost:8090/api`
 
 **Key Endpoints (via API Gateway):**
 | Feature | Endpoint Pattern |
@@ -311,7 +311,7 @@ mongodb+srv://<username>:<password>@buy02-cluster.s0i27el.mongodb.net/
                                   │
                                   ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                      API GATEWAY (port 8080)                    │
+│                      API GATEWAY (port 8090)                    │
 │                    Routes requests to services                   │
 └─────────────────────────────────────────────────────────────────┘
                                   │
