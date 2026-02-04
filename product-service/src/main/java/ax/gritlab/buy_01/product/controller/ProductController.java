@@ -31,12 +31,8 @@ public class ProductController {
         return ResponseEntity.ok(productService.getAllProducts());
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ProductResponse> getProductById(@PathVariable String id) {
-        return ResponseEntity.ok(productService.getProductById(id));
-    }
-
     // ==================== Search & Filter Endpoints ====================
+    // NOTE: These MUST come before /{id} to avoid route conflicts
 
     /**
      * Search products with advanced filtering.
@@ -119,6 +115,15 @@ public class ProductController {
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort));
 
         return ResponseEntity.ok(productService.getProductsBySeller(sellerId, pageable));
+    }
+
+    /**
+     * Get product by ID.
+     * NOTE: This must come AFTER all specific routes (/search, /categories, /tags, /seller)
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<ProductResponse> getProductById(@PathVariable String id) {
+        return ResponseEntity.ok(productService.getProductById(id));
     }
 
     // ==================== CRUD Endpoints ====================
