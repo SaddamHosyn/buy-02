@@ -40,17 +40,17 @@ export class OrderDetailPage implements OnInit {
   readonly authService = inject(Auth);
   
   // Signals
-  readonly order = this.orderService.currentOrder;
-  readonly isLoading = this.orderService.isLoading;
+  readonly order = this.orderService.currentOrderSignal;
+  readonly isLoading = this.orderService.isLoadingSignal;
   readonly isActioning = signal<boolean>(false);
   
   // Status timeline steps
   readonly statusSteps: OrderStatus[] = [
-    'PENDING',
-    'CONFIRMED',
-    'PROCESSING',
-    'SHIPPED',
-    'DELIVERED'
+    OrderStatus.PENDING,
+    OrderStatus.CONFIRMED,
+    OrderStatus.PROCESSING,
+    OrderStatus.SHIPPED,
+    OrderStatus.DELIVERED
   ];
   
   // Computed
@@ -60,8 +60,8 @@ export class OrderDetailPage implements OnInit {
     return this.statusSteps.indexOf(order.status);
   });
   
-  readonly isCancelled = computed(() => this.order()?.status === 'CANCELLED');
-  readonly isReturned = computed(() => this.order()?.status === 'RETURNED');
+  readonly isCancelled = computed(() => this.order()?.status === OrderStatus.CANCELLED);
+  readonly isReturned = computed(() => this.order()?.status === OrderStatus.RETURNED);
   
   ngOnInit(): void {
     if (!this.authService.isAuthenticated()) {

@@ -226,8 +226,10 @@
                       <mat-spinner diameter="20" color="accent"></mat-spinner>
                       Placing Order...
                     } @else {
-                      <mat-icon>shopping_bag</mat-icon>
-                      Place Order
+                      <ng-container>
+                        <mat-icon>shopping_bag</mat-icon>
+                        Place Order
+                      </ng-container>
                     }
                   </button>
                 </div>

@@ -53,8 +53,8 @@ export class OrderListPage implements OnInit {
   readonly authService = inject(Auth);
   
   // Signals
-  readonly orders = this.orderService.orders;
-  readonly isLoading = this.orderService.isLoading;
+  readonly orders = this.orderService.ordersSignal;
+  readonly isLoading = this.orderService.isLoadingSignal;
   readonly searchQuery = signal<string>('');
   readonly selectedStatus = signal<OrderStatus | ''>('');
   readonly startDate = signal<Date | null>(null);
@@ -69,9 +69,9 @@ export class OrderListPage implements OnInit {
     const query = this.searchQuery().toLowerCase();
     
     if (query) {
-      result = result.filter(order => 
+      result = result.filter((order: Order) => 
         order.orderNumber.toLowerCase().includes(query) ||
-        order.items.some(item => item.productName.toLowerCase().includes(query))
+        order.items.some((item: any) => item.productName.toLowerCase().includes(query))
       );
     }
     
@@ -83,13 +83,13 @@ export class OrderListPage implements OnInit {
   // Status options for filter
   readonly statusOptions: { value: OrderStatus | ''; label: string }[] = [
     { value: '', label: 'All Statuses' },
-    { value: 'PENDING', label: 'Pending' },
-    { value: 'CONFIRMED', label: 'Confirmed' },
-    { value: 'PROCESSING', label: 'Processing' },
-    { value: 'SHIPPED', label: 'Shipped' },
-    { value: 'DELIVERED', label: 'Delivered' },
-    { value: 'CANCELLED', label: 'Cancelled' },
-    { value: 'RETURNED', label: 'Returned' }
+    { value: OrderStatus.PENDING, label: 'Pending' },
+    { value: OrderStatus.CONFIRMED, label: 'Confirmed' },
+    { value: OrderStatus.PROCESSING, label: 'Processing' },
+    { value: OrderStatus.SHIPPED, label: 'Shipped' },
+    { value: OrderStatus.DELIVERED, label: 'Delivered' },
+    { value: OrderStatus.CANCELLED, label: 'Cancelled' },
+    { value: OrderStatus.RETURNED, label: 'Returned' }
   ];
   
   ngOnInit(): void {

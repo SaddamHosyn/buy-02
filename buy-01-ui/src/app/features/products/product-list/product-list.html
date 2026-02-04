@@ -37,10 +37,10 @@
 
       <!-- Price Range -->
       <div class="price-range">
-        <span class="price-label">Price Range: €{{ minPrice }} - €{{ maxPrice }}</span>
+        <span class="price-label">Price Range: €{{ minPrice() }} - €{{ maxPrice() }}</span>
         <mat-slider min="0" max="2000" step="10">
-          <input matSliderStartThumb [(ngModel)]="minPrice" (change)="onFilterChange()">
-          <input matSliderEndThumb [(ngModel)]="maxPrice" (change)="onFilterChange()">
+          <input matSliderStartThumb [ngModel]="minPrice()" (ngModelChange)="minPrice.set($event)" (change)="onFilterChange()">
+          <input matSliderEndThumb [ngModel]="maxPrice()" (ngModelChange)="maxPrice.set($event)" (change)="onFilterChange()">
         </mat-slider>
       </div>
 

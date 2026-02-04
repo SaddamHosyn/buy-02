@@ -154,7 +154,8 @@ export class CheckoutPage implements OnInit {
     
     this.orderService.checkout({
       shippingAddress,
-      deliveryNotes: formValue.deliveryNotes || undefined
+      deliveryNotes: formValue.deliveryNotes || undefined,
+      paymentMethod: 'PAY_ON_DELIVERY'
     }).subscribe({
       next: (order) => {
         this.isSubmitting.set(false);

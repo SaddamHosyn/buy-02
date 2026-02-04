@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -22,7 +22,6 @@ import { ProductCardSkeleton } from '../../../shared/components/product-card-ske
   standalone: true,
   imports: [
     CommonModule,
-    RouterLink,
     FormsModule,
     MatCardModule,
     MatButtonModule,
@@ -146,11 +145,14 @@ export class ProductList implements OnInit {
   /**
    * Clear all filters
    */
-  clearFilters(): void {
+  resetFilters(): void {
     this.searchQuery.set('');
     this.selectedCategory.set('all');
     this.minPrice.set(0);
     this.maxPrice.set(10000);
+    this.keyword = '';
+    this.pageIndex.set(0);
+    this.loadProducts();
   }
   
   /**
