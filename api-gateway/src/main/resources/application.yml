@@ -50,7 +50,7 @@ spring:
         - id: order-service-api
           uri: lb://ORDER-SERVICE
           predicates:
-            - Path=/api/orders/**, /api/cart/**
+            - Path=/api/orders/**, /api/cart/**, /api/wishlist/**, /api/profile/**
           filters:
             - RewritePath=/api/(?<segment>.*), /$\{segment}
 

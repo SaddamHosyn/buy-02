@@ -18,6 +18,8 @@ public class ProductResponse {
     private Double price;
     private Integer stock;
     private String sellerId;
+    private String category;
+    private List<String> tags;
     private List<String> mediaIds;
     private List<String> imageUrls;
     private String createdAt;

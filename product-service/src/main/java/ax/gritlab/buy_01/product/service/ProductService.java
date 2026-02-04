@@ -2,12 +2,21 @@ package ax.gritlab.buy_01.product.service;
 
 import ax.gritlab.buy_01.product.dto.ProductRequest;
 import ax.gritlab.buy_01.product.dto.ProductResponse;
+import ax.gritlab.buy_01.product.dto.ProductSearchRequest;
+import ax.gritlab.buy_01.product.dto.ProductSearchResponse;
 import ax.gritlab.buy_01.product.exception.ResourceNotFoundException;
 import ax.gritlab.buy_01.product.exception.UnauthorizedException;
 import ax.gritlab.buy_01.product.model.Product;
 import ax.gritlab.buy_01.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.TextCriteria;
+import org.springframework.data.mongodb.core.query.TextQuery;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -15,6 +24,7 @@ import java.time.ZonedDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -47,6 +57,7 @@ public class ProductService {
     private final RestTemplate restTemplate;
     private final org.springframework.kafka.core.KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
+    private final MongoTemplate mongoTemplate;
 
     @Value("${media.service.url:http://media-service:8083/media}")
     private String mediaServiceUrl;
@@ -73,6 +84,8 @@ public class ProductService {
                 .description(request.getDescription())
                 .price(request.getPrice())
                 .quantity(request.getQuantity())
+                .category(request.getCategory())
+                .tags(request.getTags() != null ? request.getTags() : new ArrayList<>())
                 .userId(userId)
                 .createdAt(now.toLocalDateTime())
                 .updatedAt(now.toLocalDateTime())
@@ -91,6 +104,12 @@ public class ProductService {
         product.setDescription(request.getDescription());
         product.setPrice(request.getPrice());
         product.setQuantity(request.getQuantity());
+        if (request.getCategory() != null) {
+            product.setCategory(request.getCategory());
+        }
+        if (request.getTags() != null) {
+            product.setTags(request.getTags());
+        }
         product.setUpdatedAt(ZonedDateTime.now(ZoneOffset.UTC).toLocalDateTime());
         Product saved = productRepository.save(product);
         return toProductResponse(saved);
@@ -215,12 +234,139 @@ public class ProductService {
                 .price(product.getPrice())
                 .stock(product.getQuantity())
                 .sellerId(product.getUserId())
+                .category(product.getCategory())
+                .tags(product.getTags())
                 .mediaIds(product.getMediaIds())
                 .imageUrls(imageUrls)
                 .createdAt(product.getCreatedAt() != null ? product.getCreatedAt().atZone(ZoneOffset.UTC).toString()
                         : null)
                 .updatedAt(product.getUpdatedAt() != null ? product.getUpdatedAt().atZone(ZoneOffset.UTC).toString()
                         : null)
+                .build();
+    }
+
+    // ==================== Search & Filter Methods ====================
+
+    /**
+     * Search products with advanced filtering.
+     * Supports text search, category, price range, tags, and stock filtering.
+     */
+    public ProductSearchResponse searchProducts(ProductSearchRequest request, Pageable pageable) {
+        Query query = new Query();
+        List<Criteria> criteriaList = new ArrayList<>();
+
+        // Text search (if q is provided)
+        if (request.getQ() != null && !request.getQ().trim().isEmpty()) {
+            // Use TextCriteria for full-text search on indexed fields
+            TextCriteria textCriteria = TextCriteria.forDefaultLanguage()
+                    .matching(request.getQ().trim());
+            query = TextQuery.queryText(textCriteria).sortByScore();
+        }
+
+        // Category filter
+        if (request.getCategory() != null && !request.getCategory().trim().isEmpty()) {
+            criteriaList.add(Criteria.where("category").is(request.getCategory().trim()));
+        }
+
+        // Price range filter
+        if (request.getMinPrice() != null && request.getMaxPrice() != null) {
+            criteriaList.add(Criteria.where("price").gte(request.getMinPrice()).lte(request.getMaxPrice()));
+        } else if (request.getMinPrice() != null) {
+            criteriaList.add(Criteria.where("price").gte(request.getMinPrice()));
+        } else if (request.getMaxPrice() != null) {
+            criteriaList.add(Criteria.where("price").lte(request.getMaxPrice()));
+        }
+
+        // Tags filter (match any)
+        if (request.getTags() != null && !request.getTags().isEmpty()) {
+            criteriaList.add(Criteria.where("tags").in(request.getTags()));
+        }
+
+        // In-stock filter
+        if (request.getInStock() != null && request.getInStock()) {
+            criteriaList.add(Criteria.where("quantity").gt(0));
+        }
+
+        // Seller filter
+        if (request.getSellerId() != null && !request.getSellerId().trim().isEmpty()) {
+            criteriaList.add(Criteria.where("userId").is(request.getSellerId().trim()));
+        }
+
+        // Combine all criteria
+        if (!criteriaList.isEmpty()) {
+            query.addCriteria(new Criteria().andOperator(criteriaList.toArray(new Criteria[0])));
+        }
+
+        // Execute count query for pagination
+        long total = mongoTemplate.count(Query.of(query).limit(-1).skip(-1), Product.class);
+
+        // Apply pagination
+        query.with(pageable);
+
+        // Execute query
+        List<Product> products = mongoTemplate.find(query, Product.class);
+
+        // Convert to response
+        List<ProductResponse> productResponses = products.stream()
+                .map(this::toProductResponse)
+                .collect(Collectors.toList());
+
+        return ProductSearchResponse.builder()
+                .products(productResponses)
+                .page(pageable.getPageNumber())
+                .size(pageable.getPageSize())
+                .totalElements(total)
+                .totalPages((int) Math.ceil((double) total / pageable.getPageSize()))
+                .first(pageable.getPageNumber() == 0)
+                .last(pageable.getPageNumber() >= (int) Math.ceil((double) total / pageable.getPageSize()) - 1)
+                .build();
+    }
+
+    /**
+     * Get all distinct categories in the system.
+     */
+    public List<String> getAllCategories() {
+        return mongoTemplate.query(Product.class)
+                .distinct("category")
+                .as(String.class)
+                .all()
+                .stream()
+                .filter(cat -> cat != null && !cat.isEmpty())
+                .sorted()
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get all distinct tags in the system.
+     */
+    public Set<String> getAllTags() {
+        return mongoTemplate.query(Product.class)
+                .distinct("tags")
+                .as(String.class)
+                .all()
+                .stream()
+                .filter(tag -> tag != null && !tag.isEmpty())
+                .collect(Collectors.toSet());
+    }
+
+    /**
+     * Get products by seller with pagination.
+     */
+    public ProductSearchResponse getProductsBySeller(String sellerId, Pageable pageable) {
+        Page<Product> page = productRepository.findByUserId(sellerId, pageable);
+        
+        List<ProductResponse> productResponses = page.getContent().stream()
+                .map(this::toProductResponse)
+                .collect(Collectors.toList());
+
+        return ProductSearchResponse.builder()
+                .products(productResponses)
+                .page(page.getNumber())
+                .size(page.getSize())
+                .totalElements(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .first(page.isFirst())
+                .last(page.isLast())
                 .build();
     }
 }
