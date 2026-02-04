@@ -1,6 +1,5 @@
 package ax.gritlab.buy_01.product.config;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -10,6 +9,8 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import lombok.RequiredArgsConstructor;
 
 @Configuration
 @EnableWebSecurity
@@ -25,13 +26,19 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints
-                        .requestMatchers("/products").permitAll() // Public: Get all products
-                        .requestMatchers("/products/*").permitAll() // Public: Get product by ID
-                        .requestMatchers("/products/*/remove-media/*").permitAll() // Public: Remove media (for Media
-                                                                                   // Service)
+                        // Public endpoints - Product search and browsing
+                        .requestMatchers(HttpMethod.GET, "/products").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/products/search").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/products/categories").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/products/tags").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/products/seller/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/products/*").permitAll()
+                        // Inter-service communication
+                        .requestMatchers("/products/*/remove-media/*").permitAll()
+                        .requestMatchers("/products/cleanup-orphaned-media").permitAll()
+                        // All other requests require authentication
                         .anyRequest().authenticated())
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class); // FIXED: Use jwtAuthFilter
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

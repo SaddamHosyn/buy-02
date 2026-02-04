@@ -8,6 +8,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Builder
 @AllArgsConstructor
@@ -28,4 +30,16 @@ public class ProductRequest {
     @NotNull(message = "Quantity is required")
     @Min(value = 0, message = "Quantity must be greater than or equal to 0")
     private Integer quantity;
+    
+    /**
+     * Optional category for filtering.
+     * Examples: Electronics, Clothing, Home & Garden, Sports, Books
+     */
+    private String category;
+    
+    /**
+     * Tags for flexible filtering and search.
+     * Examples: ["new", "sale", "featured", "eco-friendly"]
+     */
+    private List<String> tags;
 }

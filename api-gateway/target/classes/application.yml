@@ -46,6 +46,14 @@ spring:
           filters:
             - RewritePath=/api/(?<segment>.*), /$\{segment}
 
+        # --- Order Service Routes ---
+        - id: order-service-api
+          uri: lb://ORDER-SERVICE
+          predicates:
+            - Path=/api/orders/**, /api/cart/**, /api/wishlist/**, /api/profile/**
+          filters:
+            - RewritePath=/api/(?<segment>.*), /api/$\{segment}
+
   kafka:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
 
