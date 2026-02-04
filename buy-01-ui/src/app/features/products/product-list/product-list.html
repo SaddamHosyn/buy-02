@@ -1,35 +1,3 @@
-<mat-toolbar color="primary" class="app-toolbar">
-  <span class="toolbar-title">Buy-01 Marketplace</span>
-  <span class="spacer"></span>
-
-  @if (authService.isAuthenticated()) {
-  <span class="user-info">Welcome, {{ authService.currentUser()?.name }}</span>
-
-  @if (authService.isSeller()) {
-  <button mat-button (click)="goToDashboard()">
-    <mat-icon>dashboard</mat-icon>
-    Dashboard
-  </button>
-  }
-
-  <button mat-button routerLink="/profile">
-    <mat-icon>account_circle</mat-icon>
-    Profile
-  </button>
-
-  <button mat-button (click)="logout()">
-    <mat-icon>logout</mat-icon>
-    Logout
-  </button>
-  } @else {
-  <button mat-button routerLink="/auth/login">
-    <mat-icon>login</mat-icon>
-    Login
-  </button>
-  <button mat-raised-button color="accent" routerLink="/auth/register">Register</button>
-  }
-</mat-toolbar>
-
 <div class="container">
   <div class="search-filter-section">
     <!-- Keyword Search -->

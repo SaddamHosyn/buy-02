@@ -1,9 +1,6 @@
 <div class="dashboard-container">
   <!-- Header -->
-  <mat-toolbar color="primary" class="dashboard-header">
-    <button mat-icon-button (click)="goBack()" matTooltip="Go to Home">
-      <mat-icon>arrow_back</mat-icon>
-    </button>
+  <div class="dashboard-header-simple">
     <h1>
       <mat-icon>dashboard</mat-icon>
       Seller Dashboard
@@ -13,11 +10,7 @@
       <mat-icon>add</mat-icon>
       Create Product
     </button>
-    <button mat-button (click)="logout()" class="logout-button">
-      <mat-icon>logout</mat-icon>
-      Logout
-    </button>
-  </mat-toolbar>
+  </div>
 
   <div class="dashboard-content">
     <!-- Welcome Section -->

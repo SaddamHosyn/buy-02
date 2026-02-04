@@ -1,5 +1,5 @@
 
-// Mock data for Buy-01
+// Mock data for Buy-02
 const client_id = "mock_client_id";
 const seller_id = "mock_seller_id";
 const password_hash = "$2a$10$tOWtSaDTO1Ph.lJ1odao8OuOsOJt31kj.2k8Ln8h0kvj1oR1OyxyW"; // password123 confirmed hash
