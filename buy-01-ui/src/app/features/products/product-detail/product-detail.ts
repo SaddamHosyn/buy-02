@@ -10,8 +10,10 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatBadgeModule } from '@angular/material/badge';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 import { ProductService, Product } from '../../../core/services/product.service';
+import { CartService } from '../../../core/services/cart.service';
 import { Auth, User } from '../../../core/services/auth';
 import { ImageLightbox } from '../../../shared/components/image-lightbox/image-lightbox';   
 
@@ -30,7 +32,8 @@ import { environment } from '../../../../environments/environment';
     MatDividerModule,
     MatProgressSpinnerModule,
     MatTooltipModule,
-    MatBadgeModule
+    MatBadgeModule,
+    MatSnackBarModule
   ],
   templateUrl: './product-detail.html',
   styleUrl: './product-detail.css',
@@ -40,6 +43,8 @@ export class ProductDetail implements OnInit {
   private readonly router = inject(Router);
   private readonly productService = inject(ProductService);
   private readonly authService = inject(Auth);
+  private readonly cartService = inject(CartService);
+  private readonly snackBar = inject(MatSnackBar);
   private readonly http = inject(HttpClient);
   private readonly dialog = inject(MatDialog);
   
@@ -50,6 +55,7 @@ export class ProductDetail implements OnInit {
   readonly errorMessage = signal<string>('');
   readonly selectedImageIndex = signal<number>(0);
   readonly quantity = signal<number>(1);
+  readonly isAddingToCart = signal<boolean>(false);
   
   // Computed signals
   readonly currentUser = this.authService.currentUser;
@@ -174,33 +180,78 @@ export class ProductDetail implements OnInit {
   }
   
   /**
-   * Add to cart (placeholder - will implement later)
+   * Add to cart
    */
   addToCart(): void {
     const p = this.product();
     if (!p) return;
     
-    console.log('Add to cart:', {
-      product: p,
-      quantity: this.quantity()
-    });
+    if (!this.authService.isAuthenticated()) {
+      this.snackBar.open('Please login to add items to cart', 'Login', { duration: 3000 })
+        .onAction().subscribe(() => {
+          this.router.navigate(['/auth/login']);
+        });
+      return;
+    }
     
-    alert(`Added ${this.quantity()} x ${p.name} to cart!\n(Cart feature coming soon)`);
+    this.isAddingToCart.set(true);
+    
+    this.cartService.addToCart({
+      productId: p.id,
+      quantity: this.quantity(),
+      sellerId: p.sellerId || '',
+      cachedProductName: p.name,
+      cachedPrice: p.price
+    }).subscribe({
+      next: () => {
+        this.isAddingToCart.set(false);
+        this.snackBar.open(`Added ${this.quantity()} x ${p.name} to cart!`, 'View Cart', { duration: 3000 })
+          .onAction().subscribe(() => {
+            this.router.navigate(['/cart']);
+          });
+      },
+      error: (error) => {
+        console.error('Error adding to cart:', error);
+        this.isAddingToCart.set(false);
+        this.snackBar.open('Failed to add to cart. Please try again.', 'Close', { duration: 3000 });
+      }
+    });
   }
   
   /**
-   * Buy now (placeholder - will implement later)
+   * Buy now - add to cart and go to checkout
    */
   buyNow(): void {
     const p = this.product();
     if (!p) return;
     
-    console.log('Buy now:', {
-      product: p,
-      quantity: this.quantity()
-    });
+    if (!this.authService.isAuthenticated()) {
+      this.snackBar.open('Please login to checkout', 'Login', { duration: 3000 })
+        .onAction().subscribe(() => {
+          this.router.navigate(['/auth/login']);
+        });
+      return;
+    }
     
-    alert(`Proceed to checkout for ${this.quantity()} x ${p.name}\n(Checkout feature coming soon)`);
+    this.isAddingToCart.set(true);
+    
+    this.cartService.addToCart({
+      productId: p.id,
+      quantity: this.quantity(),
+      sellerId: p.sellerId || '',
+      cachedProductName: p.name,
+      cachedPrice: p.price
+    }).subscribe({
+      next: () => {
+        this.isAddingToCart.set(false);
+        this.router.navigate(['/checkout']);
+      },
+      error: (error) => {
+        console.error('Error adding to cart:', error);
+        this.isAddingToCart.set(false);
+        this.snackBar.open('Failed to add to cart. Please try again.', 'Close', { duration: 3000 });
+      }
+    });
   }
   
   /**

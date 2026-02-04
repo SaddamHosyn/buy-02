@@ -1,8 +1,8 @@
 server:
-  port: ${SERVER_PORT:8090}
+  port: ${SERVER_PORT:8080}
   ssl:
     enabled: ${SSL_ENABLED:false}
-    key-store: ${SSL_KEY_STORE:classpath:keystore.p12}
+    key-store: ${SSL_KEY_STORE:file:/app/certs/localhost.p12}
     key-store-password: ${SSL_KEY_STORE_PASSWORD:changeit}
     key-store-type: ${SSL_KEY_STORE_TYPE:PKCS12}
     key-alias: ${SSL_KEY_ALIAS:localhost}
@@ -50,7 +50,7 @@ spring:
         - id: order-service-api
           uri: lb://ORDER-SERVICE
           predicates:
-            - Path=/api/orders/**
+            - Path=/api/orders/**, /api/cart/**
           filters:
             - RewritePath=/api/(?<segment>.*), /$\{segment}
 

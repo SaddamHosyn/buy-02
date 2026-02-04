@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -6,6 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
@@ -22,11 +23,13 @@ import { ProductCardSkeleton } from '../../../shared/components/product-card-ske
   imports: [
     CommonModule,
     RouterLink,
+    FormsModule,
     MatCardModule,
     MatButtonModule,
     MatProgressSpinnerModule,
     MatToolbarModule,
     MatIconModule,
+    MatTooltipModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
@@ -51,15 +54,43 @@ export class ProductList implements OnInit {
 
   // Filtering & Pagination state
   keyword: string = '';
-  selectedCategory: string = '';
-  minPrice: number = 0;
-  maxPrice: number = 2000;
   sortBy: string = 'createdAt,desc';
 
   readonly totalElements = signal<number>(0);
   readonly pageSize = signal<number>(12);
   readonly pageIndex = signal<number>(0);
 
+  
+  // Search and filter signals
+  readonly searchQuery = signal<string>('');
+  readonly selectedCategory = signal<string>('all');
+  readonly minPrice = signal<number>(0);
+  readonly maxPrice = signal<number>(10000);
+  
+  // Computed filtered products
+  readonly filteredProducts = computed(() => {
+    let result = this.products();
+    
+    // Search filter
+    const query = this.searchQuery().toLowerCase();
+    if (query) {
+      result = result.filter(p =>
+        p.name.toLowerCase().includes(query) ||
+        p.description.toLowerCase().includes(query)
+      );
+    }
+    
+    // Note: Category filter removed - Product interface doesn't include category field
+    // You can add category to Product interface if needed
+    
+    // Price range filter
+    result = result.filter(p =>
+      p.price >= this.minPrice() && p.price <= this.maxPrice()
+    );
+    
+    return result;
+  });
+  
   ngOnInit(): void {
     this.loadProducts();
     this.loadCategories();
@@ -72,14 +103,14 @@ export class ProductList implements OnInit {
     });
   }
 
-  loadProducts(): void {
+  /**
+   * Load products from the API
+   */
+  private loadProducts(): void {
     this.isLoading.set(true);
 
     this.productService.searchProducts({
       keyword: this.keyword || undefined,
-      category: this.selectedCategory || undefined,
-      minPrice: this.minPrice,
-      maxPrice: this.maxPrice,
       page: this.pageIndex(),
       size: this.pageSize(),
       sort: this.sortBy
@@ -112,16 +143,23 @@ export class ProductList implements OnInit {
     this.loadProducts();
   }
 
-  resetFilters(): void {
-    this.keyword = '';
-    this.selectedCategory = '';
-    this.minPrice = 0;
-    this.maxPrice = 2000;
-    this.sortBy = 'createdAt,desc';
-    this.pageIndex.set(0);
-    this.loadProducts();
+  /**
+   * Clear all filters
+   */
+  clearFilters(): void {
+    this.searchQuery.set('');
+    this.selectedCategory.set('all');
+    this.minPrice.set(0);
+    this.maxPrice.set(10000);
   }
-
+  
+  /**
+   * Format price slider value
+   */
+  formatPrice(value: number): string {
+    return `$${value}`;
+  }
+  
   /**
    * Navigate to product details
    */

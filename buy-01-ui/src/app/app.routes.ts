@@ -54,7 +54,41 @@ export const routes: Routes = [
       }
     ]
   },
-
+  
+  // Cart route (protected - requires authentication)
+  {
+    path: 'cart',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/cart/cart').then(m => m.CartPage),
+    title: 'Shopping Cart - Buy-01'
+  },
+  
+  // Checkout route (protected - requires authentication)
+  {
+    path: 'checkout',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/checkout/checkout').then(m => m.CheckoutPage),
+    title: 'Checkout - Buy-01'
+  },
+  
+  // Orders routes (protected - requires authentication)
+  {
+    path: 'orders',
+    canActivate: [authGuard],
+    children: [
+      {
+        path: '',
+        loadComponent: () => import('./features/orders/order-list/order-list').then(m => m.OrderListPage),
+        title: 'My Orders - Buy-01'
+      },
+      {
+        path: ':id',
+        loadComponent: () => import('./features/orders/order-detail/order-detail').then(m => m.OrderDetailPage),
+        title: 'Order Details - Buy-01'
+      }
+    ]
+  },
+  
   // Profile route (protected - requires authentication)
   {
     path: 'profile',

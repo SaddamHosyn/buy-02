@@ -1,0 +1,408 @@
+.app-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.toolbar-title {
+  margin-left: 8px;
+  font-size: 1.2rem;
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* Loading State */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+}
+
+.loading-container p {
+  margin-top: 16px;
+  color: #666;
+}
+
+/* Order Header Card */
+.order-header-card {
+  margin-bottom: 24px;
+}
+
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.order-info h1 {
+  margin: 0 0 8px 0;
+  font-size: 1.5rem;
+}
+
+.order-date {
+  margin: 0;
+  color: #666;
+}
+
+.status-chip {
+  font-size: 1rem;
+  padding: 8px 16px;
+}
+
+.status-chip mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  margin-right: 4px;
+}
+
+/* Status colors */
+.status-pending {
+  background: #fff3e0 !important;
+  color: #e65100 !important;
+}
+
+.status-confirmed {
+  background: #e3f2fd !important;
+  color: #1565c0 !important;
+}
+
+.status-processing {
+  background: #e8f5e9 !important;
+  color: #2e7d32 !important;
+}
+
+.status-shipped {
+  background: #f3e5f5 !important;
+  color: #7b1fa2 !important;
+}
+
+.status-delivered {
+  background: #e8f5e9 !important;
+  color: #1b5e20 !important;
+}
+
+.status-cancelled {
+  background: #ffebee !important;
+  color: #c62828 !important;
+}
+
+.status-returned {
+  background: #fff8e1 !important;
+  color: #f57f17 !important;
+}
+
+/* Status Timeline */
+.status-timeline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.timeline-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  opacity: 0.4;
+  transition: opacity 0.3s;
+}
+
+.timeline-step.completed,
+.timeline-step.active {
+  opacity: 1;
+}
+
+.step-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #666;
+  transition: background 0.3s, color 0.3s;
+}
+
+.timeline-step.completed .step-icon {
+  background: #4caf50;
+  color: white;
+}
+
+.timeline-step.active .step-icon {
+  background: #1976d2;
+  color: white;
+}
+
+.step-label {
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.timeline-line {
+  flex: 1;
+  height: 3px;
+  background: #e0e0e0;
+  min-width: 40px;
+  max-width: 80px;
+  transition: background 0.3s;
+}
+
+.timeline-line.completed {
+  background: #4caf50;
+}
+
+/* Status Message (for cancelled/returned) */
+.status-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  background: #f5f5f5;
+  margin: 0 24px;
+  border-radius: 8px;
+}
+
+.status-message.cancelled {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.status-message mat-icon {
+  font-size: 32px;
+  width: 32px;
+  height: 32px;
+}
+
+/* Order Actions */
+.order-actions {
+  display: flex;
+  gap: 12px;
+  padding: 16px 24px 24px;
+  justify-content: center;
+}
+
+/* Order Content Layout */
+.order-content {
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .order-content {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Order Items Card */
+.order-items-card mat-card-content {
+  padding: 16px;
+}
+
+.items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.order-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 16px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  gap: 16px;
+}
+
+.item-details {
+  flex: 1;
+}
+
+.item-name {
+  margin: 0 0 4px 0;
+  font-size: 1rem;
+}
+
+.item-description {
+  margin: 0 0 8px 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.item-seller {
+  margin: 0;
+  color: #999;
+  font-size: 0.85rem;
+}
+
+.item-pricing {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.item-price {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.item-subtotal {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #1976d2;
+}
+
+/* Order Sidebar */
+.order-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Summary Card */
+.summary-card mat-card-content {
+  padding: 16px;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+}
+
+.summary-row.discount {
+  color: #4caf50;
+}
+
+.summary-row.total {
+  font-size: 1.2rem;
+  font-weight: 600;
+  padding-top: 16px;
+}
+
+.summary-card mat-divider {
+  margin: 8px 0;
+}
+
+.payment-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: #e3f2fd;
+  border-radius: 8px;
+  margin-top: 16px;
+  color: #1565c0;
+}
+
+/* Address Card */
+.address-card mat-card-content {
+  padding: 16px;
+}
+
+.address-content p {
+  margin: 4px 0;
+}
+
+.address-content .phone {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  color: #666;
+}
+
+.address-content .phone mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
+.delivery-notes {
+  margin-top: 16px;
+  padding: 12px;
+  background: #fff8e1;
+  border-radius: 8px;
+}
+
+.delivery-notes p {
+  margin: 4px 0 0 0;
+}
+
+/* History Card */
+.history-card mat-card-content {
+  padding: 16px;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.history-item {
+  display: flex;
+  gap: 12px;
+}
+
+.history-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.history-icon mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
+.history-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.history-status {
+  font-weight: 500;
+}
+
+.history-date {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.history-reason {
+  font-size: 0.85rem;
+  color: #999;
+  font-style: italic;
+}
