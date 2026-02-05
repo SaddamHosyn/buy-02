@@ -14,10 +14,12 @@
 #   disk-info           Show disk usage by Docker
 #   docker-stats        Show real-time Docker stats
 #   reset-jenkins       Remove Jenkins and rebuild image
+#   setup-job           Configure Jenkins credentials and pipeline job
 #   help                Show this help message
 #
 # EXAMPLES:
 #   ./pipeline-tools.sh diagnose
+#   ./pipeline-tools.sh setup-job
 #   ./pipeline-tools.sh cleanup --force
 #   ./pipeline-tools.sh logs jenkins
 #   ./pipeline-tools.sh docker-stats
@@ -272,6 +274,227 @@ reset_jenkins() {
     success "Jenkins reset complete. Run ./boot-pipeline.sh to start it again."
 }
 
+# Command: setup-job
+setup_job() {
+    section "JENKINS JOB AUTO-CONFIGURATION"
+    
+    local JENKINS_URL="http://localhost:8088"
+    local CONTAINER_NAME="jenkins-local"
+    local JOB_NAME="buy-02-pipeline"
+    local REPO_URL=$(git config --get remote.origin.url || echo "https://github.com/SaddamHosyn/buy-02.git")
+    
+    log "Target URL: $JENKINS_URL"
+    log "Repository: $REPO_URL"
+    
+    # Check if Jenkins is running
+    if ! curl -s "$JENKINS_URL/login" > /dev/null; then
+        error "Jenkins is not reachable at $JENKINS_URL. Please run boot-pipeline.sh first."
+        return
+    fi
+    
+    # Get Admin Password
+    log "Retrieving Admin Password..."
+    if ! PASSWORD=$(docker exec $CONTAINER_NAME cat /var/jenkins_home/secrets/initialAdminPassword 2>/dev/null); then
+        error "Could not read initialAdminPassword. This usually means Jenkins has already been set up or the volume contains old data."
+        error "To fix this, please reset Jenkins to a clean state:"
+        error "  ./.pipeline/pipeline-tools.sh reset-jenkins"
+        return 1
+    fi
+    PASSWORD=$(echo "$PASSWORD" | tr -d '\r')
+    success "Password retrieved"
+
+    # Create Groovy Script using quoted heredoc to prevent shell expansion of Groovy variables
+    cat > config_jenkins.groovy <<'EOF'
+import jenkins.model.*
+import org.jenkinsci.plugins.workflow.multibranch.*
+import jenkins.branch.*
+import jenkins.plugins.git.*
+import com.cloudbees.hudson.plugins.folder.computed.DefaultOrphanedItemStrategy
+import com.cloudbees.plugins.credentials.*
+import com.cloudbees.plugins.credentials.common.*
+import com.cloudbees.plugins.credentials.domains.*
+import com.cloudbees.plugins.credentials.impl.*
+import org.jenkinsci.plugins.plaincredentials.impl.*
+import hudson.util.Secret
+
+def jenkins = Jenkins.instance
+
+// --- CONFIGURING CREDENTIALS ---
+println " Configuring Credentials..."
+def systemCredentialsProvider = jenkins.getExtensionList('com.cloudbees.plugins.credentials.SystemCredentialsProvider')[0]
+def store = systemCredentialsProvider.getStore()
+def domain = Domain.global()
+
+def credsToCreate = [
+    [id: 'team-email', secret: 'dev-team@buy01.com', desc: 'Team Email'],
+    [id: 'mongo-root-username', secret: 'admin', desc: 'MongoDB Root User'],
+    [id: 'mongo-root-password', secret: 'admin123', desc: 'MongoDB Root Password'],
+    [id: 'api-gateway-url', secret: 'http://api-gateway:8080', desc: 'API Gateway URL'],
+    [id: 'github-token', secret: 'CHANGE_ME_GITHUB_TOKEN', desc: 'GitHub Token'],
+    [id: 'sonarqube-token', secret: 'CHANGE_ME_SONAR_TOKEN', desc: 'SonarQube Token']
+]
+
+credsToCreate.each { c ->
+    def existing = new ArrayList(store.getCredentials(domain)).find { it.id == c.id }
+    if (existing) {
+        println "  Credential '${c.id}' already exists. Skipping."
+    } else {
+        def cred = new StringCredentialsImpl(
+            CredentialsScope.GLOBAL,
+            c.id,
+            c.desc,
+            Secret.fromString(c.secret)
+        )
+        store.addCredentials(domain, cred)
+        println "  Credential '${c.id}' created."
+    }
+}
+
+// --- CONFIGURING JOB ---
+def jobName = "JOB_NAME_PLACEHOLDER"
+def repoUrl = "REPO_URL_PLACEHOLDER"
+def project = jenkins.getItem(jobName)
+
+if (project == null) {
+    println "Creating new Multibranch Project: " + jobName
+    project = jenkins.createProject(WorkflowMultiBranchProject.class, jobName)
+} else {
+    println "Updating existing project: " + jobName
+}
+
+def scmSource = new GitSCMSource(null, repoUrl, "", "*", "", false)
+// scmSource.setCredentialsId("github-token") // Uncomment if using private repo
+scmSource.setId("source-id-" + jobName)
+
+def traits = new ArrayList()
+traits.add(new jenkins.plugins.git.traits.BranchDiscoveryTrait())
+scmSource.setTraits(traits)
+
+def branchSource = new BranchSource(scmSource)
+project.setSourcesList([branchSource])
+project.setOrphanedItemStrategy(new DefaultOrphanedItemStrategy(true, "10", "10"))
+project.save()
+project.scheduleBuild2(0)
+
+println "Job configured successfully!"
+EOF
+
+    # Replace placeholders with actual values (using temp file for macOS/Linux compatibility)
+    sed "s/JOB_NAME_PLACEHOLDER/$JOB_NAME/" config_jenkins.groovy > config_jenkins.groovy.tmp && mv config_jenkins.groovy.tmp config_jenkins.groovy
+    sed "s|REPO_URL_PLACEHOLDER|$REPO_URL|" config_jenkins.groovy > config_jenkins.groovy.tmp && mv config_jenkins.groovy.tmp config_jenkins.groovy
+
+    # Execute Script via Jenkins REST API
+    log "Sending configuration to Jenkins..."
+    
+    # CSRF Crumb handling
+    CRUMB_ISSUER_URL="${JENKINS_URL}/crumbIssuer/api/json"
+    COOKIE_JAR="/tmp/jenkins_cookies.txt"
+    
+    # Get Crumb and Cookie
+    CRUMB_JSON=$(curl -s -u "admin:$PASSWORD" -c "$COOKIE_JAR" "$CRUMB_ISSUER_URL")
+    CRUMB=$(echo "$CRUMB_JSON" | grep -o '"crumb":"[^"]*"' | awk -F':' '{print $2}' | tr -d '"')
+    CRUMB_FIELD=$(echo "$CRUMB_JSON" | grep -o '"crumbRequestField":"[^"]*"' | awk -F':' '{print $2}' | tr -d '"')
+
+    # Execute Script via Jenkins REST API
+    log "Sending configuration to Jenkins..."
+    
+    if [ -n "$CRUMB" ]; then
+        RESPONSE=$(curl -s -X POST -u "admin:$PASSWORD" -b "$COOKIE_JAR" -H "$CRUMB_FIELD: $CRUMB" --data-urlencode "script=$(cat config_jenkins.groovy)" "${JENKINS_URL}/scriptText")
+    else
+        RESPONSE=$(curl -s -X POST -u "admin:$PASSWORD" -b "$COOKIE_JAR" --data-urlencode "script=$(cat config_jenkins.groovy)" "${JENKINS_URL}/scriptText")
+    fi
+
+    rm config_jenkins.groovy
+
+    if [[ "$RESPONSE" == *"Job configured successfully"* ]]; then
+        success "Jenkins configured successfully!"
+        success "  Job Link: ${JENKINS_URL}/job/${JOB_NAME}/"
+    else
+        error "Failed to configure Jenkins. Response:\n$RESPONSE"
+    fi
+}
+
+# Command: scan
+trigger_scan() {
+    section "TRIGGERING SCAN"
+    local JENKINS_URL="http://localhost:8088"
+    local CONTAINER_NAME="jenkins-local"
+    local JOB_NAME="buy-02-pipeline"
+    
+    # Get Password
+    if ! PASSWORD=$(docker exec $CONTAINER_NAME cat /var/jenkins_home/secrets/initialAdminPassword 2>/dev/null); then
+        error "Could not read initialAdminPassword."
+        return 1
+    fi
+    PASSWORD=$(echo "$PASSWORD" | tr -d '\r')
+    
+    # Get Crumb
+    COOKIE_JAR="/tmp/jenkins_cookies.txt"
+    CRUMB_ISSUER_URL="${JENKINS_URL}/crumbIssuer/api/json"
+    CRUMB_JSON=$(curl -s -u "admin:$PASSWORD" -c "$COOKIE_JAR" "$CRUMB_ISSUER_URL")
+    CRUMB=$(echo "$CRUMB_JSON" | grep -o '"crumb":"[^"]*"' | awk -F':' '{print $2}' | tr -d '"')
+    CRUMB_FIELD=$(echo "$CRUMB_JSON" | grep -o '"crumbRequestField":"[^"]*"' | awk -F':' '{print $2}' | tr -d '"')
+    
+    log "Triggering scan for branch indexing..."
+    
+    if [ -n "$CRUMB" ]; then
+        HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST -u "admin:$PASSWORD" -b "$COOKIE_JAR" -H "$CRUMB_FIELD: $CRUMB" "${JENKINS_URL}/job/${JOB_NAME}/build?delay=0")
+    else
+        HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST -u "admin:$PASSWORD" -b "$COOKIE_JAR" "${JENKINS_URL}/job/${JOB_NAME}/build?delay=0")
+    fi
+    
+    if [ "$HTTP_CODE" == "200" ] || [ "$HTTP_CODE" == "201" ] || [ "$HTTP_CODE" == "302" ]; then
+        success "Scan triggered successfully."
+        log "Please check http://localhost:8088/job/buy-02-pipeline/computation/console for logs."
+    else
+        error "Failed to trigger scan. HTTP Code: $HTTP_CODE"
+    fi
+}
+
+# Command: ngrok
+start_ngrok() {
+    section "NGROK SETUP"
+    
+    if ! command -v ngrok &> /dev/null; then
+        error "ngrok is not installed. Please install it first."
+        return 1
+    fi
+
+    # Check if ngrok is already running
+    if pgrep -x "ngrok" > /dev/null; then
+        log "ngrok is already running."
+    else
+        log "Starting ngrok on port 8088..."
+        ngrok http 8088 > /dev/null 2>&1 &
+        sleep 3
+    fi
+
+    # Get Public URL
+    local API_URL="http://localhost:4040/api/tunnels"
+    if ! curl -s "$API_URL" > /dev/null; then
+        error "Failed to retrieve ngrok URL. Is ngrok running?"
+        return 1
+    fi
+
+    local PUBLIC_URL=$(curl -s "$API_URL" | jq -r '.tunnels[0].public_url')
+
+    if [ -z "$PUBLIC_URL" ] || [ "$PUBLIC_URL" == "null" ]; then
+        error "Could not find a public URL. Please check ngrok status."
+        return 1
+    fi
+    
+    success "ngrok is running!"
+    echo -e "${GREEN}Public URL:${NC} $PUBLIC_URL"
+    echo ""
+    section "GITHUB WEBHOOK SETUP"
+    echo "1. Go to your GitHub Repository -> Settings -> Webhooks"
+    echo "2. Click 'Add webhook'"
+    echo "3. Payload URL: ${PUBLIC_URL}/github-webhook/"
+    echo "4. Content type: application/json"
+    echo "5. Click 'Add webhook'"
+    echo ""
+}
+
 # Command: help
 show_help() {
     grep "^#" "$0" | grep -E "^# " | sed 's/^# //'
@@ -287,6 +510,9 @@ case "$COMMAND" in
     disk-info) disk_info ;;
     docker-stats) docker_stats ;;
     reset-jenkins) reset_jenkins ;;
+    setup-job) setup_job ;;
+    scan) trigger_scan ;;
+    ngrok) start_ngrok ;;
     help) show_help ;;
     *)
         error "Unknown command: $COMMAND"

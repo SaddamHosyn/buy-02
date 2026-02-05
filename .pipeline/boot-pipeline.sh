@@ -33,7 +33,7 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
-LOG_FILE="${PROJECT_ROOT}/.pipeline/boot.log"
+LOG_FILE="${PROJECT_ROOT}/boot.log"
 
 # Parse command line arguments
 CLEANUP=false
@@ -159,7 +159,7 @@ else
     # Start SonarQube + Database
     section "STARTING SONARQUBE & DATABASE"
 
-    cd "$PROJECT_ROOT/.pipeline" || error "Cannot change to pipeline directory"
+    cd "$PROJECT_ROOT" || error "Cannot change to pipeline directory"
 
     log "Starting SonarQube infrastructure..."
     docker compose up -d sonarqube-db sonarqube 2>&1 | tee -a "$LOG_FILE" || error "Failed to start SonarQube"
@@ -216,7 +216,7 @@ if [ "$REBUILD_JENKINS" = true ] || ! docker image inspect "$JENKINS_IMAGE" > /d
         log "Jenkins image not found, building..."
     fi
     
-    if docker build -f "$PROJECT_ROOT/.pipeline/Dockerfile.jenkins" -t "$JENKINS_IMAGE" "$PROJECT_ROOT" >> "$LOG_FILE" 2>&1; then
+    if docker build -f "$PROJECT_ROOT/Dockerfile.jenkins" -t "$JENKINS_IMAGE" "$PROJECT_ROOT" >> "$LOG_FILE" 2>&1; then
         success "Jenkins image built successfully"
     else
         error "Failed to build Jenkins image. Check log: $LOG_FILE"
@@ -239,7 +239,7 @@ if [ ${#MISSING_TOOLS[@]} -gt 0 ]; then
     warning "Missing tools in Jenkins image: ${MISSING_TOOLS[*]}"
     warning "Image may not have been built correctly. Rebuilding..."
     docker rmi "$JENKINS_IMAGE" 2>/dev/null || true
-    if ! docker build -f "$PROJECT_ROOT/.pipeline/Dockerfile.jenkins" -t "$JENKINS_IMAGE" "$PROJECT_ROOT" >> "$LOG_FILE" 2>&1; then
+    if ! docker build -f "$PROJECT_ROOT/Dockerfile.jenkins" -t "$JENKINS_IMAGE" "$PROJECT_ROOT" >> "$LOG_FILE" 2>&1; then
         error "Failed to rebuild Jenkins image"
     fi
     success "Jenkins image rebuilt"

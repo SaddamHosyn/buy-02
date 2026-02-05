@@ -42,6 +42,11 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     node --version && \
     npm --version
 
+# Install global npm packages to speed up builds
+RUN npm install -g @angular/cli karma-cli sonarqube-scanner && \
+    ng version && \
+    echo "Global npm packages installed"
+
 # Install Docker CLI - use docker.io package which supports all architectures
 RUN apt-get update && \
     apt-get install -y docker.io && \
@@ -66,6 +71,20 @@ RUN mkdir -p /var/jenkins_home/plugins /var/jenkins_home/init.groovy.d && \
 
 # Set permissions to ensure docker socket access
 RUN chmod 755 /var/jenkins_home
+
+# Install Jenkins Plugins
+RUN jenkins-plugin-cli --plugins \
+    git \
+    workflow-aggregator \
+    blueocean \
+    sonar \
+    junit \
+    ws-cleanup \
+    credentials-binding \
+    plain-credentials \
+    github \
+    pipeline-stage-view \
+    timestamper
 
 # Set environment variables for build tools
 ENV PATH="${MAVEN_HOME}/bin:${PATH}"

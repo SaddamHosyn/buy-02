@@ -35,10 +35,10 @@ fi
 echo ""
 
 # Stop SonarQube and its database
-echo -e "${YELLOW}[3/3] Stopping SonarQube and PostgreSQL...${NC}"
+echo -e "${YELLOW}[3/3] Stopping SonarQube and its Database...${NC}"
 cd "$(dirname "$0")/.pipeline"
 docker compose stop sonarqube sonarqube-db 2>/dev/null || true
-echo -e "${GREEN}✓ SonarQube and PostgreSQL stopped${NC}"
+echo -e "${GREEN}✓ SonarQube and its Database stopped${NC}"
 echo ""
 
 echo -e "${BLUE}============================================${NC}"
