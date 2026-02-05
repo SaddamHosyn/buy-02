@@ -11,6 +11,7 @@ export const environment = {
   ordersUrl: `https://\${window.location.hostname}:8443/api/orders`,
   cartUrl: `https://\${window.location.hostname}:8443/api/cart`,
   mediaUrl: `https://${window.location.hostname}:8443/api/media`,
+  profileUrl: `https://\${window.location.hostname}:8443/api/profile`,
   enableDebugLogging: false,
   buildTimestamp: '2026-01-08T13:00:00Z',
 };

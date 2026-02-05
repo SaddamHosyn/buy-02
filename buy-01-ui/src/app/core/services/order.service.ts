@@ -110,6 +110,7 @@ export class OrderService {
 
   // API URL from environment configuration
   private readonly API_URL = environment.ordersUrl;
+  private readonly PROFILE_URL = environment.profileUrl;
 
   // State management with signals (for template use)
   readonly currentOrderSignal = signal<Order | null>(null);
@@ -281,7 +282,7 @@ export class OrderService {
    * Get stats for the Buyer Dashboard
    */
   getBuyerStats(): Observable<BuyerStats> {
-    return this.http.get<BuyerStats>(`${this.API_URL}/stats/buyer`, {
+    return this.http.get<BuyerStats>(`${this.PROFILE_URL}/buyer/me`, {
       headers: this.getHeaders()
     });
   }
@@ -316,7 +317,7 @@ export class OrderService {
    * Get stats for the Seller Dashboard
    */
   getSellerStats(): Observable<SellerStats> {
-    return this.http.get<SellerStats>(`${this.API_URL}/stats/seller`, {
+    return this.http.get<SellerStats>(`${this.PROFILE_URL}/seller/me`, {
       headers: this.getHeaders()
     });
   }

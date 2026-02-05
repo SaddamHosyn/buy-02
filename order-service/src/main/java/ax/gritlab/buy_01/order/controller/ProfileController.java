@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
  * Provides stats for both buyers and sellers.
  */
 @RestController
-@RequestMapping("/api/profile")
+@RequestMapping("/profile")
 @RequiredArgsConstructor
 public class ProfileController {
 

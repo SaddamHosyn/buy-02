@@ -10,5 +10,6 @@ export const environment = {
   ordersUrl: 'http://localhost:8090/api/orders',
   cartUrl: 'http://localhost:8090/api/cart',
   mediaUrl: 'http://localhost:8090/api/media',
+  profileUrl: 'http://localhost:8090/api/profile',
   enableDebugLogging: true
 };

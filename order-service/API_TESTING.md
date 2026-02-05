@@ -795,15 +795,15 @@ curl -X GET "http://localhost:8082/products/search?minPrice=100&maxPrice=2000&in
 
 **Query Parameters:**
 
-| Parameter  | Type    | Description                                          |
-| ---------- | ------- | ---------------------------------------------------- |
-| `q`        | string  | Text search query (requires MongoDB text index)      |
-| `minPrice` | number  | Minimum price filter                                 |
-| `maxPrice` | number  | Maximum price filter                                 |
-| `inStock`  | boolean | Filter for products with quantity > 0                |
-| `sort`     | string  | Sort order: `price_asc`, `price_desc`, `newest`      |
-| `page`     | integer | Page number (default: 0)                             |
-| `size`     | integer | Page size (default: 20)                              |
+| Parameter  | Type    | Description                                     |
+| ---------- | ------- | ----------------------------------------------- |
+| `q`        | string  | Text search query (requires MongoDB text index) |
+| `minPrice` | number  | Minimum price filter                            |
+| `maxPrice` | number  | Maximum price filter                            |
+| `inStock`  | boolean | Filter for products with quantity > 0           |
+| `sort`     | string  | Sort order: `price_asc`, `price_desc`, `newest` |
+| `page`     | integer | Page number (default: 0)                        |
+| `size`     | integer | Page size (default: 20)                         |
 
 **Test Results:**
 
@@ -1185,6 +1185,7 @@ curl -X GET http://localhost:8084/api/orders/seller \
 **Problem:** `ConflictingBeanDefinitionException` - two beans named 'jwtService' found
 
 **Cause:** Merge brought in duplicate `JwtService.java` classes:
+
 - `order-service/src/main/java/ax/.../config/JwtService.java` (from milli)
 - `order-service/src/main/java/ax/.../service/JwtService.java` (from othmane)
 
@@ -1196,33 +1197,34 @@ curl -X GET http://localhost:8084/api/orders/seller \
 
 ### Test Summary Table
 
-| Endpoint Category    | Endpoint                          | Method | Status |
-| -------------------- | --------------------------------- | ------ | ------ |
-| **Product Search**   | `/products/search`                | GET    | ✅     |
-| **Product Search**   | `/products/categories`            | GET    | ✅     |
-| **Product Search**   | `/products/tags`                  | GET    | ✅     |
-| **Profile Stats**    | `/api/profile/buyer/me`           | GET    | ✅     |
-| **Profile Stats**    | `/api/profile/buyer/{userId}`     | GET    | ✅     |
-| **Profile Stats**    | `/api/profile/seller/me`          | GET    | ✅     |
-| **Profile Stats**    | `/api/profile/seller/{sellerId}`  | GET    | ✅     |
-| **Cart**             | `/api/cart`                       | GET    | ✅     |
-| **Cart**             | `/api/cart/add`                   | POST   | ✅     |
-| **Cart**             | `/api/cart/item/{productId}`      | PATCH  | ✅     |
-| **Orders**           | `/api/orders/checkout`            | POST   | ✅     |
-| **Orders**           | `/api/orders/my-orders`           | GET    | ✅     |
-| **Orders**           | `/api/orders/{id}`                | GET    | ✅     |
-| **Orders**           | `/api/orders/{id}/cancel`         | POST   | ✅     |
-| **Orders**           | `/api/orders/{id}/redo`           | POST   | ✅     |
-| **Orders**           | `/api/orders/seller`              | GET    | ✅     |
-| **Health**           | `/api/orders/health`              | GET    | ✅     |
+| Endpoint Category  | Endpoint                         | Method | Status |
+| ------------------ | -------------------------------- | ------ | ------ |
+| **Product Search** | `/products/search`               | GET    | ✅     |
+| **Product Search** | `/products/categories`           | GET    | ✅     |
+| **Product Search** | `/products/tags`                 | GET    | ✅     |
+| **Profile Stats**  | `/api/profile/buyer/me`          | GET    | ✅     |
+| **Profile Stats**  | `/api/profile/buyer/{userId}`    | GET    | ✅     |
+| **Profile Stats**  | `/api/profile/seller/me`         | GET    | ✅     |
+| **Profile Stats**  | `/api/profile/seller/{sellerId}` | GET    | ✅     |
+| **Cart**           | `/api/cart`                      | GET    | ✅     |
+| **Cart**           | `/api/cart/add`                  | POST   | ✅     |
+| **Cart**           | `/api/cart/item/{productId}`     | PATCH  | ✅     |
+| **Orders**         | `/api/orders/checkout`           | POST   | ✅     |
+| **Orders**         | `/api/orders/my-orders`          | GET    | ✅     |
+| **Orders**         | `/api/orders/{id}`               | GET    | ✅     |
+| **Orders**         | `/api/orders/{id}/cancel`        | POST   | ✅     |
+| **Orders**         | `/api/orders/{id}/redo`          | POST   | ✅     |
+| **Orders**         | `/api/orders/seller`             | GET    | ✅     |
+| **Health**         | `/api/orders/health`             | GET    | ✅     |
 
 ---
 
 ### Known Limitations
 
 1. **Text Search**: Product text search (`/products/search?q=laptop`) requires MongoDB text index creation:
+
    ```javascript
-   db.products.createIndex({ name: "text", description: "text" })
+   db.products.createIndex({ name: "text", description: "text" });
    ```
 
 2. **Categories/Tags**: Return empty arrays if products don't have `category` or `tags` fields populated.
