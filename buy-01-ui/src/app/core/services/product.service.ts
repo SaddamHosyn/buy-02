@@ -26,11 +26,12 @@ export interface ProductRequest {
 }
 
 export interface PagedResponse<T> {
-  content: T[];
-  pageNumber: number;
-  pageSize: number;
+  products: T[];
+  page: number;
+  size: number;
   totalElements: number;
   totalPages: number;
+  first: boolean;
   last: boolean;
 }
 
@@ -148,10 +149,10 @@ export class ProductService {
     sort?: string
   }): Observable<PagedResponse<Product>> {
     let queryParams: any = {};
-    if (params.keyword) queryParams.keyword = params.keyword;
+    if (params.keyword) queryParams.q = params.keyword;  // Backend expects 'q' not 'keyword'
     if (params.category) queryParams.category = params.category;
-    if (params.minPrice) queryParams.minPrice = params.minPrice;
-    if (params.maxPrice) queryParams.maxPrice = params.maxPrice;
+    if (params.minPrice !== undefined) queryParams.minPrice = params.minPrice;
+    if (params.maxPrice !== undefined) queryParams.maxPrice = params.maxPrice;
     if (params.page !== undefined) queryParams.page = params.page;
     if (params.size !== undefined) queryParams.size = params.size;
     if (params.sort) queryParams.sort = params.sort;

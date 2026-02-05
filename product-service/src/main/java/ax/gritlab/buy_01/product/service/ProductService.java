@@ -324,12 +324,15 @@ public class ProductService {
         Query query = new Query();
         List<Criteria> criteriaList = new ArrayList<>();
 
-        // Text search (if q is provided)
+        // Text search (if q is provided) - use regex for more reliable search
         if (request.getQ() != null && !request.getQ().trim().isEmpty()) {
-            // Use TextCriteria for full-text search on indexed fields
-            TextCriteria textCriteria = TextCriteria.forDefaultLanguage()
-                    .matching(request.getQ().trim());
-            query = TextQuery.queryText(textCriteria).sortByScore();
+            String searchTerm = request.getQ().trim();
+            // Use case-insensitive regex search on name and description
+            Criteria searchCriteria = new Criteria().orOperator(
+                Criteria.where("name").regex(searchTerm, "i"),
+                Criteria.where("description").regex(searchTerm, "i")
+            );
+            criteriaList.add(searchCriteria);
         }
 
         // Category filter

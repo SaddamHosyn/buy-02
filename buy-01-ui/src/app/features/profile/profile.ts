@@ -90,12 +90,12 @@ export class Profile implements OnInit {
   // Chart Data Signals
   readonly categoryChartData = computed<ChartData<'pie'> | undefined>(() => {
     const stats = this.buyerStats();
-    if (!stats) return undefined;
+    if (!stats || !stats.topProductsByAmount || stats.topProductsByAmount.length === 0) return undefined;
 
     return {
-      labels: stats.topCategories.map(c => c.name),
+      labels: stats.topProductsByAmount.slice(0, 4).map(p => p.productName),
       datasets: [{
-        data: stats.topCategories.map(c => c.percentage),
+        data: stats.topProductsByAmount.slice(0, 4).map(p => p.totalAmount),
         backgroundColor: ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e'],
       }]
     };
@@ -103,12 +103,12 @@ export class Profile implements OnInit {
 
   readonly productsChartData = computed<ChartData<'bar'> | undefined>(() => {
     const stats = this.buyerStats();
-    if (!stats) return undefined;
+    if (!stats || !stats.mostBoughtProducts || stats.mostBoughtProducts.length === 0) return undefined;
 
     return {
-      labels: stats.mostBoughtProducts.map(p => p.name),
+      labels: stats.mostBoughtProducts.slice(0, 5).map(p => p.productName),
       datasets: [{
-        data: stats.mostBoughtProducts.map(p => p.count),
+        data: stats.mostBoughtProducts.slice(0, 5).map(p => p.quantity),
         label: 'Quantity Purchased',
         backgroundColor: '#3b82f6',
         barThickness: 40

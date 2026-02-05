@@ -108,14 +108,18 @@ export class ProductList implements OnInit {
   private loadProducts(): void {
     this.isLoading.set(true);
 
+    const category = this.selectedCategory();
     this.productService.searchProducts({
       keyword: this.keyword || undefined,
+      category: category && category !== 'all' ? category : undefined,
+      minPrice: this.minPrice() > 0 ? this.minPrice() : undefined,
+      maxPrice: this.maxPrice() < 10000 ? this.maxPrice() : undefined,
       page: this.pageIndex(),
       size: this.pageSize(),
       sort: this.sortBy
     }).subscribe({
       next: (response: PagedResponse<Product>) => {
-        this.products.set(response.content);
+        this.products.set(response.products);
         this.totalElements.set(response.totalElements);
         this.isLoading.set(false);
       },

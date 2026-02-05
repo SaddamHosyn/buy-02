@@ -16,8 +16,8 @@
       <!-- Category Filter -->
       <mat-form-field appearance="outline">
         <mat-label>Category</mat-label>
-        <mat-select [(ngModel)]="selectedCategory" (selectionChange)="onFilterChange()">
-          <mat-option value="">All Categories</mat-option>
+        <mat-select [ngModel]="selectedCategory()" (ngModelChange)="selectedCategory.set($event)" (selectionChange)="onFilterChange()">
+          <mat-option value="all">All Categories</mat-option>
           @for (cat of categories(); track cat) {
           <mat-option [value]="cat">{{ cat }}</mat-option>
           }

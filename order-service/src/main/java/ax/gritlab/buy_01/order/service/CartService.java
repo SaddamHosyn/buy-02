@@ -235,8 +235,13 @@ public class CartService {
     private JsonNode fetchProductDetails(String productId) {
         try {
             String url = productServiceUrl + "/" + productId;
-            return restTemplate.getForObject(url, JsonNode.class);
+            System.out.println("Fetching product from: " + url);
+            JsonNode result = restTemplate.getForObject(url, JsonNode.class);
+            System.out.println("Product result: " + result);
+            return result;
         } catch (Exception e) {
+            System.err.println("Error fetching product: " + e.getMessage());
+            e.printStackTrace();
             return null;
         }
     }

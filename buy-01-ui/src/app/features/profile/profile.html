@@ -51,10 +51,10 @@
             </div>
 
             <div class="charts-grid">
-              <!-- Top Categories Chart -->
+              <!-- Top Products by Amount Chart -->
               <mat-card class="chart-card">
                 <mat-card-header>
-                  <mat-card-title>Top Categories</mat-card-title>
+                  <mat-card-title>Top Products by Spending</mat-card-title>
                 </mat-card-header>
                 <mat-card-content>
                   @if (categoryChartData()) {
@@ -62,6 +62,8 @@
                     <canvas baseChart [data]="categoryChartData()" [type]="pieChartType" [options]="pieChartOptions">
                     </canvas>
                   </div>
+                  } @else {
+                  <p class="no-data">No purchase data yet</p>
                   }
                 </mat-card-content>
               </mat-card>
@@ -77,6 +79,8 @@
                     <canvas baseChart [data]="productsChartData()" [type]="barChartType" [options]="barChartOptions">
                     </canvas>
                   </div>
+                  } @else {
+                  <p class="no-data">No purchase data yet</p>
                   }
                 </mat-card-content>
               </mat-card>

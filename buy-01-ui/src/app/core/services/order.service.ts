@@ -86,17 +86,35 @@ export interface OrderSearchParams {
 }
 
 export interface BuyerStats {
+  userId: string;
   totalSpent: number;
   totalOrders: number;
-  mostBoughtProducts: { name: string; count: number }[];
-  topCategories: { name: string; percentage: number }[];
+  pendingOrders: number;
+  deliveredOrders: number;
+  cancelledOrders: number;
+  topProductsByAmount: ProductStat[];
+  mostBoughtProducts: ProductStat[];
+  averageOrderValue: number;
+}
+
+export interface ProductStat {
+  productId: string;
+  productName: string;
+  quantity: number;
+  totalAmount: number;
 }
 
 export interface SellerStats {
-  totalRevenue: number;
-  totalUnitsSold: number;
-  bestSellingProducts: { name: string; revenue: number; units: number }[];
-  revenueByMonth: { month: string; amount: number }[];
+  sellerId: string;
+  totalEarned: number;
+  totalOrders: number;
+  pendingOrders: number;
+  deliveredOrders: number;
+  cancelledOrders: number;
+  totalProductsSold: number;
+  bestSellingByAmount: ProductStat[];
+  bestSellingByQuantity: ProductStat[];
+  averageOrderValue: number;
 }
 
 // ==================== Service ====================

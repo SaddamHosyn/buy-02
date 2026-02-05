@@ -67,7 +67,7 @@
           </div>
           <div class="stat-info">
             @if (sellerStats()) {
-            <h2>€{{ sellerStats()?.totalRevenue?.toFixed(2) }}</h2>
+            <h2>€{{ sellerStats()?.totalEarned?.toFixed(2) }}</h2>
             } @else {
             <h2>...</h2>
             }
@@ -84,7 +84,7 @@
           </div>
           <div class="stat-info">
             @if (sellerStats()) {
-            <h2>{{ sellerStats()?.totalUnitsSold }}</h2>
+            <h2>{{ sellerStats()?.totalProductsSold }}</h2>
             } @else {
             <h2>...</h2>
             }

@@ -99,13 +99,14 @@ export class Dashboard implements OnInit {
   // Chart Data Signals
   readonly revenueChartData = computed<ChartData<'line'> | undefined>(() => {
     const stats = this.sellerStats();
-    if (!stats) return undefined;
+    if (!stats || !stats.bestSellingByAmount || stats.bestSellingByAmount.length === 0) return undefined;
 
+    // Use best selling products for display since backend doesn't provide monthly data
     return {
-      labels: stats.revenueByMonth.map(d => d.month),
+      labels: stats.bestSellingByAmount.slice(0, 6).map(p => p.productName),
       datasets: [
         {
-          data: stats.revenueByMonth.map(d => d.amount),
+          data: stats.bestSellingByAmount.slice(0, 6).map(p => p.totalAmount),
           label: 'Revenue (€)',
           backgroundColor: 'rgba(148,159,177,0.2)',
           borderColor: 'rgba(148,159,177,1)',
@@ -121,20 +122,20 @@ export class Dashboard implements OnInit {
 
   readonly bestSellersChartData = computed<ChartData<'bar'> | undefined>(() => {
     const stats = this.sellerStats();
-    if (!stats) return undefined;
+    if (!stats || !stats.bestSellingByQuantity || stats.bestSellingByQuantity.length === 0) return undefined;
 
     return {
-      labels: stats.bestSellingProducts.map(p => p.name),
+      labels: stats.bestSellingByQuantity.slice(0, 5).map(p => p.productName),
       datasets: [
         {
-          data: stats.bestSellingProducts.map(p => p.units),
+          data: stats.bestSellingByQuantity.slice(0, 5).map(p => p.quantity),
           label: 'Units Sold',
           backgroundColor: '#2196f3',
           borderColor: '#2196f3',
           barThickness: 20
         },
         {
-          data: stats.bestSellingProducts.map(p => p.revenue),
+          data: stats.bestSellingByQuantity.slice(0, 5).map(p => p.totalAmount),
           label: 'Revenue (€)',
           backgroundColor: '#4caf50',
           borderColor: '#4caf50',
