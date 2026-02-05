@@ -36,7 +36,7 @@ import { ProductCardSkeleton } from '../../../shared/components/product-card-ske
     MatPaginatorModule,
     FormsModule,
     ReactiveFormsModule,
-    ProductCardSkeleton
+    ProductCardSkeleton,
   ],
   templateUrl: './product-list.html',
   styleUrl: './product-list.css',
@@ -59,37 +59,33 @@ export class ProductList implements OnInit {
   readonly pageSize = signal<number>(12);
   readonly pageIndex = signal<number>(0);
 
-  
   // Search and filter signals
   readonly searchQuery = signal<string>('');
   readonly selectedCategory = signal<string>('all');
   readonly minPrice = signal<number>(0);
   readonly maxPrice = signal<number>(10000);
-  
+
   // Computed filtered products
   readonly filteredProducts = computed(() => {
     let result = this.products();
-    
+
     // Search filter
     const query = this.searchQuery().toLowerCase();
     if (query) {
-      result = result.filter(p =>
-        p.name.toLowerCase().includes(query) ||
-        p.description.toLowerCase().includes(query)
+      result = result.filter(
+        (p) => p.name.toLowerCase().includes(query) || p.description.toLowerCase().includes(query),
       );
     }
-    
+
     // Note: Category filter removed - Product interface doesn't include category field
     // You can add category to Product interface if needed
-    
+
     // Price range filter
-    result = result.filter(p =>
-      p.price >= this.minPrice() && p.price <= this.maxPrice()
-    );
-    
+    result = result.filter((p) => p.price >= this.minPrice() && p.price <= this.maxPrice());
+
     return result;
   });
-  
+
   ngOnInit(): void {
     this.loadProducts();
     this.loadCategories();
@@ -98,7 +94,7 @@ export class ProductList implements OnInit {
   private loadCategories(): void {
     this.productService.getCategories().subscribe({
       next: (categories) => this.categories.set(categories),
-      error: (err) => console.error('Error loading categories:', err)
+      error: (err) => console.error('Error loading categories:', err),
     });
   }
 
@@ -109,25 +105,27 @@ export class ProductList implements OnInit {
     this.isLoading.set(true);
 
     const category = this.selectedCategory();
-    this.productService.searchProducts({
-      keyword: this.keyword || undefined,
-      category: category && category !== 'all' ? category : undefined,
-      minPrice: this.minPrice() > 0 ? this.minPrice() : undefined,
-      maxPrice: this.maxPrice() < 10000 ? this.maxPrice() : undefined,
-      page: this.pageIndex(),
-      size: this.pageSize(),
-      sort: this.sortBy
-    }).subscribe({
-      next: (response: PagedResponse<Product>) => {
-        this.products.set(response.products);
-        this.totalElements.set(response.totalElements);
-        this.isLoading.set(false);
-      },
-      error: (error) => {
-        console.error('Error loading products:', error);
-        this.isLoading.set(false);
-      }
-    });
+    this.productService
+      .searchProducts({
+        keyword: this.keyword || undefined,
+        category: category && category !== 'all' ? category : undefined,
+        minPrice: this.minPrice() > 0 ? this.minPrice() : undefined,
+        maxPrice: this.maxPrice() < 10000 ? this.maxPrice() : undefined,
+        page: this.pageIndex(),
+        size: this.pageSize(),
+        sort: this.sortBy,
+      })
+      .subscribe({
+        next: (response: PagedResponse<Product>) => {
+          this.products.set(response.products);
+          this.totalElements.set(response.totalElements);
+          this.isLoading.set(false);
+        },
+        error: (error) => {
+          console.error('Error loading products:', error);
+          this.isLoading.set(false);
+        },
+      });
   }
 
   onSearch(): void {
@@ -158,14 +156,14 @@ export class ProductList implements OnInit {
     this.pageIndex.set(0);
     this.loadProducts();
   }
-  
+
   /**
    * Format price slider value
    */
   formatPrice(value: number): string {
     return `$${value}`;
   }
-  
+
   /**
    * Navigate to product details
    */
@@ -187,4 +185,3 @@ export class ProductList implements OnInit {
     this.router.navigate(['/seller/dashboard']);
   }
 }
-

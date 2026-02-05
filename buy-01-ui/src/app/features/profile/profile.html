@@ -17,74 +17,83 @@
           <div class="tab-content dashboard-tab">
             <!-- Loading State -->
             @if (statsLoading()) {
-            <div class="loading-container">
-              <mat-spinner diameter="50"></mat-spinner>
-              <p>Loading stats...</p>
-            </div>
+              <div class="loading-container">
+                <mat-spinner diameter="50"></mat-spinner>
+                <p>Loading stats...</p>
+              </div>
             } @else if (buyerStats()) {
+              <!-- Summary Cards -->
+              <div class="stats-summary">
+                <mat-card class="stat-card">
+                  <mat-card-content>
+                    <div class="stat-icon spent">
+                      <mat-icon>attach_money</mat-icon>
+                    </div>
+                    <div class="stat-info">
+                      <h2>€{{ buyerStats()?.totalSpent?.toFixed(2) }}</h2>
+                      <p>Total Spent</p>
+                    </div>
+                  </mat-card-content>
+                </mat-card>
 
-            <!-- Summary Cards -->
-            <div class="stats-summary">
-              <mat-card class="stat-card">
-                <mat-card-content>
-                  <div class="stat-icon spent">
-                    <mat-icon>attach_money</mat-icon>
-                  </div>
-                  <div class="stat-info">
-                    <h2>€{{ buyerStats()?.totalSpent?.toFixed(2) }}</h2>
-                    <p>Total Spent</p>
-                  </div>
-                </mat-card-content>
-              </mat-card>
+                <mat-card class="stat-card">
+                  <mat-card-content>
+                    <div class="stat-icon orders">
+                      <mat-icon>shopping_bag</mat-icon>
+                    </div>
+                    <div class="stat-info">
+                      <h2>{{ buyerStats()?.totalOrders }}</h2>
+                      <p>Total Orders</p>
+                    </div>
+                  </mat-card-content>
+                </mat-card>
+              </div>
 
-              <mat-card class="stat-card">
-                <mat-card-content>
-                  <div class="stat-icon orders">
-                    <mat-icon>shopping_bag</mat-icon>
-                  </div>
-                  <div class="stat-info">
-                    <h2>{{ buyerStats()?.totalOrders }}</h2>
-                    <p>Total Orders</p>
-                  </div>
-                </mat-card-content>
-              </mat-card>
-            </div>
+              <div class="charts-grid">
+                <!-- Top Products by Amount Chart -->
+                <mat-card class="chart-card">
+                  <mat-card-header>
+                    <mat-card-title>Top Products by Spending</mat-card-title>
+                  </mat-card-header>
+                  <mat-card-content>
+                    @if (categoryChartData()) {
+                      <div class="chart-container">
+                        <canvas
+                          baseChart
+                          [data]="categoryChartData()"
+                          [type]="pieChartType"
+                          [options]="pieChartOptions"
+                        >
+                        </canvas>
+                      </div>
+                    } @else {
+                      <p class="no-data">No purchase data yet</p>
+                    }
+                  </mat-card-content>
+                </mat-card>
 
-            <div class="charts-grid">
-              <!-- Top Products by Amount Chart -->
-              <mat-card class="chart-card">
-                <mat-card-header>
-                  <mat-card-title>Top Products by Spending</mat-card-title>
-                </mat-card-header>
-                <mat-card-content>
-                  @if (categoryChartData()) {
-                  <div class="chart-container">
-                    <canvas baseChart [data]="categoryChartData()" [type]="pieChartType" [options]="pieChartOptions">
-                    </canvas>
-                  </div>
-                  } @else {
-                  <p class="no-data">No purchase data yet</p>
-                  }
-                </mat-card-content>
-              </mat-card>
-
-              <!-- Most Bought Products Chart -->
-              <mat-card class="chart-card">
-                <mat-card-header>
-                  <mat-card-title>Most Bought Products</mat-card-title>
-                </mat-card-header>
-                <mat-card-content>
-                  @if (productsChartData()) {
-                  <div class="chart-container">
-                    <canvas baseChart [data]="productsChartData()" [type]="barChartType" [options]="barChartOptions">
-                    </canvas>
-                  </div>
-                  } @else {
-                  <p class="no-data">No purchase data yet</p>
-                  }
-                </mat-card-content>
-              </mat-card>
-            </div>
+                <!-- Most Bought Products Chart -->
+                <mat-card class="chart-card">
+                  <mat-card-header>
+                    <mat-card-title>Most Bought Products</mat-card-title>
+                  </mat-card-header>
+                  <mat-card-content>
+                    @if (productsChartData()) {
+                      <div class="chart-container">
+                        <canvas
+                          baseChart
+                          [data]="productsChartData()"
+                          [type]="barChartType"
+                          [options]="barChartOptions"
+                        >
+                        </canvas>
+                      </div>
+                    } @else {
+                      <p class="no-data">No purchase data yet</p>
+                    }
+                  </mat-card-content>
+                </mat-card>
+              </div>
             }
           </div>
         </mat-tab>
@@ -95,25 +104,42 @@
             <!-- Avatar Section -->
             <div class="avatar-section">
               @if (displayAvatar()) {
-              <div class="avatar-container">
-                <img [src]="displayAvatar()" alt="Profile avatar" class="profile-avatar" />
-                <button mat-mini-fab color="warn" type="button" class="remove-avatar-btn" matTooltip="Remove avatar"
-                  (click)="uploadAvatar()">
-                  <!-- Note: Replaced remove with upload trigger since removeAvatar isn't in TS yet -->
-                  <mat-icon>edit</mat-icon>
-                </button>
-              </div>
+                <div class="avatar-container">
+                  <img [src]="displayAvatar()" alt="Profile avatar" class="profile-avatar" />
+                  <button
+                    mat-mini-fab
+                    color="warn"
+                    type="button"
+                    class="remove-avatar-btn"
+                    matTooltip="Remove avatar"
+                    (click)="uploadAvatar()"
+                  >
+                    <!-- Note: Replaced remove with upload trigger since removeAvatar isn't in TS yet -->
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                </div>
               } @else {
-              <div class="no-avatar">
-                <mat-icon>account_circle</mat-icon>
-                <p>No avatar set</p>
-              </div>
+                <div class="no-avatar">
+                  <mat-icon>account_circle</mat-icon>
+                  <p>No avatar set</p>
+                </div>
               }
 
               <!-- Upload Button -->
               <div class="upload-section">
-                <input #avatarInput type="file" accept="image/*" (change)="onFileSelected($event)" hidden />
-                <button mat-stroked-button color="primary" type="button" (click)="avatarInput.click()">
+                <input
+                  #avatarInput
+                  type="file"
+                  accept="image/*"
+                  (change)="onFileSelected($event)"
+                  hidden
+                />
+                <button
+                  mat-stroked-button
+                  color="primary"
+                  type="button"
+                  (click)="avatarInput.click()"
+                >
                   <mat-icon>cloud_upload</mat-icon>
                   {{ displayAvatar() ? 'Change Avatar' : 'Upload Avatar' }}
                 </button>
@@ -122,10 +148,10 @@
 
               <!-- Upload Error -->
               @if (uploadError()) {
-              <div class="upload-error">
-                <mat-icon>error</mat-icon>
-                {{ uploadError() }}
-              </div>
+                <div class="upload-error">
+                  <mat-icon>error</mat-icon>
+                  {{ uploadError() }}
+                </div>
               }
             </div>
 
@@ -139,7 +165,7 @@
                 <input matInput type="text" formControlName="name" />
                 <mat-icon matPrefix>person</mat-icon>
                 @if (profileForm.get('name')?.invalid && profileForm.get('name')?.touched) {
-                <mat-error>{{ getErrorMessage('name') }}</mat-error>
+                  <mat-error>{{ getErrorMessage('name') }}</mat-error>
                 }
               </mat-form-field>
 
@@ -149,7 +175,7 @@
                 <input matInput type="email" formControlName="email" [readonly]="true" />
                 <mat-icon matPrefix>email</mat-icon>
                 @if (profileForm.get('email')?.invalid && profileForm.get('email')?.touched) {
-                <mat-error>{{ getErrorMessage('email') }}</mat-error>
+                  <mat-error>{{ getErrorMessage('email') }}</mat-error>
                 }
               </mat-form-field>
 
@@ -157,22 +183,28 @@
               <div class="role-display">
                 <mat-icon>{{
                   currentUser()?.role === 'SELLER' ? 'store' : 'shopping_cart'
-                  }}</mat-icon>
+                }}</mat-icon>
                 <span>{{ currentUser()?.role }}</span>
               </div>
 
               <!-- Submit Button -->
-              <button mat-raised-button color="primary" type="submit" class="full-width submit-btn" [disabled]="
+              <button
+                mat-raised-button
+                color="primary"
+                type="submit"
+                class="full-width submit-btn"
+                [disabled]="
                   isLoading() || profileForm.invalid || (!profileForm.dirty && !selectedFile())
-                ">
+                "
+              >
                 @if (isLoading()) {
-                <mat-spinner diameter="20"></mat-spinner>
-                <span>Saving...</span>
+                  <mat-spinner diameter="20"></mat-spinner>
+                  <span>Saving...</span>
                 } @else {
-                <ng-container>
-                  <mat-icon>save</mat-icon>
-                  <span>Save Changes</span>
-                </ng-container>
+                  <ng-container>
+                    <mat-icon>save</mat-icon>
+                    <span>Save Changes</span>
+                  </ng-container>
                 }
               </button>
             </form>
@@ -197,49 +229,67 @@
               </div>
 
               @if (showPasswordFields()) {
-              <form [formGroup]="passwordForm" (ngSubmit)="changePassword()" class="password-form">
-                <!-- Current Password -->
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Current Password</mat-label>
-                  <input matInput type="password" formControlName="currentPassword" />
-                  <mat-icon matPrefix>lock</mat-icon>
-                  @if (passwordForm.get('currentPassword')?.invalid &&
-                  passwordForm.get('currentPassword')?.touched) {
-                  <mat-error>{{ getErrorMessage('currentPassword') }}</mat-error>
-                  }
-                </mat-form-field>
+                <form
+                  [formGroup]="passwordForm"
+                  (ngSubmit)="changePassword()"
+                  class="password-form"
+                >
+                  <!-- Current Password -->
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Current Password</mat-label>
+                    <input matInput type="password" formControlName="currentPassword" />
+                    <mat-icon matPrefix>lock</mat-icon>
+                    @if (
+                      passwordForm.get('currentPassword')?.invalid &&
+                      passwordForm.get('currentPassword')?.touched
+                    ) {
+                      <mat-error>{{ getErrorMessage('currentPassword') }}</mat-error>
+                    }
+                  </mat-form-field>
 
-                <!-- New Password -->
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>New Password</mat-label>
-                  <input matInput type="password" formControlName="newPassword" />
-                  <mat-icon matPrefix>lock_outline</mat-icon>
-                  @if (passwordForm.get('newPassword')?.invalid &&
-                  passwordForm.get('newPassword')?.touched) {
-                  <mat-error>{{ getErrorMessage('newPassword') }}</mat-error>
-                  }
-                </mat-form-field>
+                  <!-- New Password -->
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>New Password</mat-label>
+                    <input matInput type="password" formControlName="newPassword" />
+                    <mat-icon matPrefix>lock_outline</mat-icon>
+                    @if (
+                      passwordForm.get('newPassword')?.invalid &&
+                      passwordForm.get('newPassword')?.touched
+                    ) {
+                      <mat-error>{{ getErrorMessage('newPassword') }}</mat-error>
+                    }
+                  </mat-form-field>
 
-                <!-- Confirm Password -->
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Confirm New Password</mat-label>
-                  <input matInput type="password" formControlName="confirmPassword" />
-                  <mat-icon matPrefix>lock_outline</mat-icon>
-                  @if (passwordForm.get('confirmPassword')?.invalid &&
-                  passwordForm.get('confirmPassword')?.touched) {
-                  <mat-error>{{ getErrorMessage('confirmPassword') }}</mat-error>
-                  } @if (passwordForm.hasError('passwordMismatch') &&
-                  passwordForm.get('confirmPassword')?.touched) {
-                  <mat-error>Passwords do not match</mat-error>
-                  }
-                </mat-form-field>
+                  <!-- Confirm Password -->
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Confirm New Password</mat-label>
+                    <input matInput type="password" formControlName="confirmPassword" />
+                    <mat-icon matPrefix>lock_outline</mat-icon>
+                    @if (
+                      passwordForm.get('confirmPassword')?.invalid &&
+                      passwordForm.get('confirmPassword')?.touched
+                    ) {
+                      <mat-error>{{ getErrorMessage('confirmPassword') }}</mat-error>
+                    }
+                    @if (
+                      passwordForm.hasError('passwordMismatch') &&
+                      passwordForm.get('confirmPassword')?.touched
+                    ) {
+                      <mat-error>Passwords do not match</mat-error>
+                    }
+                  </mat-form-field>
 
-                <button mat-raised-button color="primary" type="submit" class="full-width"
-                  [disabled]="isLoading() || passwordForm.invalid">
-                  <mat-icon>vpn_key</mat-icon>
-                  Update Password
-                </button>
-              </form>
+                  <button
+                    mat-raised-button
+                    color="primary"
+                    type="submit"
+                    class="full-width"
+                    [disabled]="isLoading() || passwordForm.invalid"
+                  >
+                    <mat-icon>vpn_key</mat-icon>
+                    Update Password
+                  </button>
+                </form>
               }
             </div>
           </div>

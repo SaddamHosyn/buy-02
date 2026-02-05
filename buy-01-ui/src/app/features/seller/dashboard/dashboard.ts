@@ -31,7 +31,7 @@ import { OrderService, SellerStats } from '../../../core/services/order.service'
     MatProgressSpinnerModule,
     MatProgressSpinnerModule,
     MatTooltipModule,
-    BaseChartDirective
+    BaseChartDirective,
   ],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
@@ -52,12 +52,15 @@ export class Dashboard implements OnInit {
   // Computed signals for stats
   readonly totalProducts = computed(() => this.myProducts().length);
   readonly totalInventoryValue = computed(() => {
-    return this.myProducts().reduce((sum, product) => sum + (product.price * (product.stock || 0)), 0);
+    return this.myProducts().reduce(
+      (sum, product) => sum + product.price * (product.stock || 0),
+      0,
+    );
   });
   readonly avgPrice = computed(() => {
     const total = this.totalProducts();
     const inventoryVal = this.totalInventoryValue();
-    return total > 0 ? (inventoryVal / total) : 0;
+    return total > 0 ? inventoryVal / total : 0;
   });
 
   // Dashboard Stats
@@ -80,33 +83,34 @@ export class Dashboard implements OnInit {
         grid: {
           color: 'rgba(255,0,0,0.3)',
         },
-        display: false
-      }
+        display: false,
+      },
     },
     plugins: {
       legend: { display: true },
-    }
+    },
   };
   public lineChartType: ChartType = 'line';
 
   public bestSellersChartOptions: ChartConfiguration['options'] = {
     responsive: true,
     indexAxis: 'y',
-    plugins: { legend: { display: true } }
+    plugins: { legend: { display: true } },
   };
   public bestSellersChartType: ChartType = 'bar';
 
   // Chart Data Signals
   readonly revenueChartData = computed<ChartData<'line'> | undefined>(() => {
     const stats = this.sellerStats();
-    if (!stats || !stats.bestSellingByAmount || stats.bestSellingByAmount.length === 0) return undefined;
+    if (!stats || !stats.bestSellingByAmount || stats.bestSellingByAmount.length === 0)
+      return undefined;
 
     // Use best selling products for display since backend doesn't provide monthly data
     return {
-      labels: stats.bestSellingByAmount.slice(0, 6).map(p => p.productName),
+      labels: stats.bestSellingByAmount.slice(0, 6).map((p) => p.productName),
       datasets: [
         {
-          data: stats.bestSellingByAmount.slice(0, 6).map(p => p.totalAmount),
+          data: stats.bestSellingByAmount.slice(0, 6).map((p) => p.totalAmount),
           label: 'Revenue (€)',
           backgroundColor: 'rgba(148,159,177,0.2)',
           borderColor: 'rgba(148,159,177,1)',
@@ -115,33 +119,34 @@ export class Dashboard implements OnInit {
           pointHoverBackgroundColor: '#fff',
           pointHoverBorderColor: 'rgba(148,159,177,0.8)',
           fill: 'origin',
-        }
-      ]
+        },
+      ],
     };
   });
 
   readonly bestSellersChartData = computed<ChartData<'bar'> | undefined>(() => {
     const stats = this.sellerStats();
-    if (!stats || !stats.bestSellingByQuantity || stats.bestSellingByQuantity.length === 0) return undefined;
+    if (!stats || !stats.bestSellingByQuantity || stats.bestSellingByQuantity.length === 0)
+      return undefined;
 
     return {
-      labels: stats.bestSellingByQuantity.slice(0, 5).map(p => p.productName),
+      labels: stats.bestSellingByQuantity.slice(0, 5).map((p) => p.productName),
       datasets: [
         {
-          data: stats.bestSellingByQuantity.slice(0, 5).map(p => p.quantity),
+          data: stats.bestSellingByQuantity.slice(0, 5).map((p) => p.quantity),
           label: 'Units Sold',
           backgroundColor: '#2196f3',
           borderColor: '#2196f3',
-          barThickness: 20
+          barThickness: 20,
         },
         {
-          data: stats.bestSellingByQuantity.slice(0, 5).map(p => p.totalAmount),
+          data: stats.bestSellingByQuantity.slice(0, 5).map((p) => p.totalAmount),
           label: 'Revenue (€)',
           backgroundColor: '#4caf50',
           borderColor: '#4caf50',
-          barThickness: 20
-        }
-      ]
+          barThickness: 20,
+        },
+      ],
     };
   });
 
@@ -163,7 +168,7 @@ export class Dashboard implements OnInit {
       error: (err) => {
         console.error('Failed to load seller stats', err);
         this.statsLoading.set(false);
-      }
+      },
     });
   }
 
@@ -199,7 +204,7 @@ export class Dashboard implements OnInit {
         console.error('Error loading products:', error);
         this.errorMessage.set('Failed to load products');
         this.isLoading.set(false);
-      }
+      },
     });
   }
 
@@ -221,10 +226,10 @@ export class Dashboard implements OnInit {
    * Delete product
    */
   deleteProduct(productId: string): void {
-    const product = this.myProducts().find(p => p.id === productId);
+    const product = this.myProducts().find((p) => p.id === productId);
     const productName = product?.name || 'this product';
 
-    this.dialogService.confirmDelete(productName).subscribe(confirmed => {
+    this.dialogService.confirmDelete(productName).subscribe((confirmed) => {
       if (!confirmed) {
         return;
       }
@@ -232,14 +237,12 @@ export class Dashboard implements OnInit {
       this.productService.deleteProduct(productId).subscribe({
         next: () => {
           // Remove from local state
-          this.myProducts.update(products =>
-            products.filter(p => p.id !== productId)
-          );
+          this.myProducts.update((products) => products.filter((p) => p.id !== productId));
         },
         error: (error) => {
           console.error('Error deleting product:', error);
           this.errorMessage.set('Failed to delete product');
-        }
+        },
       });
     });
   }
@@ -262,7 +265,7 @@ export class Dashboard implements OnInit {
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-      second: '2-digit'
+      second: '2-digit',
     });
   }
 }

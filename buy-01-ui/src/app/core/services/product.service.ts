@@ -36,7 +36,7 @@ export interface PagedResponse<T> {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ProductService {
   private readonly http = inject(HttpClient);
@@ -54,9 +54,9 @@ export class ProductService {
    * Calls backend API: GET /api/products
    */
   getAllProducts(): Observable<Product[]> {
-    return this.http.get<Product[]>(this.API_URL).pipe(
-      tap(products => this.productsSignal.set(products))
-    );
+    return this.http
+      .get<Product[]>(this.API_URL)
+      .pipe(tap((products) => this.productsSignal.set(products)));
   }
 
   /**
@@ -87,9 +87,9 @@ export class ProductService {
     }
 
     // Get all products and filter by sellerId (client-side filtering - CSR!)
-    return this.http.get<Product[]>(this.API_URL).pipe(
-      map(products => products.filter(p => p.sellerId === currentUserId))
-    );
+    return this.http
+      .get<Product[]>(this.API_URL)
+      .pipe(map((products) => products.filter((p) => p.sellerId === currentUserId)));
   }
 
   /**
@@ -124,9 +124,6 @@ export class ProductService {
     return this.http.post<Product>(`${this.API_URL}/${productId}/media/${mediaId}`, {});
   }
 
-
-
-
   /**
    * Remove media ID from product's mediaIds array
    * Calls backend API: DELETE /api/products/{productId}/remove-media/{mediaId}
@@ -140,16 +137,16 @@ export class ProductService {
    * Calls backend API: GET /api/products/search
    */
   searchProducts(params: {
-    keyword?: string,
-    category?: string,
-    minPrice?: number,
-    maxPrice?: number,
-    page?: number,
-    size?: number,
-    sort?: string
+    keyword?: string;
+    category?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    page?: number;
+    size?: number;
+    sort?: string;
   }): Observable<PagedResponse<Product>> {
     let queryParams: any = {};
-    if (params.keyword) queryParams.q = params.keyword;  // Backend expects 'q' not 'keyword'
+    if (params.keyword) queryParams.q = params.keyword; // Backend expects 'q' not 'keyword'
     if (params.category) queryParams.category = params.category;
     if (params.minPrice !== undefined) queryParams.minPrice = params.minPrice;
     if (params.maxPrice !== undefined) queryParams.maxPrice = params.maxPrice;
@@ -159,13 +156,4 @@ export class ProductService {
 
     return this.http.get<PagedResponse<Product>>(`${this.API_URL}/search`, { params: queryParams });
   }
-
-
-
-
-
-
-
-
-
 }

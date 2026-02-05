@@ -78,7 +78,7 @@ export class Profile implements OnInit {
       x: {},
       y: {
         min: 0,
-        ticks: { stepSize: 1 }
+        ticks: { stepSize: 1 },
       },
     },
     plugins: {
@@ -90,29 +90,35 @@ export class Profile implements OnInit {
   // Chart Data Signals
   readonly categoryChartData = computed<ChartData<'pie'> | undefined>(() => {
     const stats = this.buyerStats();
-    if (!stats || !stats.topProductsByAmount || stats.topProductsByAmount.length === 0) return undefined;
+    if (!stats || !stats.topProductsByAmount || stats.topProductsByAmount.length === 0)
+      return undefined;
 
     return {
-      labels: stats.topProductsByAmount.slice(0, 4).map(p => p.productName),
-      datasets: [{
-        data: stats.topProductsByAmount.slice(0, 4).map(p => p.totalAmount),
-        backgroundColor: ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e'],
-      }]
+      labels: stats.topProductsByAmount.slice(0, 4).map((p) => p.productName),
+      datasets: [
+        {
+          data: stats.topProductsByAmount.slice(0, 4).map((p) => p.totalAmount),
+          backgroundColor: ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e'],
+        },
+      ],
     };
   });
 
   readonly productsChartData = computed<ChartData<'bar'> | undefined>(() => {
     const stats = this.buyerStats();
-    if (!stats || !stats.mostBoughtProducts || stats.mostBoughtProducts.length === 0) return undefined;
+    if (!stats || !stats.mostBoughtProducts || stats.mostBoughtProducts.length === 0)
+      return undefined;
 
     return {
-      labels: stats.mostBoughtProducts.slice(0, 5).map(p => p.productName),
-      datasets: [{
-        data: stats.mostBoughtProducts.slice(0, 5).map(p => p.quantity),
-        label: 'Quantity Purchased',
-        backgroundColor: '#3b82f6',
-        barThickness: 40
-      }]
+      labels: stats.mostBoughtProducts.slice(0, 5).map((p) => p.productName),
+      datasets: [
+        {
+          data: stats.mostBoughtProducts.slice(0, 5).map((p) => p.quantity),
+          label: 'Quantity Purchased',
+          backgroundColor: '#3b82f6',
+          barThickness: 40,
+        },
+      ],
     };
   });
 
@@ -134,7 +140,7 @@ export class Profile implements OnInit {
       newPassword: ['', [Validators.required, Validators.minLength(6)]],
       confirmPassword: ['', [Validators.required, Validators.minLength(6)]],
     },
-    { validators: this.passwordMatchValidator }
+    { validators: this.passwordMatchValidator },
   );
 
   ngOnInit(): void {
@@ -160,7 +166,7 @@ export class Profile implements OnInit {
       error: (err) => {
         console.error('Failed to load stats', err);
         this.statsLoading.set(false);
-      }
+      },
     });
   }
 

@@ -3,12 +3,17 @@
     <!-- Keyword Search -->
     <mat-form-field appearance="outline" class="search-bar">
       <mat-label>Search products...</mat-label>
-      <input matInput [(ngModel)]="keyword" (keyup.enter)="onSearch()" placeholder="e.g. Vintage Camera">
+      <input
+        matInput
+        [(ngModel)]="keyword"
+        (keyup.enter)="onSearch()"
+        placeholder="e.g. Vintage Camera"
+      />
       <mat-icon matPrefix>search</mat-icon>
       @if (keyword) {
-      <button mat-icon-button matSuffix (click)="keyword = ''; onSearch()">
-        <mat-icon>close</mat-icon>
-      </button>
+        <button mat-icon-button matSuffix (click)="keyword = ''; onSearch()">
+          <mat-icon>close</mat-icon>
+        </button>
       }
     </mat-form-field>
 
@@ -16,10 +21,14 @@
       <!-- Category Filter -->
       <mat-form-field appearance="outline">
         <mat-label>Category</mat-label>
-        <mat-select [ngModel]="selectedCategory()" (ngModelChange)="selectedCategory.set($event)" (selectionChange)="onFilterChange()">
+        <mat-select
+          [ngModel]="selectedCategory()"
+          (ngModelChange)="selectedCategory.set($event)"
+          (selectionChange)="onFilterChange()"
+        >
           <mat-option value="all">All Categories</mat-option>
           @for (cat of categories(); track cat) {
-          <mat-option [value]="cat">{{ cat }}</mat-option>
+            <mat-option [value]="cat">{{ cat }}</mat-option>
           }
         </mat-select>
       </mat-form-field>
@@ -39,8 +48,18 @@
       <div class="price-range">
         <span class="price-label">Price Range: €{{ minPrice() }} - €{{ maxPrice() }}</span>
         <mat-slider min="0" max="2000" step="10">
-          <input matSliderStartThumb [ngModel]="minPrice()" (ngModelChange)="minPrice.set($event)" (change)="onFilterChange()">
-          <input matSliderEndThumb [ngModel]="maxPrice()" (ngModelChange)="maxPrice.set($event)" (change)="onFilterChange()">
+          <input
+            matSliderStartThumb
+            [ngModel]="minPrice()"
+            (ngModelChange)="minPrice.set($event)"
+            (change)="onFilterChange()"
+          />
+          <input
+            matSliderEndThumb
+            [ngModel]="maxPrice()"
+            (ngModelChange)="maxPrice.set($event)"
+            (change)="onFilterChange()"
+          />
         </mat-slider>
       </div>
 
@@ -56,52 +75,66 @@
   </div>
 
   @if (isLoading()) {
-  <!-- Skeleton Loaders -->
-  <div class="products-grid">
-    @for (i of [1,2,3,4,5,6,7,8]; track i) {
-    <app-product-card-skeleton />
-    }
-  </div>
-  } @else {
-  <div class="products-grid">
-    @for (product of products(); track product.id) {
-    <mat-card class="product-card" (click)="viewProduct(product.id)">
-      <div class="image-container">
-        @if (product.imageUrls && product.imageUrls.length > 0) {
-        <img mat-card-image [src]="product.imageUrls[0]" [alt]="product.name" class="product-image" />
-        } @else {
-        <div class="no-image">
-          <mat-icon>image</mat-icon>
-        </div>
-        }
-      </div>
-
-      <mat-card-header>
-        <mat-card-title>{{ product.name }}</mat-card-title>
-        <mat-card-subtitle class="price-tag">€{{ product.price.toFixed(2) }}</mat-card-subtitle>
-      </mat-card-header>
-
-      <mat-card-content>
-        <p class="description">{{ product.description }}</p>
-      </mat-card-content>
-
-      <mat-card-actions>
-        <button mat-button color="primary">DETAILS</button>
-        <span class="spacer"></span>
-        <button mat-icon-button color="accent">
-          <mat-icon>add_shopping_cart</mat-icon>
-        </button>
-      </mat-card-actions>
-    </mat-card>
-    } @empty {
-    <div class="no-results">
-      <mat-icon>search_off</mat-icon>
-      <p>No products match your filters.</p>
-      <button mat-raised-button color="primary" (click)="resetFilters()">Clear all filters</button>
+    <!-- Skeleton Loaders -->
+    <div class="products-grid">
+      @for (i of [1, 2, 3, 4, 5, 6, 7, 8]; track i) {
+        <app-product-card-skeleton />
+      }
     </div>
-    }
-  </div>
+  } @else {
+    <div class="products-grid">
+      @for (product of products(); track product.id) {
+        <mat-card class="product-card" (click)="viewProduct(product.id)">
+          <div class="image-container">
+            @if (product.imageUrls && product.imageUrls.length > 0) {
+              <img
+                mat-card-image
+                [src]="product.imageUrls[0]"
+                [alt]="product.name"
+                class="product-image"
+              />
+            } @else {
+              <div class="no-image">
+                <mat-icon>image</mat-icon>
+              </div>
+            }
+          </div>
+
+          <mat-card-header>
+            <mat-card-title>{{ product.name }}</mat-card-title>
+            <mat-card-subtitle class="price-tag">€{{ product.price.toFixed(2) }}</mat-card-subtitle>
+          </mat-card-header>
+
+          <mat-card-content>
+            <p class="description">{{ product.description }}</p>
+          </mat-card-content>
+
+          <mat-card-actions>
+            <button mat-button color="primary">DETAILS</button>
+            <span class="spacer"></span>
+            <button mat-icon-button color="accent">
+              <mat-icon>add_shopping_cart</mat-icon>
+            </button>
+          </mat-card-actions>
+        </mat-card>
+      } @empty {
+        <div class="no-results">
+          <mat-icon>search_off</mat-icon>
+          <p>No products match your filters.</p>
+          <button mat-raised-button color="primary" (click)="resetFilters()">
+            Clear all filters
+          </button>
+        </div>
+      }
+    </div>
   }
-  <mat-paginator [length]="totalElements()" [pageSize]="pageSize()" [pageIndex]="pageIndex()"
-    [pageSizeOptions]="[12, 24, 48]" (page)="onPageChange($event)" aria-label="Select page">
+  <mat-paginator
+    [length]="totalElements()"
+    [pageSize]="pageSize()"
+    [pageIndex]="pageIndex()"
+    [pageSizeOptions]="[12, 24, 48]"
+    (page)="onPageChange($event)"
+    aria-label="Select page"
+  >
   </mat-paginator>
+</div>
