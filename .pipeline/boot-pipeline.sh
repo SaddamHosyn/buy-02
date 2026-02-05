@@ -275,6 +275,7 @@ if docker ps -a --format '{{.Names}}' 2>/dev/null | grep -q '^jenkins-local$'; t
             --name jenkins-local \
             -p 8088:8080 \
             -p 50000:50000 \
+            -e DOCKER_HOST=unix:///var/run/docker.sock \
             -v jenkins_home:/var/jenkins_home \
             -v /var/run/docker.sock:/var/run/docker.sock:rw \
             "$JENKINS_IMAGE" >> "$LOG_FILE" 2>&1 || error "Failed to create Jenkins container"
@@ -286,6 +287,7 @@ else
         --name jenkins-local \
         -p 8088:8080 \
         -p 50000:50000 \
+        -e DOCKER_HOST=unix:///var/run/docker.sock \
         -v jenkins_home:/var/jenkins_home \
         -v /var/run/docker.sock:/var/run/docker.sock:rw \
         "$JENKINS_IMAGE" >> "$LOG_FILE" 2>&1 || error "Failed to create Jenkins container"

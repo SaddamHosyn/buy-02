@@ -72,6 +72,9 @@ RUN mkdir -p /var/jenkins_home/plugins /var/jenkins_home/init.groovy.d && \
 # Set permissions to ensure docker socket access
 RUN chmod 755 /var/jenkins_home
 
+# Set Docker Host environment variable explicitely for Testcontainers
+ENV DOCKER_HOST=unix:///var/run/docker.sock
+
 # Install Jenkins Plugins
 RUN jenkins-plugin-cli --plugins \
     git \
