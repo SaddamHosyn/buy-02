@@ -128,6 +128,11 @@ echo ""
 # Start Frontend (Angular)
 echo -e "${YELLOW}[8/8] Starting Frontend (Angular)...${NC}"
 cd "$PROJECT_ROOT/buy-01-ui"
+# Install dependencies if node_modules doesn't exist
+if [ ! -d "node_modules" ]; then
+    echo -e "${YELLOW}  Installing npm dependencies...${NC}"
+    npm install > "$PROJECT_ROOT/logs/frontend-install.log" 2>&1
+fi
 npm start > "$PROJECT_ROOT/logs/frontend.log" 2>&1 &
 FRONTEND_PID=$!
 echo "$FRONTEND_PID" > "$PROJECT_ROOT/pids/frontend.pid"
