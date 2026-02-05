@@ -37,7 +37,7 @@ public class OrderController {
     }
 
     /**
-     * Get user's orders (buyer).
+     * Get user's orders (buyer) - paginated.
      */
     @GetMapping
     public ResponseEntity<Page<OrderResponse>> getUserOrders(
@@ -46,6 +46,22 @@ public class OrderController {
         User user = (User) authentication.getPrincipal();
         Page<OrderResponse> orders = orderService.getUserOrders(user.getId(), pageable);
         return ResponseEntity.ok(orders);
+    }
+
+    /**
+     * Get user's orders (buyer) - list endpoint for frontend compatibility.
+     */
+    @GetMapping("/my-orders")
+    public ResponseEntity<java.util.List<OrderResponse>> getMyOrders(
+            @RequestParam(required = false) OrderStatus status,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String dateFrom,
+            @RequestParam(required = false) String dateTo,
+            @PageableDefault(size = 100, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            Authentication authentication) {
+        User user = (User) authentication.getPrincipal();
+        Page<OrderResponse> orders = orderService.getUserOrders(user.getId(), pageable);
+        return ResponseEntity.ok(orders.getContent());
     }
 
     /**
