@@ -63,6 +63,33 @@ export class OrderDetailPage implements OnInit {
   readonly isCancelled = computed(() => this.order()?.status === 'CANCELLED');
   readonly isReturned = computed(() => this.order()?.status === 'RETURNED');
   
+  // Check if current user is a seller with products in this order
+  readonly isSellerInOrder = computed(() => {
+    const order = this.order();
+    const userId = this.authService.currentUser()?.id;
+    if (!order || !userId) return false;
+    return this.authService.isSeller() && order.sellerIds?.includes(userId);
+  });
+  
+  // Check if current user is the buyer of this order
+  readonly isBuyer = computed(() => {
+    const order = this.order();
+    const userId = this.authService.currentUser()?.id;
+    return order?.buyerId === userId;
+  });
+  
+  // Get next status seller can transition to
+  readonly nextSellerStatus = computed(() => {
+    const order = this.order();
+    return order ? this.orderService.getNextSellerStatus(order) : null;
+  });
+  
+  // Can seller update this order
+  readonly canSellerUpdate = computed(() => {
+    const order = this.order();
+    return this.isSellerInOrder() && order && this.orderService.canSellerUpdateStatus(order);
+  });
+  
   ngOnInit(): void {
     if (!this.authService.isAuthenticated()) {
       this.router.navigate(['/auth/login']);
@@ -157,6 +184,73 @@ export class OrderDetailPage implements OnInit {
     return order ? this.orderService.canRedo(order) : false;
   }
   
+  /**
+   * Update order status (seller action)
+   */
+  updateStatus(): void {
+    const order = this.order();
+    const nextStatus = this.nextSellerStatus();
+    if (!order || !nextStatus) return;
+    
+    const statusLabels: Record<string, string> = {
+      'CONFIRMED': 'confirm',
+      'PROCESSING': 'start processing',
+      'SHIPPED': 'mark as shipped'
+    };
+    
+    const action = statusLabels[nextStatus] || 'update';
+    if (!confirm(`Are you sure you want to ${action} order ${order.orderNumber}?`)) {
+      return;
+    }
+    
+    this.isActioning.set(true);
+    this.orderService.updateOrderStatus(order.id, nextStatus, `Status updated to ${nextStatus} by seller`).subscribe({
+      next: () => {
+        this.isActioning.set(false);
+        this.snackBar.open(`Order ${action}ed successfully`, 'Close', { duration: 3000 });
+      },
+      error: (error) => {
+        console.error('Error updating order status:', error);
+        this.isActioning.set(false);
+        
+        let errorMessage = 'Failed to update order status';
+        if (error.status === 403) {
+          errorMessage = 'You do not have permission to update this order';
+        } else if (error.error?.message) {
+          errorMessage = error.error.message;
+        }
+        
+        this.snackBar.open(errorMessage, 'Close', { duration: 4000 });
+      }
+    });
+  }
+  
+  /**
+   * Get label for seller action button
+   */
+  getSellerActionLabel(): string {
+    const nextStatus = this.nextSellerStatus();
+    const labels: Record<string, string> = {
+      'CONFIRMED': 'Confirm Order',
+      'PROCESSING': 'Start Processing',
+      'SHIPPED': 'Mark as Shipped'
+    };
+    return labels[nextStatus || ''] || 'Update Status';
+  }
+  
+  /**
+   * Get icon for seller action button
+   */
+  getSellerActionIcon(): string {
+    const nextStatus = this.nextSellerStatus();
+    const icons: Record<string, string> = {
+      'CONFIRMED': 'check_circle',
+      'PROCESSING': 'inventory',
+      'SHIPPED': 'local_shipping'
+    };
+    return icons[nextStatus || ''] || 'update';
+  }
+
   /**
    * Get status label
    */

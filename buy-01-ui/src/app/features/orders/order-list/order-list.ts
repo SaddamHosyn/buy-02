@@ -351,6 +351,80 @@ export class OrderListPage implements OnInit {
   }
   
   /**
+   * Check if seller can update order status
+   */
+  canSellerUpdate(order: Order): boolean {
+    if (this.viewMode() !== 'seller') return false;
+    return this.orderService.canSellerUpdateStatus(order);
+  }
+  
+  /**
+   * Get next seller status for order
+   */
+  getNextSellerStatus(order: Order): OrderStatus | null {
+    return this.orderService.getNextSellerStatus(order);
+  }
+  
+  /**
+   * Get label for seller action button
+   */
+  getSellerActionLabel(order: Order): string {
+    const nextStatus = this.getNextSellerStatus(order);
+    const labels: Record<string, string> = {
+      'CONFIRMED': 'Confirm',
+      'PROCESSING': 'Process',
+      'SHIPPED': 'Ship'
+    };
+    return labels[nextStatus || ''] || 'Update';
+  }
+  
+  /**
+   * Update order status (seller action)
+   */
+  updateOrderStatus(order: Order, event: Event): void {
+    event.stopPropagation();
+    
+    const nextStatus = this.getNextSellerStatus(order);
+    if (!nextStatus) return;
+    
+    const statusLabels: Record<string, string> = {
+      'CONFIRMED': 'confirm',
+      'PROCESSING': 'start processing',
+      'SHIPPED': 'mark as shipped'
+    };
+    
+    const action = statusLabels[nextStatus] || 'update';
+    if (!confirm(`Are you sure you want to ${action} order ${order.orderNumber}?`)) {
+      return;
+    }
+    
+    this.orderService.updateOrderStatus(order.id, nextStatus, `Status updated by seller`).subscribe({
+      next: () => {
+        this.snackBar.open(`Order ${action}ed successfully`, 'Close', { 
+          duration: 3000,
+          panelClass: ['success-snackbar']
+        });
+        this.loadOrders();
+      },
+      error: (error) => {
+        console.error('Error updating order status:', error);
+        
+        let errorMessage = 'Failed to update order status';
+        if (error.status === 403) {
+          errorMessage = 'You do not have permission to update this order';
+        } else if (error.error?.message) {
+          errorMessage = error.error.message;
+        }
+        
+        this.snackBar.open(errorMessage, 'Close', { 
+          duration: 4000,
+          panelClass: ['error-snackbar']
+        });
+      }
+    });
+  }
+
+  /**
    * Get status label
    */
   getStatusLabel(status: OrderStatus): string {

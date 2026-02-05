@@ -200,6 +200,26 @@
   gap: 12px;
   padding: 16px 24px 24px;
   justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.seller-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background-color: #fff3e0;
+  color: #e65100;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.seller-badge mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
 }
 
 /* Order Content Layout */

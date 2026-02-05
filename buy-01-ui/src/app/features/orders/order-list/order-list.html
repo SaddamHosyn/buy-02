@@ -120,21 +120,45 @@
             </div>
 
             <div class="order-actions">
-              @if (canCancel(order)) {
-                <button mat-button color="warn" (click)="cancelOrder(order, $event)">
-                  <mat-icon>cancel</mat-icon>
-                  Cancel
+              <!-- Buyer Actions -->
+              @if (viewMode() === 'buyer') {
+                @if (canCancel(order)) {
+                  <button mat-button color="warn" (click)="cancelOrder(order, $event)">
+                    <mat-icon>cancel</mat-icon>
+                    Cancel
+                  </button>
+                }
+                @if (canRedo(order)) {
+                  <button mat-button color="primary" (click)="redoOrder(order, $event)">
+                    <mat-icon>refresh</mat-icon>
+                    Redo
+                  </button>
+                }
+                <button mat-stroked-button (click)="removeOrder(order, $event)">
+                  <mat-icon>delete_outline</mat-icon>
                 </button>
               }
-              @if (canRedo(order)) {
-                <button mat-button color="primary" (click)="redoOrder(order, $event)">
-                  <mat-icon>refresh</mat-icon>
-                  Redo
-                </button>
+
+              <!-- Seller Actions -->
+              @if (viewMode() === 'seller') {
+                @if (canSellerUpdate(order)) {
+                  <button
+                    mat-raised-button
+                    color="accent"
+                    (click)="updateOrderStatus(order, $event)"
+                  >
+                    <mat-icon>{{
+                      getNextSellerStatus(order) === 'SHIPPED'
+                        ? 'local_shipping'
+                        : getNextSellerStatus(order) === 'PROCESSING'
+                          ? 'inventory'
+                          : 'check_circle'
+                    }}</mat-icon>
+                    {{ getSellerActionLabel(order) }}
+                  </button>
+                }
               }
-              <button mat-stroked-button (click)="removeOrder(order, $event)">
-                <mat-icon>delete_outline</mat-icon>
-              </button>
+
               <button mat-raised-button color="primary" (click)="viewOrder(order.id)">
                 View Details
               </button>

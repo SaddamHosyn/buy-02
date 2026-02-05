@@ -130,6 +130,7 @@ export class OrderService {
   
   /**
    * Get orders for current user (buyer)
+   * Server uses authenticated user's ID automatically
    */
   getMyOrders(params?: OrderSearchParams): Observable<Order[]> {
     this.loadingSignal.set(true);
@@ -149,6 +150,7 @@ export class OrderService {
   
   /**
    * Get orders for seller (orders containing seller's products)
+   * Server uses authenticated seller's ID automatically
    */
   getSellerOrders(params?: OrderSearchParams): Observable<Order[]> {
     this.loadingSignal.set(true);
@@ -185,10 +187,11 @@ export class OrderService {
   
   /**
    * Cancel an order (allowed for PENDING, CONFIRMED, PROCESSING)
+   * Server validates ownership - only order owner can cancel
    */
   cancelOrder(orderId: string, reason?: string): Observable<Order> {
     this.loadingSignal.set(true);
-    return this.http.post<Order>(`${this.API_URL}/${orderId}/cancel`, { reason }).pipe(
+    return this.http.put<Order>(`${this.API_URL}/${orderId}/cancel`, { reason }).pipe(
       tap(order => {
         this.currentOrderSignal.set(order);
         this.updateOrderInList(order);
@@ -203,6 +206,7 @@ export class OrderService {
   
   /**
    * Redo a cancelled order (creates new order with same items)
+   * Server validates ownership - only order owner can redo
    */
   redoOrder(orderId: string): Observable<Order> {
     this.loadingSignal.set(true);
@@ -219,7 +223,29 @@ export class OrderService {
   }
   
   /**
+   * Update order status (seller only)
+   * Sellers can transition orders to: CONFIRMED, PROCESSING, SHIPPED
+   * Server validates seller owns products in this order
+   */
+  updateOrderStatus(orderId: string, status: OrderStatus, reason?: string): Observable<Order> {
+    this.loadingSignal.set(true);
+    return this.http.put<Order>(`${this.API_URL}/${orderId}/status`, { status, reason }).pipe(
+      tap(response => {
+        const order = (response as any).order || response;
+        this.currentOrderSignal.set(order);
+        this.updateOrderInList(order);
+        this.loadingSignal.set(false);
+      }),
+      catchError(error => {
+        this.loadingSignal.set(false);
+        return throwError(() => error);
+      })
+    );
+  }
+  
+  /**
    * Remove order (soft delete - hides from user's view)
+   * Server validates ownership - only order owner can remove
    */
   removeOrder(orderId: string): Observable<void> {
     this.loadingSignal.set(true);
@@ -247,6 +273,26 @@ export class OrderService {
    */
   canRedo(order: Order): boolean {
     return order.status === 'CANCELLED';
+  }
+  
+  /**
+   * Get next status for seller workflow
+   * Returns the next logical status a seller can transition to
+   */
+  getNextSellerStatus(order: Order): OrderStatus | null {
+    const sellerTransitions: Partial<Record<OrderStatus, OrderStatus>> = {
+      'PENDING': 'CONFIRMED',
+      'CONFIRMED': 'PROCESSING',
+      'PROCESSING': 'SHIPPED'
+    };
+    return sellerTransitions[order.status] || null;
+  }
+  
+  /**
+   * Check if seller can update this order's status
+   */
+  canSellerUpdateStatus(order: Order): boolean {
+    return ['PENDING', 'CONFIRMED', 'PROCESSING'].includes(order.status);
   }
   
   /**

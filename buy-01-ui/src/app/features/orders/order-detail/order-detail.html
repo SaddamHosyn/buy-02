@@ -71,27 +71,50 @@
 
         <!-- Order Actions -->
         <div class="order-actions">
-          @if (canCancel()) {
+          <!-- Buyer Actions -->
+          @if (isBuyer()) {
+            @if (canCancel()) {
+              <button
+                mat-raised-button
+                color="warn"
+                (click)="cancelOrder()"
+                [disabled]="isActioning()"
+              >
+                <mat-icon>cancel</mat-icon>
+                Cancel Order
+              </button>
+            }
+            @if (canRedo()) {
+              <button
+                mat-raised-button
+                color="primary"
+                (click)="redoOrder()"
+                [disabled]="isActioning()"
+              >
+                <mat-icon>refresh</mat-icon>
+                Reorder
+              </button>
+            }
+          }
+
+          <!-- Seller Actions -->
+          @if (canSellerUpdate()) {
             <button
               mat-raised-button
-              color="warn"
-              (click)="cancelOrder()"
+              color="accent"
+              (click)="updateStatus()"
               [disabled]="isActioning()"
             >
-              <mat-icon>cancel</mat-icon>
-              Cancel Order
+              <mat-icon>{{ getSellerActionIcon() }}</mat-icon>
+              {{ getSellerActionLabel() }}
             </button>
           }
-          @if (canRedo()) {
-            <button
-              mat-raised-button
-              color="primary"
-              (click)="redoOrder()"
-              [disabled]="isActioning()"
-            >
-              <mat-icon>refresh</mat-icon>
-              Reorder
-            </button>
+
+          @if (isSellerInOrder() && !isBuyer()) {
+            <span class="seller-badge">
+              <mat-icon>storefront</mat-icon>
+              You're a seller in this order
+            </span>
           }
         </div>
       </mat-card>
