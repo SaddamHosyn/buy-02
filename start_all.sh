@@ -14,23 +14,47 @@ NC='\033[0m' # No Color
 
 PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
 
+# Ensure we use a stable Java version (17 or 21) if available
+if [ -x "/usr/libexec/java_home" ]; then
+    export JAVA_HOME=$(/usr/libexec/java_home -v 17 2>/dev/null || /usr/libexec/java_home -v 21 2>/dev/null || echo $JAVA_HOME)
+    export PATH="$JAVA_HOME/bin:$PATH"
+    echo -e "${GREEN}Using Java Version:${NC}"
+    java -version 2>&1 | head -n 1
+fi
+
+# Ensure logs and pids directories exist
+mkdir -p "$PROJECT_ROOT/logs"
+mkdir -p "$PROJECT_ROOT/pids"
+
 echo -e "${BLUE}============================================${NC}"
 echo -e "${BLUE}   Buy-01 Application Startup${NC}"
 echo -e "${BLUE}============================================${NC}"
 echo ""
 
 # Check if MongoDB is running
-echo -e "${YELLOW}[1/7] Checking MongoDB...${NC}"
-#if ! pgrep -x "mongod" > /dev/null; then
- #   echo -e "${RED}❌ MongoDB is not running!${NC}"
- #   echo -e "${YELLOW}Please start MongoDB first:${NC}"
-  
-  #  echo -e "  brew services start mongodb-community"
-   # echo -e "  OR"
-   # echo -e "  mongod --config /opt/homebrew/etc/mongod.conf"
-   # exit 1
-#fi
+echo -e "${YELLOW}[1/8] Checking MongoDB...${NC}"
+if ! pgrep -x "mongod" > /dev/null; then
+    echo -e "${YELLOW}MongoDB is not running. Starting it via brew...${NC}"
+    brew services start mongodb-community
+    sleep 2
+fi
 echo -e "${GREEN}✓ MongoDB is running${NC}"
+
+# Check if Zookeeper is running
+echo -e "${YELLOW}[1.5/8] Checking Zookeeper & Kafka...${NC}"
+if ! pgrep -f "org.apache.zookeeper.server.quorum.QuorumPeerMain" > /dev/null; then
+    echo -e "${YELLOW}Zookeeper is not running. Starting it via brew...${NC}"
+    brew services start zookeeper
+    sleep 5
+fi
+
+# Check if Kafka is running
+if ! pgrep -f "kafka.Kafka" > /dev/null; then
+    echo -e "${YELLOW}Kafka is not running. Starting it via brew...${NC}"
+    brew services start kafka
+    sleep 5
+fi
+echo -e "${GREEN}✓ Kafka/Zookeeper check complete${NC}"
 echo ""
 
 # Start Service Registry (Eureka)
@@ -78,19 +102,29 @@ echo -e "${GREEN}✓ Media Service started (PID: $MEDIA_SERVICE_PID)${NC}"
 echo -e "${GREEN}  Port: 8083${NC}"
 echo ""
 
+# Start Order Service
+echo -e "${YELLOW}[6/8] Starting Order Service...${NC}"
+cd "$PROJECT_ROOT/order-service"
+mvn spring-boot:run > "$PROJECT_ROOT/logs/order-service.log" 2>&1 &
+ORDER_SERVICE_PID=$!
+echo "$ORDER_SERVICE_PID" > "$PROJECT_ROOT/pids/order-service.pid"
+echo -e "${GREEN}✓ Order Service started (PID: $ORDER_SERVICE_PID)${NC}"
+echo -e "${GREEN}  Port: 8084${NC}"
+echo ""
+
 # Wait for microservices to register
 echo -e "${YELLOW}Waiting for services to register with Eureka...${NC}"
 sleep 15
 echo ""
 
 # Start API Gateway
-echo -e "${YELLOW}[6/7] Starting API Gateway...${NC}"
+echo -e "${YELLOW}[7/8] Starting API Gateway...${NC}"
 cd "$PROJECT_ROOT/api-gateway"
 mvn spring-boot:run > "$PROJECT_ROOT/logs/api-gateway.log" 2>&1 &
 API_GATEWAY_PID=$!
 echo "$API_GATEWAY_PID" > "$PROJECT_ROOT/pids/api-gateway.pid"
 echo -e "${GREEN}✓ API Gateway started (PID: $API_GATEWAY_PID)${NC}"
-echo -e "${GREEN}  URL: http://localhost:8080${NC}"
+echo -e "${GREEN}  URL: http://localhost:8090${NC}"
 echo ""
 
 # Wait for API Gateway to be ready
@@ -99,7 +133,7 @@ sleep 10
 echo ""
 
 # Start Frontend (Angular)
-echo -e "${YELLOW}[7/7] Starting Frontend (Angular)...${NC}"
+echo -e "${YELLOW}[8/8] Starting Frontend (Angular)...${NC}"
 cd "$PROJECT_ROOT/buy-01-ui"
 npm start > "$PROJECT_ROOT/logs/frontend.log" 2>&1 &
 FRONTEND_PID=$!
@@ -115,11 +149,12 @@ echo -e "${BLUE}============================================${NC}"
 echo ""
 echo -e "${BLUE}Service URLs:${NC}"
 echo -e "  Frontend:         ${GREEN}http://localhost:4200${NC}"
-echo -e "  API Gateway:      ${GREEN}http://localhost:8080${NC}"
+echo -e "  API Gateway:      ${GREEN}http://localhost:8090${NC}"
 echo -e "  Service Registry: ${GREEN}http://localhost:8761${NC}"
 echo -e "  User Service:     ${GREEN}http://localhost:8081${NC}"
 echo -e "  Product Service:  ${GREEN}http://localhost:8082${NC}"
 echo -e "  Media Service:    ${GREEN}http://localhost:8083${NC}"
+echo -e "  Order Service:    ${GREEN}http://localhost:8084${NC}"
 echo ""
 echo -e "${YELLOW}Logs are saved in: $PROJECT_ROOT/logs/${NC}"
 echo -e "${YELLOW}Process IDs are saved in: $PROJECT_ROOT/pids/${NC}"

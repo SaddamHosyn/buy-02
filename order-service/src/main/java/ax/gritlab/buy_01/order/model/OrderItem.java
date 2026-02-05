@@ -82,6 +82,11 @@ public class OrderItem {
     private String thumbnailMediaId;
 
     /**
+     * SNAPSHOTTED: Product category at time of purchase.
+     */
+    private String category;
+
+    /**
      * Calculates and sets the subtotal based on price and quantity.
      */
     public void calculateSubtotal() {
@@ -101,8 +106,9 @@ public class OrderItem {
             Integer quantity,
             String sellerId,
             String sellerName,
-            String thumbnailMediaId) {
-        
+            String thumbnailMediaId,
+            String category) {
+
         OrderItem item = OrderItem.builder()
                 .productId(productId)
                 .productName(productName)
@@ -112,8 +118,9 @@ public class OrderItem {
                 .sellerId(sellerId)
                 .sellerName(sellerName)
                 .thumbnailMediaId(thumbnailMediaId)
+                .category(category)
                 .build();
-        
+
         item.calculateSubtotal();
         return item;
     }

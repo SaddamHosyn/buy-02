@@ -21,28 +21,29 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final AuthenticationProvider authenticationProvider;
 
-@Bean
-public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    http
-            .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(auth -> auth
-                    // Public endpoints (Login, Register, Health checks)
-                    .requestMatchers("/auth/**", "/actuator/**").permitAll()
-                    
-                    // Allow anyone to VIEW user profiles
-                    .requestMatchers(HttpMethod.GET, "/users/**").permitAll()  // GET WILDCARD
-                    
-                    // Protected endpoints - require authentication
-                    .requestMatchers(HttpMethod.PUT, "/users/**").authenticated()
-                    .requestMatchers(HttpMethod.DELETE, "/users/**").authenticated()
-                    
-                    // All other requests require authentication
-                    .anyRequest().authenticated())
-            .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authenticationProvider(authenticationProvider)
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(auth -> auth
+                        // Public endpoints (Login, Register, Health checks)
+                        .requestMatchers("/auth/**", "/actuator/**").permitAll()
 
-    return http.build();
-}
+                        // Allow anyone to VIEW user profiles (sellers)
+                        .requestMatchers(HttpMethod.GET, "/users/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/users/me").authenticated() // Profile/Me still needs auth
+
+                        // Protected endpoints - require authentication
+                        .requestMatchers(HttpMethod.PUT, "/users/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/users/**").authenticated()
+
+                        // All other requests require authentication
+                        .anyRequest().authenticated())
+                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authenticationProvider(authenticationProvider)
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
 
 }

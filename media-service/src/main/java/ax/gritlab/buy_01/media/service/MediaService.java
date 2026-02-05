@@ -101,7 +101,7 @@ public class MediaService {
     private final RestTemplate restTemplate; // ADD THIS for inter-service communication
     private Path rootLocation;
 
-    @Value("${api.gateway.url:http://localhost:8080/api/media}")
+    @Value("${api.gateway.url:http://localhost:8090/api/media}")
     private String apiGatewayUrl;
 
     @Value("${product.service.url:http://localhost:8082}")

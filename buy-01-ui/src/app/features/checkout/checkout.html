@@ -1,0 +1,287 @@
+<mat-toolbar color="primary" class="app-toolbar">
+  <button mat-icon-button (click)="backToCart()">
+    <mat-icon>arrow_back</mat-icon>
+  </button>
+  <span class="toolbar-title">Checkout</span>
+  <span class="spacer"></span>
+</mat-toolbar>
+
+<div class="container">
+  @if (isLoading()) {
+    <div class="loading-container">
+      <mat-spinner diameter="50"></mat-spinner>
+      <p>Loading checkout...</p>
+    </div>
+  } @else if (isEmpty()) {
+    <div class="empty-state">
+      <mat-icon>shopping_cart</mat-icon>
+      <h2>Your cart is empty</h2>
+      <button mat-raised-button color="primary" routerLink="/products">Continue Shopping</button>
+    </div>
+  } @else {
+    <div class="checkout-layout">
+      <!-- Checkout Steps -->
+      <div class="checkout-steps">
+        <mat-card>
+          <!-- Step Indicators -->
+          <div class="step-indicators">
+            <div
+              class="step"
+              [class.active]="currentStep() >= 0"
+              [class.completed]="currentStep() > 0"
+            >
+              <div class="step-number">1</div>
+              <span>Shipping Address</span>
+            </div>
+            <div class="step-line" [class.active]="currentStep() > 0"></div>
+            <div
+              class="step"
+              [class.active]="currentStep() >= 1"
+              [class.completed]="currentStep() > 1"
+            >
+              <div class="step-number">2</div>
+              <span>Review Order</span>
+            </div>
+            <div class="step-line" [class.active]="currentStep() > 1"></div>
+            <div class="step" [class.active]="currentStep() >= 2">
+              <div class="step-number">3</div>
+              <span>Confirm</span>
+            </div>
+          </div>
+
+          <mat-divider></mat-divider>
+
+          <!-- Step Content -->
+          <div class="step-content">
+            <!-- Step 1: Shipping Address -->
+            @if (currentStep() === 0) {
+              <div class="address-step">
+                <h2>Shipping Address</h2>
+                <form [formGroup]="addressForm">
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Full Name</mat-label>
+                    <input matInput formControlName="fullName" placeholder="John Doe" />
+                    <mat-error>{{ getErrorMessage('fullName') }}</mat-error>
+                  </mat-form-field>
+
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Address Line 1</mat-label>
+                    <input matInput formControlName="addressLine1" placeholder="123 Main Street" />
+                    <mat-error>{{ getErrorMessage('addressLine1') }}</mat-error>
+                  </mat-form-field>
+
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Address Line 2 (Optional)</mat-label>
+                    <input matInput formControlName="addressLine2" placeholder="Apt 4B" />
+                  </mat-form-field>
+
+                  <div class="form-row">
+                    <mat-form-field appearance="outline">
+                      <mat-label>City</mat-label>
+                      <input matInput formControlName="city" placeholder="New York" />
+                      <mat-error>{{ getErrorMessage('city') }}</mat-error>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline">
+                      <mat-label>Postal Code</mat-label>
+                      <input matInput formControlName="postalCode" placeholder="10001" />
+                      <mat-error>{{ getErrorMessage('postalCode') }}</mat-error>
+                    </mat-form-field>
+                  </div>
+
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Country</mat-label>
+                    <input matInput formControlName="country" placeholder="United States" />
+                    <mat-error>{{ getErrorMessage('country') }}</mat-error>
+                  </mat-form-field>
+
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Phone Number (Optional)</mat-label>
+                    <input matInput formControlName="phoneNumber" placeholder="+1 234 567 8900" />
+                    <mat-error>{{ getErrorMessage('phoneNumber') }}</mat-error>
+                  </mat-form-field>
+
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Delivery Notes (Optional)</mat-label>
+                    <textarea
+                      matInput
+                      formControlName="deliveryNotes"
+                      rows="2"
+                      placeholder="Leave at door, etc."
+                    ></textarea>
+                  </mat-form-field>
+                </form>
+
+                <div class="step-actions">
+                  <button mat-button (click)="backToCart()">Back to Cart</button>
+                  <button mat-raised-button color="primary" (click)="nextStep()">
+                    Continue to Review
+                    <mat-icon>arrow_forward</mat-icon>
+                  </button>
+                </div>
+              </div>
+            }
+
+            <!-- Step 2: Review Order -->
+            @if (currentStep() === 1) {
+              <div class="review-step">
+                <h2>Review Your Order</h2>
+
+                <div class="review-section">
+                  <h3>Shipping Address</h3>
+                  <div class="address-preview">
+                    <p>
+                      <strong>{{ addressForm.value.fullName }}</strong>
+                    </p>
+                    <p>{{ addressForm.value.addressLine1 }}</p>
+                    @if (addressForm.value.addressLine2) {
+                      <p>{{ addressForm.value.addressLine2 }}</p>
+                    }
+                    <p>{{ addressForm.value.city }}, {{ addressForm.value.postalCode }}</p>
+                    <p>{{ addressForm.value.country }}</p>
+                    @if (addressForm.value.phoneNumber) {
+                      <p>Phone: {{ addressForm.value.phoneNumber }}</p>
+                    }
+                  </div>
+                  <button mat-button color="primary" (click)="prevStep()">
+                    <mat-icon>edit</mat-icon> Edit
+                  </button>
+                </div>
+
+                <mat-divider></mat-divider>
+
+                <div class="review-section">
+                  <h3>Order Items ({{ totalItems() }})</h3>
+                  <div class="order-items">
+                    @for (item of items(); track item.productId) {
+                      <div class="order-item">
+                        <div class="item-info">
+                          <span class="item-name">{{ item.cachedProductName || 'Product' }}</span>
+                          <span class="item-qty">x{{ item.quantity }}</span>
+                        </div>
+                        <span class="item-price">${{ getItemSubtotal(item).toFixed(2) }}</span>
+                      </div>
+                    }
+                  </div>
+                </div>
+
+                <mat-divider></mat-divider>
+
+                <div class="review-section">
+                  <h3>Payment Method</h3>
+                  <div class="payment-method">
+                    <mat-icon>local_shipping</mat-icon>
+                    <div>
+                      <strong>Pay on Delivery</strong>
+                      <p>Pay with cash when your order is delivered</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="step-actions">
+                  <button mat-button (click)="prevStep()">
+                    <mat-icon>arrow_back</mat-icon>
+                    Back
+                  </button>
+                  <button mat-raised-button color="primary" (click)="nextStep()">
+                    Continue to Confirm
+                    <mat-icon>arrow_forward</mat-icon>
+                  </button>
+                </div>
+              </div>
+            }
+
+            <!-- Step 3: Confirm -->
+            @if (currentStep() === 2) {
+              <div class="confirm-step">
+                <h2>Confirm Your Order</h2>
+
+                <div class="confirm-message">
+                  <mat-icon class="confirm-icon">check_circle</mat-icon>
+                  <p>
+                    You're about to place an order for <strong>{{ totalItems() }} item(s)</strong>
+                  </p>
+                  <p class="total-highlight">
+                    Total: <strong>${{ totalAmount().toFixed(2) }}</strong>
+                  </p>
+                  <p class="payment-note">
+                    <mat-icon>info</mat-icon>
+                    Payment will be collected upon delivery
+                  </p>
+                </div>
+
+                <div class="step-actions">
+                  <button mat-button (click)="prevStep()" [disabled]="isSubmitting()">
+                    <mat-icon>arrow_back</mat-icon>
+                    Back
+                  </button>
+                  <button
+                    mat-raised-button
+                    color="primary"
+                    class="place-order-btn"
+                    (click)="placeOrder()"
+                    [disabled]="isSubmitting()"
+                  >
+                    @if (isSubmitting()) {
+                      <mat-spinner diameter="20" color="accent"></mat-spinner>
+                      Placing Order...
+                    } @else {
+                      <ng-container>
+                        <mat-icon>shopping_bag</mat-icon>
+                        Place Order
+                      </ng-container>
+                    }
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        </mat-card>
+      </div>
+
+      <!-- Order Summary Sidebar -->
+      <div class="order-summary">
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title>Order Summary</mat-card-title>
+          </mat-card-header>
+
+          <mat-card-content>
+            <div class="summary-items">
+              @for (item of items(); track item.productId) {
+                <div class="summary-item">
+                  <span class="item-name"
+                    >{{ item.cachedProductName || 'Product' }} x{{ item.quantity }}</span
+                  >
+                  <span>${{ getItemSubtotal(item).toFixed(2) }}</span>
+                </div>
+              }
+            </div>
+
+            <mat-divider></mat-divider>
+
+            <div class="summary-row">
+              <span>Subtotal</span>
+              <span>${{ subtotal().toFixed(2) }}</span>
+            </div>
+            <div class="summary-row">
+              <span>Shipping</span>
+              <span>{{ shippingCost() === 0 ? 'Free' : '$' + shippingCost().toFixed(2) }}</span>
+            </div>
+            <div class="summary-row">
+              <span>Tax</span>
+              <span>${{ taxAmount().toFixed(2) }}</span>
+            </div>
+
+            <mat-divider></mat-divider>
+
+            <div class="summary-row total">
+              <span>Total</span>
+              <span>${{ totalAmount().toFixed(2) }}</span>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </div>
+  }
+</div>

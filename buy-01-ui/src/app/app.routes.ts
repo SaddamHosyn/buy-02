@@ -10,12 +10,12 @@ import { roleGuard } from './core/guards/role-guard';
  * - No NgModules - pure CSR
  */
 export const routes: Routes = [
-  { 
-    path: '', 
-    redirectTo: '/products', 
-    pathMatch: 'full' 
+  {
+    path: '',
+    redirectTo: '/products',
+    pathMatch: 'full'
   },
-  
+
   // Auth routes (public - no guards)
   {
     path: 'auth',
@@ -23,21 +23,21 @@ export const routes: Routes = [
       {
         path: 'login',
         loadComponent: () => import('./features/auth/login/login').then(m => m.Login),
-        title: 'Login - Buy-01'
+        title: 'Login - Buy-02'
       },
       {
         path: 'register',
         loadComponent: () => import('./features/auth/register/register').then(m => m.Register),
-        title: 'Register - Buy-01'
+        title: 'Register - Buy-02'
       },
-      { 
-        path: '', 
-        redirectTo: 'login', 
-        pathMatch: 'full' 
+      {
+        path: '',
+        redirectTo: 'login',
+        pathMatch: 'full'
       }
     ]
   },
-  
+
   // Products routes (public - no authentication required)
   {
     path: 'products',
@@ -45,12 +45,46 @@ export const routes: Routes = [
       {
         path: '',
         loadComponent: () => import('./features/products/product-list/product-list').then(m => m.ProductList),
-        title: 'Products - Buy-01'
+        title: 'Products - Buy-02'
       },
       {
         path: ':id',
         loadComponent: () => import('./features/products/product-detail/product-detail').then(m => m.ProductDetail),
-        title: 'Product Details - Buy-01'
+        title: 'Product Details - Buy-02'
+      }
+    ]
+  },
+  
+  // Cart route (protected - requires authentication)
+  {
+    path: 'cart',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/cart/cart').then(m => m.CartPage),
+    title: 'Shopping Cart - Buy-01'
+  },
+  
+  // Checkout route (protected - requires authentication)
+  {
+    path: 'checkout',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/checkout/checkout').then(m => m.CheckoutPage),
+    title: 'Checkout - Buy-01'
+  },
+  
+  // Orders routes (protected - requires authentication)
+  {
+    path: 'orders',
+    canActivate: [authGuard],
+    children: [
+      {
+        path: '',
+        loadComponent: () => import('./features/orders/order-list/order-list').then(m => m.OrderListPage),
+        title: 'My Orders - Buy-01'
+      },
+      {
+        path: ':id',
+        loadComponent: () => import('./features/orders/order-detail/order-detail').then(m => m.OrderDetailPage),
+        title: 'Order Details - Buy-01'
       }
     ]
   },
@@ -60,9 +94,9 @@ export const routes: Routes = [
     path: 'profile',
     canActivate: [authGuard],
     loadComponent: () => import('./features/profile/profile').then(m => m.Profile),
-    title: 'My Profile - Buy-01'
+    title: 'My Profile - Buy-02'
   },
-  
+
   // Seller routes (protected - requires authentication + SELLER role)
   {
     path: 'seller',
@@ -72,35 +106,35 @@ export const routes: Routes = [
       {
         path: 'dashboard',
         loadComponent: () => import('./features/seller/dashboard/dashboard').then(m => m.Dashboard),
-        title: 'Seller Dashboard - Buy-01'
+        title: 'Seller Dashboard - Buy-02'
       },
       {
         path: 'product-form',
         loadComponent: () => import('./features/seller/product-form/product-form').then(m => m.ProductForm),
-        title: 'Create Product - Buy-01'
+        title: 'Create Product - Buy-02'
       },
       {
         path: 'product-form/:id',
         loadComponent: () => import('./features/seller/product-form/product-form').then(m => m.ProductForm),
-        title: 'Edit Product - Buy-01'
+        title: 'Edit Product - Buy-02'
       },
       {
         path: 'media-manager',
         loadComponent: () => import('./features/seller/media-manager/media-manager').then(m => m.MediaManager),
-        title: 'Media Manager - Buy-01'
+        title: 'Media Manager - Buy-02'
       },
-      { 
-        path: '', 
-        redirectTo: 'dashboard', 
-        pathMatch: 'full' 
+      {
+        path: '',
+        redirectTo: 'dashboard',
+        pathMatch: 'full'
       }
     ]
   },
-  
+
   // 404 - Redirect to products
-  { 
-    path: '**', 
-    redirectTo: '/products' 
+  {
+    path: '**',
+    redirectTo: '/products'
   }
 ];
 

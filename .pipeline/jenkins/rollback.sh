@@ -81,7 +81,7 @@ if [ $BACKUP_EXISTS -eq 0 ]; then
     fi
     
     # Check API Gateway
-    if curl -f http://localhost:8080/actuator/health >/dev/null 2>&1; then
+    if curl -f http://localhost:8090/actuator/health >/dev/null 2>&1; then
         echo "✓ API Gateway is healthy"
     else
         echo "❌ API Gateway health check failed"
@@ -140,7 +140,7 @@ if ! curl -f -s "http://localhost:8761" > /dev/null 2>&1; then
     HEALTH_OK=0
 fi
 
-if ! curl -f -s "http://localhost:8080/actuator/health" > /dev/null 2>&1; then
+if ! curl -f -s "http://localhost:8090/actuator/health" > /dev/null 2>&1; then
     echo "⚠ API Gateway not responding"
     HEALTH_OK=0
 fi
@@ -168,7 +168,7 @@ if [ $? -eq 0 ]; then
     echo -e "${GREEN}🌐 Application restored at:${NC}"
     echo -e "   Frontend (HTTP):  http://${AWS_PUBLIC_IP}:4200"
     echo -e "   Frontend (HTTPS): https://${AWS_PUBLIC_IP}:4201"
-    echo -e "   API Gateway:      http://${AWS_PUBLIC_IP}:8080"
+    echo -e "   API Gateway:      http://${AWS_PUBLIC_IP}:8090"
     echo -e "   Eureka Dashboard: http://${AWS_PUBLIC_IP}:8761"
     echo ""
     echo -e "${YELLOW}⚠ Previous working version has been restored${NC}"

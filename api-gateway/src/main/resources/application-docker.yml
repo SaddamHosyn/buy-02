@@ -1,5 +1,5 @@
 server:
-  port: 8080 # Port for Docker (HTTP)
+  port: 8090 # Port for Docker (HTTP)
 
 spring:
   cloud:

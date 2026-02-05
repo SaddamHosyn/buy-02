@@ -21,37 +21,41 @@ echo ""
 # Function to stop a service
 stop_service() {
     local service_name=$1
+    local port=$2
     local pid_file="$PIDS_DIR/${service_name}.pid"
     
+    echo -e "${YELLOW}Stopping $service_name...${NC}"
+
+    # 1. Try stopping via PID file if it exists
     if [ -f "$pid_file" ]; then
         local pid=$(cat "$pid_file")
         if ps -p $pid > /dev/null 2>&1; then
-            echo -e "${YELLOW}Stopping $service_name (PID: $pid)...${NC}"
-            kill $pid
-            sleep 2
-            
-            # Force kill if still running
-            if ps -p $pid > /dev/null 2>&1; then
-                kill -9 $pid
-            fi
-            
-            echo -e "${GREEN}✓ $service_name stopped${NC}"
-        else
-            echo -e "${YELLOW}$service_name is not running${NC}"
+            pkill -P $pid > /dev/null 2>&1
+            kill $pid > /dev/null 2>&1
+            sleep 1
         fi
         rm "$pid_file"
-    else
-        echo -e "${YELLOW}No PID file found for $service_name${NC}"
     fi
+
+    # 2. Aggressive cleanup: Kill any Java process on the specific port
+    if [ ! -z "$port" ]; then
+        local port_pid=$(lsof -t -i:$port)
+        if [ ! -z "$port_pid" ]; then
+            echo -e "${YELLOW}  Cleaning up ghost process on port $port (PID: $port_pid)...${NC}"
+            kill -9 $port_pid > /dev/null 2>&1
+        fi
+    fi
+    echo -e "${GREEN}✓ $service_name cleaned up${NC}"
 }
 
 # Stop services in reverse order
-stop_service "frontend"
-stop_service "api-gateway"
-stop_service "media-service"
-stop_service "product-service"
-stop_service "user-service"
-stop_service "service-registry"
+stop_service "frontend" 4200
+stop_service "api-gateway" 8090
+stop_service "order-service" 8084
+stop_service "media-service" 8083
+stop_service "product-service" 8082
+stop_service "user-service" 8081
+stop_service "service-registry" 8761
 
 echo ""
 echo -e "${GREEN}✓ All services stopped${NC}"
