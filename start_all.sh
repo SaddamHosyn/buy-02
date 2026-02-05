@@ -40,21 +40,14 @@ if ! pgrep -x "mongod" > /dev/null; then
 fi
 echo -e "${GREEN}✓ MongoDB is running${NC}"
 
-# Check if Zookeeper is running
-echo -e "${YELLOW}[1.5/8] Checking Zookeeper & Kafka...${NC}"
-if ! pgrep -f "org.apache.zookeeper.server.quorum.QuorumPeerMain" > /dev/null; then
-    echo -e "${YELLOW}Zookeeper is not running. Starting it via brew...${NC}"
-    brew services start zookeeper
-    sleep 5
-fi
-
-# Check if Kafka is running
-if ! pgrep -f "kafka.Kafka" > /dev/null; then
+# Check if Kafka is running (Kafka 4.x uses KRaft mode - no Zookeeper needed)
+echo -e "${YELLOW}[1.5/8] Checking Kafka...${NC}"
+if ! pgrep -f "kafka.Kafka\|kafka.server.KafkaServer\|org.apache.kafka" > /dev/null; then
     echo -e "${YELLOW}Kafka is not running. Starting it via brew...${NC}"
     brew services start kafka
-    sleep 5
+    sleep 8
 fi
-echo -e "${GREEN}✓ Kafka/Zookeeper check complete${NC}"
+echo -e "${GREEN}✓ Kafka check complete${NC}"
 echo ""
 
 # Start Service Registry (Eureka)

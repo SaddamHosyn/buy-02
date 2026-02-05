@@ -21,6 +21,7 @@ ax/gritlab/buy_01/user/dto/AuthenticationRequest$AuthenticationRequestBuilder.cl
 ax/gritlab/buy_01/user/model/User$UserBuilder.class
 ax/gritlab/buy_01/user/exception/ValidationErrorResponse.class
 ax/gritlab/buy_01/user/model/Role.class
+ax/gritlab/buy_01/userservice/config/CorsConfig.class
 ax/gritlab/buy_01/user/exception/ErrorResponse.class
 ax/gritlab/buy_01/user/dto/RegisterRequest.class
 ax/gritlab/buy_01/user/config/KafkaTopicConfig.class
