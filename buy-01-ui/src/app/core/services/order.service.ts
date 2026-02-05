@@ -13,7 +13,7 @@ export enum OrderStatus {
   SHIPPED = 'SHIPPED',
   DELIVERED = 'DELIVERED',
   CANCELLED = 'CANCELLED',
-  RETURNED = 'RETURNED'
+  RETURNED = 'RETURNED',
 }
 
 // ==================== Interfaces ====================
@@ -102,7 +102,7 @@ export interface SellerStats {
 // ==================== Service ====================
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class OrderService {
   private readonly http = inject(HttpClient);
@@ -142,7 +142,7 @@ export class OrderService {
   private getHeaders(): HttpHeaders {
     const userId = this.authService.currentUser()?.id || '';
     return new HttpHeaders({
-      'X-User-Id': userId
+      'X-User-Id': userId,
     });
   }
 
@@ -158,12 +158,12 @@ export class OrderService {
   }): Observable<Order> {
     const userId = this.authService.currentUser()?.id || '';
     const fullRequest = { ...request, userId };
-    
-    return this.http.post<Order>(`${this.API_URL}/checkout`, fullRequest, {
-      headers: this.getHeaders()
-    }).pipe(
-      tap(order => this.currentOrderSignal.set(order))
-    );
+
+    return this.http
+      .post<Order>(`${this.API_URL}/checkout`, fullRequest, {
+        headers: this.getHeaders(),
+      })
+      .pipe(tap((order) => this.currentOrderSignal.set(order)));
   }
 
   /**
@@ -171,14 +171,16 @@ export class OrderService {
    */
   getOrderById(id: string): Observable<Order> {
     this.isLoadingSignal.set(true);
-    return this.http.get<Order>(`${this.API_URL}/${id}`, {
-      headers: this.getHeaders()
-    }).pipe(
-      tap(order => {
-        this.currentOrderSignal.set(order);
-        this.isLoadingSignal.set(false);
+    return this.http
+      .get<Order>(`${this.API_URL}/${id}`, {
+        headers: this.getHeaders(),
       })
-    );
+      .pipe(
+        tap((order) => {
+          this.currentOrderSignal.set(order);
+          this.isLoadingSignal.set(false);
+        }),
+      );
   }
 
   /**
@@ -190,53 +192,50 @@ export class OrderService {
     if (params) {
       const keys = Object.keys(params) as (keyof OrderSearchParams)[];
       queryParams = keys
-        .filter(key => params[key] !== undefined && params[key] !== null)
-        .map(key => `${key}=${encodeURIComponent(String(params[key]))}`)
+        .filter((key) => params[key] !== undefined && params[key] !== null)
+        .map((key) => `${key}=${encodeURIComponent(String(params[key]))}`)
         .join('&');
     }
-    const url = queryParams ? `${this.API_URL}/my-orders?${queryParams}` : `${this.API_URL}/my-orders`;
-    return this.http.get<Order[]>(url, {
-      headers: this.getHeaders()
-    }).pipe(
-      tap(orders => {
-        this.ordersSignal.set(orders);
-        this.isLoadingSignal.set(false);
+    const url = queryParams
+      ? `${this.API_URL}/my-orders?${queryParams}`
+      : `${this.API_URL}/my-orders`;
+    return this.http
+      .get<Order[]>(url, {
+        headers: this.getHeaders(),
       })
-    );
+      .pipe(
+        tap((orders) => {
+          this.ordersSignal.set(orders);
+          this.isLoadingSignal.set(false);
+        }),
+      );
   }
 
   /**
    * Cancel an order
    */
   cancelOrder(id: string, reason?: string): Observable<Order> {
-    return this.http.patch<Order>(
-      `${this.API_URL}/${id}/cancel`,
-      { reason },
-      { headers: this.getHeaders() }
-    ).pipe(
-      tap(order => this.currentOrderSignal.set(order))
-    );
+    return this.http
+      .patch<Order>(`${this.API_URL}/${id}/cancel`, { reason }, { headers: this.getHeaders() })
+      .pipe(tap((order) => this.currentOrderSignal.set(order)));
   }
 
   /**
    * Redo a cancelled order (create new order with same items)
    */
   redoOrder(id: string): Observable<Order> {
-    return this.http.post<Order>(
-      `${this.API_URL}/${id}/redo`,
-      {},
-      { headers: this.getHeaders() }
-    ).pipe(
-      tap(order => this.currentOrderSignal.set(order))
-    );
+    return this.http
+      .post<Order>(`${this.API_URL}/${id}/redo`, {}, { headers: this.getHeaders() })
+      .pipe(tap((order) => this.currentOrderSignal.set(order)));
   }
 
   /**
    * Check if order can be cancelled
    */
   canCancel(order: Order): boolean {
-    return [OrderStatus.PENDING, OrderStatus.CONFIRMED, OrderStatus.PROCESSING]
-      .includes(order.status);
+    return [OrderStatus.PENDING, OrderStatus.CONFIRMED, OrderStatus.PROCESSING].includes(
+      order.status,
+    );
   }
 
   /**
@@ -257,7 +256,7 @@ export class OrderService {
       [OrderStatus.SHIPPED]: 'Shipped',
       [OrderStatus.DELIVERED]: 'Delivered',
       [OrderStatus.CANCELLED]: 'Cancelled',
-      [OrderStatus.RETURNED]: 'Returned'
+      [OrderStatus.RETURNED]: 'Returned',
     };
     return labels[status] || status;
   }
@@ -273,7 +272,7 @@ export class OrderService {
       [OrderStatus.SHIPPED]: '#00bcd4',
       [OrderStatus.DELIVERED]: '#4caf50',
       [OrderStatus.CANCELLED]: '#f44336',
-      [OrderStatus.RETURNED]: '#e91e63'
+      [OrderStatus.RETURNED]: '#e91e63',
     };
     return colors[status] || '#757575';
   }
@@ -283,7 +282,7 @@ export class OrderService {
    */
   getBuyerStats(): Observable<BuyerStats> {
     return this.http.get<BuyerStats>(`${this.PROFILE_URL}/buyer/me`, {
-      headers: this.getHeaders()
+      headers: this.getHeaders(),
     });
   }
 
@@ -298,19 +297,21 @@ export class OrderService {
     if (params) {
       const keys = Object.keys(params) as (keyof OrderSearchParams)[];
       queryParams = keys
-        .filter(key => params[key] !== undefined && params[key] !== null)
-        .map(key => `${key}=${encodeURIComponent(String(params[key]))}`)
+        .filter((key) => params[key] !== undefined && params[key] !== null)
+        .map((key) => `${key}=${encodeURIComponent(String(params[key]))}`)
         .join('&');
     }
     const url = queryParams ? `${this.API_URL}/seller?${queryParams}` : `${this.API_URL}/seller`;
-    return this.http.get<Order[]>(url, {
-      headers: this.getHeaders()
-    }).pipe(
-      tap(orders => {
-        this.ordersSignal.set(orders);
-        this.isLoadingSignal.set(false);
+    return this.http
+      .get<Order[]>(url, {
+        headers: this.getHeaders(),
       })
-    );
+      .pipe(
+        tap((orders) => {
+          this.ordersSignal.set(orders);
+          this.isLoadingSignal.set(false);
+        }),
+      );
   }
 
   /**
@@ -318,7 +319,7 @@ export class OrderService {
    */
   getSellerStats(): Observable<SellerStats> {
     return this.http.get<SellerStats>(`${this.PROFILE_URL}/seller/me`, {
-      headers: this.getHeaders()
+      headers: this.getHeaders(),
     });
   }
 
@@ -327,7 +328,7 @@ export class OrderService {
    */
   removeOrder(id: string): Observable<void> {
     return this.http.delete<void>(`${this.API_URL}/${id}`, {
-      headers: this.getHeaders()
+      headers: this.getHeaders(),
     });
   }
 }
