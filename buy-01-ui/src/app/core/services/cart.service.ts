@@ -63,7 +63,8 @@ export class CartService {
    */
   getCart(): Observable<Cart> {
     this.loadingSignal.set(true);
-    return this.http.get<Cart>(this.API_URL).pipe(
+    const userId = this.authService.currentUser()?.id;
+    return this.http.get<Cart>(`${this.API_URL}/${userId}`).pipe(
       tap(cart => {
         this.cartSignal.set(cart);
         this.loadingSignal.set(false);
@@ -97,7 +98,8 @@ export class CartService {
     this.cartSignal.set(optimisticCart);
     
     this.loadingSignal.set(true);
-    return this.http.post<Cart>(`${this.API_URL}/items`, request).pipe(
+    const userId = this.authService.currentUser()?.id;
+    return this.http.post<Cart>(`${this.API_URL}/${userId}/items`, request).pipe(
       tap(cart => {
         this.cartSignal.set(cart);
         this.loadingSignal.set(false);
@@ -121,7 +123,8 @@ export class CartService {
     this.cartSignal.set(optimisticCart);
     
     this.loadingSignal.set(true);
-    return this.http.put<Cart>(`${this.API_URL}/items/${productId}`, { quantity }).pipe(
+    const userId = this.authService.currentUser()?.id;
+    return this.http.put<Cart>(`${this.API_URL}/${userId}/items/${productId}?quantity=${quantity}`, {}).pipe(
       tap(cart => {
         this.cartSignal.set(cart);
         this.loadingSignal.set(false);
@@ -145,7 +148,8 @@ export class CartService {
     this.cartSignal.set(optimisticCart);
     
     this.loadingSignal.set(true);
-    return this.http.delete<Cart>(`${this.API_URL}/items/${productId}`).pipe(
+    const userId = this.authService.currentUser()?.id;
+    return this.http.delete<Cart>(`${this.API_URL}/${userId}/items/${productId}`).pipe(
       tap(cart => {
         this.cartSignal.set(cart);
         this.loadingSignal.set(false);
@@ -175,7 +179,8 @@ export class CartService {
     this.cartSignal.set(emptyCart);
     
     this.loadingSignal.set(true);
-    return this.http.delete<void>(this.API_URL).pipe(
+    const userId = this.authService.currentUser()?.id;
+    return this.http.delete<void>(`${this.API_URL}/${userId}`).pipe(
       tap(() => {
         this.loadingSignal.set(false);
       }),

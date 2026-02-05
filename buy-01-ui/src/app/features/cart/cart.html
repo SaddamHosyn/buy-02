@@ -1,20 +1,3 @@
-<mat-toolbar color="primary" class="app-toolbar">
-  <button mat-icon-button routerLink="/products">
-    <mat-icon>arrow_back</mat-icon>
-  </button>
-  <span class="toolbar-title">Shopping Cart</span>
-  <span class="spacer"></span>
-
-  @if (authService.isAuthenticated()) {
-    <span class="user-info">{{ authService.currentUser()?.name }}</span>
-    <button mat-button routerLink="/profile">
-      <mat-icon>account_circle</mat-icon>
-    </button>
-    <button mat-icon-button (click)="logout()">
-      <mat-icon>logout</mat-icon>
-    </button>
-  }
-</mat-toolbar>
 
 <div class="container">
   @if (isLoading()) {

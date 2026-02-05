@@ -14,6 +14,13 @@
                 Browse
             </button>
 
+            @if (!authService.isSeller() && !authService.isAdmin()) {
+            <button mat-button routerLink="/cart" routerLinkActive="active-link" matTooltip="Your Cart">
+                <mat-icon [matBadge]="cartCount()" [matBadgeHidden]="cartCount() === 0" matBadgeColor="warn" matBadgeSize="small">shopping_cart</mat-icon>
+                <span>Cart</span>
+            </button>
+            }
+
             @if (authService.isAuthenticated()) {
             @if (authService.isSeller()) {
             <button mat-button (click)="goToDashboard()" routerLinkActive="active-link">

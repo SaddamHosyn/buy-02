@@ -42,10 +42,12 @@ public class OrderController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User ID and shipping address are required");
         }
 
-        // For demo purposes, return success with order number
+        // Generate a fake ID for now to satisfy the frontend router
+        String orderId = "ord_" + System.currentTimeMillis(); 
         Map<String, String> response = new HashMap<>();
         response.put("message", "Order placed successfully");
         response.put("orderNumber", "ORD-" + System.currentTimeMillis());
+        response.put("id", orderId); // Fix: added 'id' for frontend routing
         return ResponseEntity.ok(response);
     }
 

@@ -90,7 +90,9 @@ export class CartPage implements OnInit {
       },
       error: (error) => {
         console.error('Error updating quantity:', error);
-        this.snackBar.open('Failed to update quantity', 'Close', { duration: 3000 });
+        // Extract error message from backend if available
+        const errorMessage = error.error?.message || 'Failed to update quantity';
+        this.snackBar.open(errorMessage, 'Close', { duration: 3000 });
         this.setItemUpdating(item.productId, false);
       }
     });

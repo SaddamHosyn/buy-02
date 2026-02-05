@@ -26,7 +26,9 @@ public class SecurityConfig {
                         // Permitting all for development since security is handled by Gateway or not
                         // yet fully implemented here
                         .requestMatchers("/orders/**").permitAll()
+                        .requestMatchers("/cart/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
+                        .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated());
 
         return http.build();

@@ -155,7 +155,10 @@ export class OrderService {
     deliveryNotes?: string;
     paymentMethod: string;
   }): Observable<Order> {
-    return this.http.post<Order>(`${this.API_URL}/checkout`, request, {
+    const userId = this.authService.currentUser()?.id || '';
+    const fullRequest = { ...request, userId };
+    
+    return this.http.post<Order>(`${this.API_URL}/checkout`, fullRequest, {
       headers: this.getHeaders()
     }).pipe(
       tap(order => this.currentOrderSignal.set(order))
