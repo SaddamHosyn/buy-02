@@ -114,6 +114,26 @@ services:
     networks:
       - buy-01-network
 
+  order-service:
+    image: buy01-pipeline-order-service:latest
+    container_name: buy-01-order-service
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_DATA_MONGODB_URI: mongodb://${MONGO_ROOT_USERNAME:-admin}:${MONGO_ROOT_PASSWORD:-admin123}@mongodb:27017/orderdb?authSource=admin
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://service-registry:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: order-service
+      PRODUCT_SERVICE_URL: http://product-service:8082/products
+      USER_SERVICE_URL: http://user-service:8081/users
+    depends_on:
+      - kafka
+      - service-registry
+      - mongodb
+    networks:
+      - buy-01-network
+
   media-service:
     image: buy01-pipeline-media-service:latest
     container_name: buy-01-media-service

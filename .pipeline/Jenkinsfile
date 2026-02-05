@@ -135,7 +135,7 @@ pipeline {
                 dir('.pipeline') {
                     sh '''
                         docker compose up -d mongodb zookeeper kafka \
-                            service-registry api-gateway user-service product-service media-service frontend
+                            service-registry api-gateway user-service product-service order-service media-service frontend
                     '''
                 }
                 echo "✅ Deployed successfully"
