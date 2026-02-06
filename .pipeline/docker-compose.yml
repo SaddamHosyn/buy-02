@@ -14,7 +14,7 @@ services:
     image: mongo:6.0
     container_name: buy-01-mongodb
     ports:
-      - "27017:27017"
+      - "27018:27017"   # Offset to avoid local MongoDB conflict
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-admin}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-admin123}
@@ -29,7 +29,7 @@ services:
     depends_on:
       - zookeeper
     ports:
-      - "9092:9092"
+      - "9094:9092"   # Offset to avoid local Kafka conflict
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -49,7 +49,7 @@ services:
     image: buy01-pipeline-service-registry:latest
     container_name: buy-01-service-registry
     ports:
-      - "8761:8761"
+      - "8762:8761"   # Offset to avoid local conflict
     networks:
       - buy-01-network
 
@@ -57,8 +57,8 @@ services:
     image: buy01-pipeline-api-gateway:latest
     container_name: buy-01-api-gateway
     ports:
-      - "8080:8080"   # HTTP (always available)
-      - "8443:8443"   # HTTPS (when enabled)
+      - "8090:8080"   # HTTP - offset to avoid local API Gateway conflict
+      - "8444:8443"   # HTTPS - offset
     volumes:
       - buy01-certs:/app/certs:ro
     environment:
@@ -81,7 +81,7 @@ services:
     image: buy01-pipeline-user-service:latest
     container_name: buy-01-user-service
     ports:
-      - "8081:8081"
+      - "8091:8081"   # Offset to avoid local conflict
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -99,7 +99,7 @@ services:
     image: buy01-pipeline-product-service:latest
     container_name: buy-01-product-service
     ports:
-      - "8082:8082"
+      - "8092:8082"   # Offset to avoid local conflict
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -118,7 +118,7 @@ services:
     image: buy01-pipeline-order-service:latest
     container_name: buy-01-order-service
     ports:
-      - "8084:8084"
+      - "8094:8084"   # Offset to avoid local conflict
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -138,7 +138,7 @@ services:
     image: buy01-pipeline-media-service:latest
     container_name: buy-01-media-service
     ports:
-      - "8083:8083"
+      - "8093:8083"   # Offset to avoid local conflict
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
