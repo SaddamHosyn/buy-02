@@ -31,6 +31,25 @@ echo -e "${BLUE}   Buy-01 Application Startup${NC}"
 echo -e "${BLUE}============================================${NC}"
 echo ""
 
+# Function to wait for a service to be ready on a port
+wait_for_port() {
+    local port=$1
+    local service_name=$2
+    local max_wait=${3:-60}
+    local count=0
+    echo -e "${YELLOW}  Waiting for $service_name to be ready on port $port...${NC}"
+    while ! nc -z localhost $port 2>/dev/null; do
+        sleep 2
+        count=$((count + 2))
+        if [ $count -ge $max_wait ]; then
+            echo -e "${RED}  ✗ $service_name failed to start within ${max_wait}s${NC}"
+            return 1
+        fi
+    done
+    echo -e "${GREEN}  ✓ $service_name is ready${NC}"
+    return 0
+}
+
 # Check if MongoDB is running
 echo -e "${YELLOW}[1/8] Checking MongoDB...${NC}"
 if ! pgrep -x "mongod" > /dev/null; then
@@ -41,7 +60,7 @@ fi
 echo -e "${GREEN}✓ MongoDB is running${NC}"
 
 # Check if Kafka is running (Kafka 4.x uses KRaft mode - no Zookeeper needed)
-echo -e "${YELLOW}[1.5/8] Checking Kafka...${NC}"
+echo -e "${YELLOW}[2/8] Checking Kafka...${NC}"
 if ! pgrep -f "kafka.Kafka\|kafka.server.KafkaServer\|org.apache.kafka" > /dev/null; then
     echo -e "${YELLOW}Kafka is not running. Starting it via brew...${NC}"
     brew services start kafka
@@ -51,22 +70,18 @@ echo -e "${GREEN}✓ Kafka check complete${NC}"
 echo ""
 
 # Start Service Registry (Eureka)
-echo -e "${YELLOW}[2/7] Starting Service Registry (Eureka)...${NC}"
+echo -e "${YELLOW}[3/8] Starting Service Registry (Eureka)...${NC}"
 cd "$PROJECT_ROOT/service-registry"
 mvn spring-boot:run > "$PROJECT_ROOT/logs/service-registry.log" 2>&1 &
 SERVICE_REGISTRY_PID=$!
 echo "$SERVICE_REGISTRY_PID" > "$PROJECT_ROOT/pids/service-registry.pid"
 echo -e "${GREEN}✓ Service Registry started (PID: $SERVICE_REGISTRY_PID)${NC}"
 echo -e "${GREEN}  URL: http://localhost:8761${NC}"
-echo ""
-
-# Wait for Service Registry to be ready
-echo -e "${YELLOW}Waiting for Service Registry to be ready...${NC}"
-sleep 20
+wait_for_port 8761 "Service Registry" 90
 echo ""
 
 # Start User Service
-echo -e "${YELLOW}[3/7] Starting User Service...${NC}"
+echo -e "${YELLOW}[4/8] Starting User Service...${NC}"
 cd "$PROJECT_ROOT/user-service"
 mvn spring-boot:run > "$PROJECT_ROOT/logs/user-service.log" 2>&1 &
 USER_SERVICE_PID=$!
@@ -76,7 +91,7 @@ echo -e "${GREEN}  Port: 8081${NC}"
 echo ""
 
 # Start Product Service
-echo -e "${YELLOW}[4/7] Starting Product Service...${NC}"
+echo -e "${YELLOW}[5/8] Starting Product Service...${NC}"
 cd "$PROJECT_ROOT/product-service"
 mvn spring-boot:run > "$PROJECT_ROOT/logs/product-service.log" 2>&1 &
 PRODUCT_SERVICE_PID=$!
@@ -86,7 +101,7 @@ echo -e "${GREEN}  Port: 8082${NC}"
 echo ""
 
 # Start Media Service
-echo -e "${YELLOW}[5/7] Starting Media Service...${NC}"
+echo -e "${YELLOW}[6/8] Starting Media Service...${NC}"
 cd "$PROJECT_ROOT/media-service"
 mvn spring-boot:run > "$PROJECT_ROOT/logs/media-service.log" 2>&1 &
 MEDIA_SERVICE_PID=$!
@@ -96,7 +111,7 @@ echo -e "${GREEN}  Port: 8083${NC}"
 echo ""
 
 # Start Order Service
-echo -e "${YELLOW}[6/8] Starting Order Service...${NC}"
+echo -e "${YELLOW}[7/8] Starting Order Service...${NC}"
 cd "$PROJECT_ROOT/order-service"
 mvn spring-boot:run > "$PROJECT_ROOT/logs/order-service.log" 2>&1 &
 ORDER_SERVICE_PID=$!
@@ -105,38 +120,41 @@ echo -e "${GREEN}✓ Order Service started (PID: $ORDER_SERVICE_PID)${NC}"
 echo -e "${GREEN}  Port: 8084${NC}"
 echo ""
 
-# Wait for microservices to register
-echo -e "${YELLOW}Waiting for services to register with Eureka...${NC}"
-sleep 15
+# Wait for microservices to be ready
+echo -e "${YELLOW}Waiting for microservices to start...${NC}"
+wait_for_port 8081 "User Service" 60
+wait_for_port 8082 "Product Service" 60
+wait_for_port 8083 "Media Service" 60
+wait_for_port 8084 "Order Service" 60
 echo ""
 
 # Start API Gateway
-echo -e "${YELLOW}[7/8] Starting API Gateway...${NC}"
+echo -e "${YELLOW}[8/8] Starting API Gateway...${NC}"
 cd "$PROJECT_ROOT/api-gateway"
 mvn spring-boot:run > "$PROJECT_ROOT/logs/api-gateway.log" 2>&1 &
 API_GATEWAY_PID=$!
 echo "$API_GATEWAY_PID" > "$PROJECT_ROOT/pids/api-gateway.pid"
 echo -e "${GREEN}✓ API Gateway started (PID: $API_GATEWAY_PID)${NC}"
 echo -e "${GREEN}  URL: http://localhost:8090${NC}"
-echo ""
-
-# Wait for API Gateway to be ready
-echo -e "${YELLOW}Waiting for API Gateway to be ready...${NC}"
-sleep 10
+wait_for_port 8090 "API Gateway" 60
 echo ""
 
 # Start Frontend (Angular)
-echo -e "${YELLOW}[8/8] Starting Frontend (Angular)...${NC}"
+echo -e "${YELLOW}[9/9] Starting Frontend (Angular)...${NC}"
 cd "$PROJECT_ROOT/buy-01-ui"
-# Install dependencies if node_modules doesn't exist
-if [ ! -d "node_modules" ]; then
+# Install dependencies if node_modules doesn't exist or package-lock changed
+if [ ! -d "node_modules" ] || [ "package.json" -nt "node_modules" ]; then
     echo -e "${YELLOW}  Installing npm dependencies...${NC}"
     npm install > "$PROJECT_ROOT/logs/frontend-install.log" 2>&1
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}  ✗ npm install failed. Check logs/frontend-install.log${NC}"
+    fi
 fi
 npm start > "$PROJECT_ROOT/logs/frontend.log" 2>&1 &
 FRONTEND_PID=$!
 echo "$FRONTEND_PID" > "$PROJECT_ROOT/pids/frontend.pid"
 echo -e "${GREEN}✓ Frontend started (PID: $FRONTEND_PID)${NC}"
+wait_for_port 4200 "Frontend" 120
 echo -e "${GREEN}  URL: http://localhost:4200${NC}"
 echo ""
 

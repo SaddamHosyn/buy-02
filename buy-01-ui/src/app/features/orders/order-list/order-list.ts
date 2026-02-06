@@ -65,7 +65,14 @@ export class OrderListPage implements OnInit {
   
   // Computed
   readonly filteredOrders = computed(() => {
-    let result = this.orders();
+    let result = this.orders() || [];
+    
+    // Ensure result is an array
+    if (!Array.isArray(result)) {
+      console.warn('Orders is not an array:', result);
+      return [];
+    }
+    
     const query = this.searchQuery().toLowerCase();
     
     if (query) {

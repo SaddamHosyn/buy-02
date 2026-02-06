@@ -88,14 +88,14 @@ public class OrderService {
         
         // Payment and shipping
         order.setPaymentMethod(request.getPaymentMethod());
-        order.setPaymentStatus("PENDING");
+        order.setPaymentStatus("PAID"); // MVP: Mark as paid directly
         order.setShippingAddress(request.getShippingAddress());
         order.setDeliveryNotes(request.getDeliveryNotes());
         
-        // Status
-        order.setStatus(OrderStatus.PENDING);
+        // Status - MVP: Set directly to CONFIRMED for simplicity
+        order.setStatus(OrderStatus.CONFIRMED);
         order.setStatusHistory(new ArrayList<>());
-        addStatusHistoryEntry(order, null, OrderStatus.PENDING, userId, Role.CLIENT, "Order created");
+        addStatusHistoryEntry(order, null, OrderStatus.CONFIRMED, userId, Role.CLIENT, "Order placed and confirmed");
         
         // Dates
         order.setEstimatedDeliveryDate(LocalDateTime.now().plusDays(estimatedDeliveryDays));
