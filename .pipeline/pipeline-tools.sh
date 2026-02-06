@@ -321,6 +321,8 @@ import com.cloudbees.plugins.credentials.domains.*
 import com.cloudbees.plugins.credentials.impl.*
 import org.jenkinsci.plugins.plaincredentials.impl.*
 import hudson.util.Secret
+import hudson.plugins.sonar.*
+import hudson.plugins.sonar.model.*
 
 def jenkins = Jenkins.instance
 
@@ -355,6 +357,47 @@ credsToCreate.each { c ->
     store.addCredentials(domain, cred)
     println "  Credential '${c.id}' created/updated."
 }
+
+// --- CONFIGURING SONARQUBE SERVER ---
+println " Configuring SonarQube Server..."
+def sonarGlobalConf = jenkins.getDescriptor(SonarGlobalConfiguration.class)
+
+// Attempt to define SonarQube installation with fallback
+def instName = "SonarQube"
+def serverUrl = "http://sonarqube:9000"
+def credId = "sonarqube-token"
+
+try {
+    // Constructor 1: Full constructor (Common in recent plugins)
+    // String name, String serverUrl, String credentialsId, String serverAuthenticationToken, String mojoVersion, String additionalProperties, String additionalAnalysisProperties, Triggers triggers
+    def sonarInst = new SonarInstallation(
+        instName,
+        serverUrl,
+        credId,
+        null, // auth token (deprecated in favor of credentialsId)
+        null, // mojo version
+        null, // additional props
+        null, // additional analysis props
+        null  // triggers
+    )
+    sonarGlobalConf.setInstallations(sonarInst)
+    println "  SonarQube server '${instName}' configured (Full Constructor)."
+} catch (Exception e1) {
+    println "  [WARN] Full constructor failed: " + e1.getMessage()
+    try {
+        // Constructor 2: Simple/Earlier versions
+        // String name, String serverUrl, String credentialsId
+        def sonarInst = new SonarInstallation(instName, serverUrl, credId)
+        sonarGlobalConf.setInstallations(sonarInst)
+        println "  SonarQube server '${instName}' configured (Simple Constructor)."
+    } catch (Exception e2) {
+        println "  [ERROR] Could not configure SonarQube server: " + e2.getMessage()
+    }
+}
+sonarGlobalConf.save()
+
+
+// --- CONFIGURING 
 
 // --- CONFIGURING JOB ---
 def jobName = "JOB_NAME_PLACEHOLDER"
