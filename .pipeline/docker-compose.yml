@@ -16,8 +16,8 @@ services:
     ports:
       - "27017:27017"
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:?MONGO_ROOT_USERNAME must be set}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?MONGO_ROOT_PASSWORD must be set}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-admin123}
     volumes:
       - ./uploads:/data/db
     networks:
@@ -57,10 +57,10 @@ services:
     image: buy01-pipeline-api-gateway:latest
     container_name: buy-01-api-gateway
     ports:
-      - "8090:8090"   # HTTP (always available)
+      - "8080:8080"   # HTTP (always available)
       - "8443:8443"   # HTTPS (when enabled)
     volumes:
-      - ./certs:/app/certs:ro
+      - buy01-certs:/app/certs:ro
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -85,7 +85,7 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      SPRING_DATA_MONGODB_URI: mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongodb:27017/userdb?authSource=admin
+      SPRING_DATA_MONGODB_URI: mongodb://${MONGO_ROOT_USERNAME:-admin}:${MONGO_ROOT_PASSWORD:-admin123}@mongodb:27017/userdb?authSource=admin
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://service-registry:8761/eureka/
       EUREKA_INSTANCE_HOSTNAME: user-service
     depends_on:
@@ -103,10 +103,30 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      SPRING_DATA_MONGODB_URI: mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongodb:27017/productdb?authSource=admin
+      SPRING_DATA_MONGODB_URI: mongodb://${MONGO_ROOT_USERNAME:-admin}:${MONGO_ROOT_PASSWORD:-admin123}@mongodb:27017/productdb?authSource=admin
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://service-registry:8761/eureka/
       EUREKA_INSTANCE_HOSTNAME: product-service
       MEDIA_PUBLIC_URL: ${API_GATEWAY_URL}/api/media
+    depends_on:
+      - kafka
+      - service-registry
+      - mongodb
+    networks:
+      - buy-01-network
+
+  order-service:
+    image: buy01-pipeline-order-service:latest
+    container_name: buy-01-order-service
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_DATA_MONGODB_URI: mongodb://${MONGO_ROOT_USERNAME:-admin}:${MONGO_ROOT_PASSWORD:-admin123}@mongodb:27017/orderdb?authSource=admin
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://service-registry:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: order-service
+      PRODUCT_SERVICE_URL: http://product-service:8082/products
+      USER_SERVICE_URL: http://user-service:8081/users
     depends_on:
       - kafka
       - service-registry
@@ -122,7 +142,7 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      SPRING_DATA_MONGODB_URI: mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongodb:27017/mediadb?authSource=admin
+      SPRING_DATA_MONGODB_URI: mongodb://${MONGO_ROOT_USERNAME:-admin}:${MONGO_ROOT_PASSWORD:-admin123}@mongodb:27017/mediadb?authSource=admin
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://service-registry:8761/eureka/
       EUREKA_INSTANCE_HOSTNAME: media-service
       API_GATEWAY_URL: ${API_GATEWAY_URL}/api/media
@@ -142,12 +162,55 @@ services:
       - "4200:80"   # HTTP
       - "4201:443"  # HTTPS
     volumes:
-      - ./certs:/etc/nginx/certs:ro
+      - buy01-certs:/etc/nginx/certs:ro
     depends_on:
       - api-gateway
     networks:
       - buy-01-network
 
+  sonarqube:
+    image: sonarqube:community
+    container_name: buy01-sonarqube
+    ports:
+      - "9000:9000"
+    environment:
+      - SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true
+      - SONAR_JDBC_URL=jdbc:postgresql://sonarqube-db:5432/sonar
+      - SONAR_JDBC_USERNAME=sonar
+      - SONAR_JDBC_PASSWORD=sonar
+    command:
+      - -Dsonar.web.javaOpts=-Xmx512m -Xms128m -XX:+HeapDumpOnOutOfMemoryError
+      - -Dsonar.ce.javaOpts=-Xmx512m -Xms128m -XX:+HeapDumpOnOutOfMemoryError
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_logs:/opt/sonarqube/logs
+      - sonarqube_extensions:/opt/sonarqube/extensions
+    depends_on:
+      - sonarqube-db
+    networks:
+      - buy-01-network
+
+  sonarqube-db:
+    image: postgres:13
+    container_name: buy01-sonarqube-db
+    environment:
+      - POSTGRES_USER=sonar
+      - POSTGRES_PASSWORD=sonar
+      - POSTGRES_DB=sonar
+    volumes:
+      - sonarqube_db:/var/lib/postgresql/data
+    networks:
+      - buy-01-network
+
+
 networks:
   buy-01-network:
     driver: bridge
+
+volumes:
+  sonarqube_data:
+  sonarqube_logs:
+  sonarqube_extensions:
+  sonarqube_db:
+  buy01-certs:
+    external: true
