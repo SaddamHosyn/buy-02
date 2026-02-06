@@ -66,6 +66,9 @@ pipeline {
         }
         
         stage('SonarQube Analysis') {
+            when {
+                branch 'main'
+            }
             parallel {
                 stage('Backend Analysis') {
                     steps {

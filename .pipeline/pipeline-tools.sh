@@ -362,37 +362,28 @@ credsToCreate.each { c ->
 println " Configuring SonarQube Server..."
 def sonarGlobalConf = jenkins.getDescriptor(SonarGlobalConfiguration.class)
 
-// Attempt to define SonarQube installation with fallback
+// Attempt to define SonarQube installation
 def instName = "SonarQube"
 def serverUrl = "http://sonarqube:9000"
 def credId = "sonarqube-token"
+def triggers = new TriggersConfig()
 
 try {
-    // Constructor 1: Full constructor (Common in recent plugins)
-    // String name, String serverUrl, String credentialsId, String serverAuthenticationToken, String mojoVersion, String additionalProperties, String additionalAnalysisProperties, Triggers triggers
+    // Constructor matching installed plugin:
+    // (String name, String serverUrl, String credentialsId, String serverAuthenticationToken, String mojoVersion, TriggersConfig triggers, String additionalProperties)
     def sonarInst = new SonarInstallation(
         instName,
         serverUrl,
         credId,
-        null, // auth token (deprecated in favor of credentialsId)
-        null, // mojo version
-        null, // additional props
-        null, // additional analysis props
-        null  // triggers
+        null, // serverAuthenticationToken
+        null, // mojoVersion
+        triggers,
+        null  // additionalProperties
     )
     sonarGlobalConf.setInstallations(sonarInst)
-    println "  SonarQube server '${instName}' configured (Full Constructor)."
-} catch (Exception e1) {
-    println "  [WARN] Full constructor failed: " + e1.getMessage()
-    try {
-        // Constructor 2: Simple/Earlier versions
-        // String name, String serverUrl, String credentialsId
-        def sonarInst = new SonarInstallation(instName, serverUrl, credId)
-        sonarGlobalConf.setInstallations(sonarInst)
-        println "  SonarQube server '${instName}' configured (Simple Constructor)."
-    } catch (Exception e2) {
-        println "  [ERROR] Could not configure SonarQube server: " + e2.getMessage()
-    }
+    println "  SonarQube server '${instName}' configured."
+} catch (Exception e) {
+    println "  [ERROR] Could not configure SonarQube server: " + e.getMessage()
 }
 sonarGlobalConf.save()
 
