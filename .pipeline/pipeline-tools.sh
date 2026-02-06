@@ -38,6 +38,11 @@ NC='\033[0m'
 
 PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
 
+# Load .env file from project root if it exists
+if [ -f "${PROJECT_ROOT}/../.env" ]; then
+    export $(grep -v '^#' "${PROJECT_ROOT}/../.env" | xargs)
+fi
+
 # Helper functions
 log() {
     echo -e "${BLUE}[INFO]${NC} $1"
@@ -331,28 +336,30 @@ def credsToCreate = [
     [id: 'mongo-root-password', secret: 'admin123', desc: 'MongoDB Root Password'],
     [id: 'api-gateway-url', secret: 'http://api-gateway:8080', desc: 'API Gateway URL'],
     [id: 'github-token', secret: 'CHANGE_ME_GITHUB_TOKEN', desc: 'GitHub Token'],
-    [id: 'sonarqube-token', secret: 'CHANGE_ME_SONAR_TOKEN', desc: 'SonarQube Token']
+    [id: 'sonarqube-token', secret: System.getenv('SONAR_AUTH_TOKEN') ?: 'CHANGE_ME_SONAR_TOKEN', desc: 'SonarQube Token']
 ]
 
 credsToCreate.each { c ->
     def existing = new ArrayList(store.getCredentials(domain)).find { it.id == c.id }
     if (existing) {
-        println "  Credential '${c.id}' already exists. Skipping."
-    } else {
-        def cred = new StringCredentialsImpl(
-            CredentialsScope.GLOBAL,
-            c.id,
-            c.desc,
-            Secret.fromString(c.secret)
-        )
-        store.addCredentials(domain, cred)
-        println "  Credential '${c.id}' created."
+        println "  Credential '${c.id}' already exists. Updating..."
+        store.removeCredentials(domain, existing)
     }
+    
+    def cred = new StringCredentialsImpl(
+        CredentialsScope.GLOBAL,
+        c.id,
+        c.desc,
+        Secret.fromString(c.secret)
+    )
+    store.addCredentials(domain, cred)
+    println "  Credential '${c.id}' created/updated."
 }
 
 // --- CONFIGURING JOB ---
 def jobName = "JOB_NAME_PLACEHOLDER"
 def repoUrl = "REPO_URL_PLACEHOLDER"
+def scriptPath = ".pipeline/Jenkinsfile"
 def project = jenkins.getItem(jobName)
 
 if (project == null) {
@@ -373,6 +380,7 @@ scmSource.setTraits(traits)
 def branchSource = new BranchSource(scmSource)
 project.setSourcesList([branchSource])
 project.setOrphanedItemStrategy(new DefaultOrphanedItemStrategy(true, "10", "10"))
+project.getProjectFactory().setScriptPath(scriptPath)
 project.save()
 project.scheduleBuild2(0)
 
@@ -419,8 +427,11 @@ setup_sonarqube() {
     section "SONARQUBE AUTO-CONFIGURATION"
     
     local SONAR_URL="http://localhost:9000"
+    local SONAR_PASS="${SONAR_ADMIN_PASSWORD:-admin123}"
     
     log "Target URL: $SONAR_URL"
+    # Mask password in logs
+    log "Using Admin Password: ${SONAR_PASS:0:3}*****"
     
     # Check if SonarQube is running
     if ! curl -s "$SONAR_URL/api/system/health" > /dev/null; then
@@ -428,27 +439,33 @@ setup_sonarqube() {
         return
     fi
     
-    # Attempt to change password
-    log "Attempting to set admin password to 'admin123'..."
+    # Attempt to change password (defaults to admin123 if env var not set)
+    log "Attempting to set/verify admin password..."
     
-    # Try with default admin:admin (first login)
-    curl -s -u "admin:admin" -X POST "$SONAR_URL/api/users/change_password" -d "login=admin" -d "previousPassword=admin" -d "password=admin123" > /dev/null
-    
-    # Verify access with admin123
-    if curl -s -u "admin:admin123" "$SONAR_URL/api/authentication/validate" | grep -q "true"; then
-         success "Password is set to 'admin123'"
+    # Check if we can already login with the target password
+    if curl -s -u "admin:$SONAR_PASS" "$SONAR_URL/api/authentication/validate" | grep -q "true"; then
+        success "Authenticated successfully with configured password."
     else
-         warning "Could not automatically set password."
-         warning "1. Log in to http://localhost:9000"
-         warning "2. Use admin/admin or admin/newadmin if you changed it."
-         warning "3. Set the new password to: admin123"
-         warning "4. Run this command again."
-         return
+        # Try to change it from default 'admin'
+        log "Authentication failed. Attempting to change default password..."
+        curl -s -u "admin:admin" -X POST "$SONAR_URL/api/users/change_password" -d "login=admin" -d "previousPassword=admin" -d "password=$SONAR_PASS" > /dev/null
+        
+        # Verify access again
+        if curl -s -u "admin:$SONAR_PASS" "$SONAR_URL/api/authentication/validate" | grep -q "true"; then
+             success "Default password changed successfully."
+        else
+             warning "Could not automatically set password."
+             warning "1. Log in to http://localhost:9000"
+             warning "2. Use admin/admin (or current password)"
+             warning "3. Set the new password to: $SONAR_PASS"
+             warning "4. Run this command again."
+             return
+        fi
     fi
     
     # Create Project
     log "Creating project 'buy-02'..."
-    if curl -s -u "admin:admin123" -X POST "$SONAR_URL/api/projects/create" -d "name=buy-02" -d "project=buy-02" -d "visibility=public" | grep -q "project"; then
+    if curl -s -u "admin:$SONAR_PASS" -X POST "$SONAR_URL/api/projects/create" -d "name=buy-02" -d "project=buy-02" -d "visibility=public" | grep -q "project"; then
         success "Project 'buy-02' created"
     else
         log "Project likely already exists"
@@ -456,12 +473,25 @@ setup_sonarqube() {
     
     # Generate Token
     log "Generating Jenkins Token..."
-    TOKEN_RESPONSE=$(curl -s -u "admin:admin123" -X POST "$SONAR_URL/api/user_tokens/generate" -d "name=jenkins-token-$(date +%s)" -d "type=GLOBAL_ANALYSIS_TOKEN")
+    TOKEN_RESPONSE=$(curl -s -u "admin:$SONAR_PASS" -X POST "$SONAR_URL/api/user_tokens/generate" -d "name=jenkins-token-$(date +%s)" -d "type=GLOBAL_ANALYSIS_TOKEN")
     
     TOKEN=$(echo "$TOKEN_RESPONSE" | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
     
     if [ -n "$TOKEN" ]; then
         success "Token generated: $TOKEN"
+        
+        # Save token to .env for other scripts/functions to use
+        if [ -f "${PROJECT_ROOT}/../.env" ]; then
+             if grep -q "SONAR_AUTH_TOKEN=" "${PROJECT_ROOT}/../.env"; then
+                 # Portable in-place edit for macOS/Linux
+                 sed -i.bak "s|^SONAR_AUTH_TOKEN=.*|SONAR_AUTH_TOKEN=$TOKEN|" "${PROJECT_ROOT}/../.env" && rm "${PROJECT_ROOT}/../.env.bak"
+             else
+                 echo "SONAR_AUTH_TOKEN=$TOKEN" >> "${PROJECT_ROOT}/../.env"
+             fi
+             log "Token saved to .env file"
+             export SONAR_AUTH_TOKEN=$TOKEN
+        fi
+        
         echo ""
         echo "IMPORTANT: Copy this token to update Jenkins credentials:"
         echo "$TOKEN"

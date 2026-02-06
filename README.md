@@ -119,7 +119,7 @@ ngrok http 8090
    - **Repository URL**: `https://github.com/jeeeeedi/mr-jenk.git`
    - **Credentials**: Select the GitHub credentials you created
    - **Branch**: `*/cleanup` (or your working branch)
-4. **Script Path**: `Jenkinsfile` (default)
+4. **Script Path**: `.pipeline/Jenkinsfile`
 5. Under **Build Triggers** → Check ☑️ **GitHub hook trigger for GITScm polling**
 6. **Save**
 
