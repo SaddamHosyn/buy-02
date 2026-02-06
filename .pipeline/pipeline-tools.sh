@@ -414,6 +414,62 @@ EOF
     fi
 }
 
+# Command: setup-sonarqube
+setup_sonarqube() {
+    section "SONARQUBE AUTO-CONFIGURATION"
+    
+    local SONAR_URL="http://localhost:9000"
+    
+    log "Target URL: $SONAR_URL"
+    
+    # Check if SonarQube is running
+    if ! curl -s "$SONAR_URL/api/system/health" > /dev/null; then
+        error "SonarQube is not reachable. Please run boot-pipeline.sh first."
+        return
+    fi
+    
+    # Attempt to change password
+    log "Attempting to set admin password to 'admin123'..."
+    
+    # Try with default admin:admin (first login)
+    curl -s -u "admin:admin" -X POST "$SONAR_URL/api/users/change_password" -d "login=admin" -d "previousPassword=admin" -d "password=admin123" > /dev/null
+    
+    # Verify access with admin123
+    if curl -s -u "admin:admin123" "$SONAR_URL/api/authentication/validate" | grep -q "true"; then
+         success "Password is set to 'admin123'"
+    else
+         warning "Could not automatically set password."
+         warning "1. Log in to http://localhost:9000"
+         warning "2. Use admin/admin or admin/newadmin if you changed it."
+         warning "3. Set the new password to: admin123"
+         warning "4. Run this command again."
+         return
+    fi
+    
+    # Create Project
+    log "Creating project 'buy-02'..."
+    if curl -s -u "admin:admin123" -X POST "$SONAR_URL/api/projects/create" -d "name=buy-02" -d "project=buy-02" -d "visibility=public" | grep -q "project"; then
+        success "Project 'buy-02' created"
+    else
+        log "Project likely already exists"
+    fi
+    
+    # Generate Token
+    log "Generating Jenkins Token..."
+    TOKEN_RESPONSE=$(curl -s -u "admin:admin123" -X POST "$SONAR_URL/api/user_tokens/generate" -d "name=jenkins-token-$(date +%s)" -d "type=GLOBAL_ANALYSIS_TOKEN")
+    
+    TOKEN=$(echo "$TOKEN_RESPONSE" | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
+    
+    if [ -n "$TOKEN" ]; then
+        success "Token generated: $TOKEN"
+        echo ""
+        echo "IMPORTANT: Copy this token to update Jenkins credentials:"
+        echo "$TOKEN"
+    else
+        warning "Could not generate token. Check logs."
+    fi
+}
+
 # Command: scan
 trigger_scan() {
     section "TRIGGERING SCAN"
@@ -511,6 +567,7 @@ case "$COMMAND" in
     docker-stats) docker_stats ;;
     reset-jenkins) reset_jenkins ;;
     setup-job) setup_job ;;
+    setup-sonarqube) setup_sonarqube ;;
     scan) trigger_scan ;;
     ngrok) start_ngrok ;;
     help) show_help ;;
