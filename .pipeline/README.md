@@ -55,7 +55,43 @@ The pipeline is defined in `Jenkinsfile` and covers:
 4. **Analysis:** Runs SonarQube scanner (Community Edition).
    - *Note: Branch analysis is disabled for Community Edition.*
 
+## � Pipeline-Deployed Service Ports
+
+When the pipeline deploys via `docker compose`, host ports are **offset** from the local dev ports to avoid conflicts:
+
+| Service          | Local Dev Port | Pipeline Port | Container Port |
+|------------------|---------------|---------------|----------------|
+| API Gateway HTTP | 8080          | **8090**      | 8080           |
+| API Gateway HTTPS| 8443          | **8444**      | 8443           |
+| Service Registry | 8761          | **8762**      | 8761           |
+| User Service     | 8081          | **8091**      | 8081           |
+| Product Service  | 8082          | **8092**      | 8082           |
+| Media Service    | 8083          | **8093**      | 8083           |
+| Order Service    | 8084          | **8094**      | 8084           |
+| MongoDB          | 27017         | **27018**     | 27017          |
+| Kafka            | 9092          | **9094**      | 9092           |
+| Zookeeper        | 2181          | **2182**      | 2181           |
+| Frontend HTTP    | 4200          | 4200          | 80             |
+| Frontend HTTPS   | 4201          | 4201          | 443            |
+
+> Internal container-to-container communication uses the original ports via the Docker network.
+
+## 🔐 SSL Certificates
+
+The pipeline requires a `buy01-certs` Docker volume for HTTPS. It is auto-created by `boot-pipeline.sh`, or you can set it up manually:
+
+```bash
+./setup_certs.sh          # Creates volume + generates self-signed certs
+./setup_certs.sh --force  # Regenerates certs even if they exist
+```
+
+You can also run it via `pipeline-tools.sh setup-certs`.
+
+---
+
 ## 🐳 Troubleshooting
+- **"port already in use"?** Your local services (via `start_all.sh`) may be running. Either stop them (`./stop_all.sh`) or rely on the offset ports above.
+- **"external volume buy01-certs not found"?** Run `./setup_certs.sh` or `.pipeline/pipeline-tools.sh setup-certs`.
 - **Build failing on SonarQube?** Check that your `sonarqube-token` in Jenkins matches the one in SonarQube.
 - **"UnknownHostException: sonarqube"?** Update Jenkins System Config -> SonarQube URL to `http://host.docker.internal:9000`.
 - **"401 Unauthorized"?** Refresh the `sonarqube-token` credential in Jenkins.
