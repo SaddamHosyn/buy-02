@@ -76,7 +76,7 @@ pipeline {
                             withSonarQubeEnv('SonarQube') {
                                 script {
                                     def branch = env.GIT_BRANCH?.replace('origin/', '') ?: 'main'
-                                    sh "mvn sonar:sonar -Dsonar.branch.name=${branch} -Dsonar.host.url=${SONARQUBE_URL} -Dsonar.token=${SONAR_TOKEN}"
+                                    sh "mvn sonar:sonar -Dsonar.host.url=${SONARQUBE_URL} -Dsonar.token=${SONAR_TOKEN}"
                                 }
                             }
                             // Check Quality Gate immediately for backend
@@ -107,7 +107,6 @@ pipeline {
                                         // Run SonarQube analysis
                                         sh """
                                             npx sonarqube-scanner \
-                                                -Dsonar.branch.name=${branch} \
                                                 -Dsonar.host.url=${SONARQUBE_URL} \
                                                 -Dsonar.token=${SONAR_TOKEN}
                                         """
