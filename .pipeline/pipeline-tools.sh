@@ -571,6 +571,19 @@ trigger_scan() {
     fi
 }
 
+# Command: setup-certs
+setup_certs() {
+    section "CERTIFICATE SETUP"
+    local SCRIPT="${PROJECT_ROOT}/setup_certs.sh"
+    
+    if [ ! -f "$SCRIPT" ]; then
+        error "Certificate setup script not found at $SCRIPT"
+    fi
+    
+    chmod +x "$SCRIPT"
+    "$SCRIPT" || error "Failed to setup certificates"
+}
+
 # Command: ngrok
 start_ngrok() {
     section "NGROK SETUP"
@@ -632,6 +645,7 @@ case "$COMMAND" in
     reset-jenkins) reset_jenkins ;;
     setup-job) setup_job ;;
     setup-sonarqube) setup_sonarqube ;;
+    setup-certs) setup_certs ;;
     scan) trigger_scan ;;
     ngrok) start_ngrok ;;
     help) show_help ;;

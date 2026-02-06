@@ -319,6 +319,16 @@ if [ "$JENKINS_READY" = true ]; then
     success "Jenkins is ready"
     success "  URL: http://localhost:8088"
     
+    # Setup Certificates for Application
+    log "Checking application certificates..."
+    if [ -f "$PROJECT_ROOT/setup_certs.sh" ]; then
+        chmod +x "$PROJECT_ROOT/setup_certs.sh"
+        "$PROJECT_ROOT/setup_certs.sh" || warning "Certificate setup failed"
+        success "Application certificates configured"
+    else
+        warning "Certificate setup script not found: $PROJECT_ROOT/setup_certs.sh"
+    fi
+    
     # Verify Jenkins can access Docker socket
     log "Verifying Docker socket access from Jenkins..."
     if docker exec jenkins-local docker ps > /dev/null 2>&1; then
