@@ -119,9 +119,9 @@ success "Sufficient disk space available"
 if [ "$CLEANUP" = true ]; then
     section "CLEANUP"
     log "Cleaning up Docker resources..."
-    docker stop jenkins-local sonarqube sonarqube-db 2>/dev/null || true
-    docker rm jenkins-local sonarqube sonarqube-db 2>/dev/null || true
-    docker volume rm jenkins_home 2>/dev/null || true
+    docker stop jenkins-local sonarqube sonarqube-db buy01-sonarqube buy01-sonarqube-db 2>/dev/null || true
+    docker rm jenkins-local sonarqube sonarqube-db buy01-sonarqube buy01-sonarqube-db 2>/dev/null || true
+    docker volume rm jenkins_home pipeline_sonarqube_data pipeline_sonarqube_db pipeline_sonarqube_extensions pipeline_sonarqube_logs 2>/dev/null || true
     success "Cleanup completed"
 fi
 
