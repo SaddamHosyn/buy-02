@@ -139,14 +139,21 @@ db.media.countDocuments({ userId: "69244af654df39660cbd3294" })
 
 ###### Are there unit tests in place for critical parts of the application?
 
-> **Yes.** 8 test classes across services using JUnit 5, Mockito, and Testcontainers:
+> **Yes.** 9 backend test classes + 7 frontend spec files covering critical paths:
+>
+> **Backend** (JUnit 5, Mockito, Testcontainers):
 > - **User Service**: `UserServiceTest` (profile CRUD), `JwtServiceTest` (token generation/validation/extraction)
 > - **Product Service**: `ProductServiceTest` (CRUD operations)
 > - **Media Service**: `MediaServiceTest` (findByUserId, associateWithProduct)
-> - **Order Service**: `ProfileServiceTest` (buyer/seller stats calculation — 395 lines of comprehensive tests), `OrderRepositoryIntegrationTest` (Testcontainers with MongoDB for entity mapping and indexes)
+> - **Order Service**: `OrderServiceTest` (27 tests — checkout, getOrder, getUserOrders, getSellerOrders, search, cancel, redo, delete, response mapping), `ProfileServiceTest` (buyer/seller stats — 395 lines), `OrderRepositoryIntegrationTest` (Testcontainers + MongoDB)
 > - **API Gateway & Service Registry**: Context load tests
 >
-> Tests cover service-layer logic with mocked repositories and a real-database integration test for the order repository.
+> **Frontend** (Jasmine, Karma, Angular TestBed):
+> - `product-detail.spec.ts` — 27 tests: image gallery, quantity controls, addToCart, buyNow, navigation, lightbox, computed signals, formatDate
+> - `order-list.spec.ts` — 16 tests: init, loadOrders (buyer/seller), viewMode switch, filters, filteredOrders, navigation
+> - `product.service.spec.ts` — 14 tests: CRUD, search with filters (keyword, sort, price range, category), media operations
+>
+> Total: **96 frontend tests**, **27+ backend OrderService tests** (all passing). Tests cover service-layer logic with mocked repositories, HTTP request verification, and a real-database integration test.
 
 #### Bonus
 
