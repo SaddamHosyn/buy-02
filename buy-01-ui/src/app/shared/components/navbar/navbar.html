@@ -1,107 +1,126 @@
 <mat-toolbar color="primary" class="app-navbar mat-elevation-z4">
-    <div class="navbar-container">
-        <div class="logo-section" routerLink="/" style="cursor: pointer;">
-            <mat-icon class="logo-icon">shopping_bag</mat-icon>
-            <span class="logo-text">Buy-02</span>
-        </div>
-
-        <span class="spacer"></span>
-
-        <!-- Desktop Navigation -->
-        <div class="nav-links desktop-only">
-            <button mat-button routerLink="/products" routerLinkActive="active-link">
-                <mat-icon>grid_view</mat-icon>
-                Browse
-            </button>
-
-            @if (!authService.isSeller() && !authService.isAdmin()) {
-            <button mat-button routerLink="/cart" routerLinkActive="active-link" matTooltip="Your Cart">
-                <mat-icon [matBadge]="cartCount()" [matBadgeHidden]="cartCount() === 0" matBadgeColor="warn" matBadgeSize="small">shopping_cart</mat-icon>
-                <span>Cart</span>
-            </button>
-            }
-
-            @if (authService.isAuthenticated()) {
-            <button mat-button routerLink="/orders" routerLinkActive="active-link" matTooltip="Your Orders">
-                <mat-icon>receipt_long</mat-icon>
-                <span>Orders</span>
-            </button>
-
-            @if (authService.isSeller()) {
-            <button mat-button (click)="goToDashboard()" routerLinkActive="active-link">
-                <mat-icon>dashboard</mat-icon>
-                Dashboard
-            </button>
-            }
-
-            <button mat-button routerLink="/profile" routerLinkActive="active-link">
-                @if (authService.currentUser()?.avatarUrl) {
-                <img [src]="authService.currentUser()?.avatarUrl" class="nav-avatar" />
-                } @else {
-                <mat-icon>account_circle</mat-icon>
-                }
-                {{ authService.currentUser()?.name }}
-            </button>
-
-            <button mat-icon-button (click)="logout()" matTooltip="Logout">
-                <mat-icon>logout</mat-icon>
-            </button>
-            } @else {
-            <button mat-button routerLink="/auth/login">Login</button>
-            <button mat-raised-button color="accent" routerLink="/auth/register" class="register-btn">Register</button>
-            }
-        </div>
-
-        <!-- Mobile Navigation -->
-        <div class="mobile-only">
-            <button mat-icon-button [matMenuTriggerFor]="menu">
-                <mat-icon>menu</mat-icon>
-            </button>
-            <mat-menu #menu="matMenu">
-                <button mat-menu-item routerLink="/products">
-                    <mat-icon>grid_view</mat-icon>
-                    <span>Browse Products</span>
-                </button>
-
-                @if (authService.isAuthenticated()) {
-                @if (!authService.isSeller() && !authService.isAdmin()) {
-                <button mat-menu-item routerLink="/cart">
-                    <mat-icon [matBadge]="cartCount()" [matBadgeHidden]="cartCount() === 0" matBadgeColor="warn" matBadgeSize="small">shopping_cart</mat-icon>
-                    <span>Cart</span>
-                </button>
-                }
-                <button mat-menu-item routerLink="/orders">
-                    <mat-icon>receipt_long</mat-icon>
-                    <span>My Orders</span>
-                </button>
-                <mat-divider></mat-divider>
-                @if (authService.isSeller()) {
-                <button mat-menu-item (click)="goToDashboard()">
-                    <mat-icon>dashboard</mat-icon>
-                    <span>Seller Dashboard</span>
-                </button>
-                }
-                <button mat-menu-item routerLink="/profile">
-                    <mat-icon>account_circle</mat-icon>
-                    <span>My Profile</span>
-                </button>
-                <mat-divider></mat-divider>
-                <button mat-menu-item (click)="logout()">
-                    <mat-icon>logout</mat-icon>
-                    <span>Logout</span>
-                </button>
-                } @else {
-                <mat-divider></mat-divider>
-                <button mat-menu-item routerLink="/auth/login">
-                    <mat-icon>login</mat-icon>
-                    <span>Login</span>
-                </button>
-                <button mat-menu-item routerLink="/auth/register">
-                    <mat-icon>person_add</mat-icon>
-                    <span>Register</span>
-                </button>
-                }
-            </mat-menu>
-        </div>
+  <div class="navbar-container">
+    <div class="logo-section" routerLink="/" style="cursor: pointer">
+      <mat-icon class="logo-icon">shopping_bag</mat-icon>
+      <span class="logo-text">Buy-02</span>
     </div>
+
+    <span class="spacer"></span>
+
+    <!-- Desktop Navigation -->
+    <div class="nav-links desktop-only">
+      <button mat-button routerLink="/products" routerLinkActive="active-link">
+        <mat-icon>grid_view</mat-icon>
+        Browse
+      </button>
+
+      @if (!authService.isSeller() && !authService.isAdmin()) {
+        <button mat-button routerLink="/cart" routerLinkActive="active-link" matTooltip="Your Cart">
+          <mat-icon
+            [matBadge]="cartCount()"
+            [matBadgeHidden]="cartCount() === 0"
+            matBadgeColor="warn"
+            matBadgeSize="small"
+            >shopping_cart</mat-icon
+          >
+          <span>Cart</span>
+        </button>
+      }
+
+      @if (authService.isAuthenticated()) {
+        <button
+          mat-button
+          routerLink="/orders"
+          routerLinkActive="active-link"
+          matTooltip="Your Orders"
+        >
+          <mat-icon>receipt_long</mat-icon>
+          <span>Orders</span>
+        </button>
+
+        @if (authService.isSeller()) {
+          <button mat-button (click)="goToDashboard()" routerLinkActive="active-link">
+            <mat-icon>dashboard</mat-icon>
+            Dashboard
+          </button>
+        }
+
+        <button mat-button routerLink="/profile" routerLinkActive="active-link">
+          @if (authService.currentUser()?.avatarUrl) {
+            <img [src]="authService.currentUser()?.avatarUrl" class="nav-avatar" />
+          } @else {
+            <mat-icon>account_circle</mat-icon>
+          }
+          {{ authService.currentUser()?.name }}
+        </button>
+
+        <button mat-icon-button (click)="logout()" matTooltip="Logout">
+          <mat-icon>logout</mat-icon>
+        </button>
+      } @else {
+        <button mat-button routerLink="/auth/login">Login</button>
+        <button mat-raised-button color="accent" routerLink="/auth/register" class="register-btn">
+          Register
+        </button>
+      }
+    </div>
+
+    <!-- Mobile Navigation -->
+    <div class="mobile-only">
+      <button mat-icon-button [matMenuTriggerFor]="menu">
+        <mat-icon>menu</mat-icon>
+      </button>
+      <mat-menu #menu="matMenu">
+        <button mat-menu-item routerLink="/products">
+          <mat-icon>grid_view</mat-icon>
+          <span>Browse Products</span>
+        </button>
+
+        @if (authService.isAuthenticated()) {
+          @if (!authService.isSeller() && !authService.isAdmin()) {
+            <button mat-menu-item routerLink="/cart">
+              <mat-icon
+                [matBadge]="cartCount()"
+                [matBadgeHidden]="cartCount() === 0"
+                matBadgeColor="warn"
+                matBadgeSize="small"
+                >shopping_cart</mat-icon
+              >
+              <span>Cart</span>
+            </button>
+          }
+          <button mat-menu-item routerLink="/orders">
+            <mat-icon>receipt_long</mat-icon>
+            <span>My Orders</span>
+          </button>
+          <mat-divider></mat-divider>
+          @if (authService.isSeller()) {
+            <button mat-menu-item (click)="goToDashboard()">
+              <mat-icon>dashboard</mat-icon>
+              <span>Seller Dashboard</span>
+            </button>
+          }
+          <button mat-menu-item routerLink="/profile">
+            <mat-icon>account_circle</mat-icon>
+            <span>My Profile</span>
+          </button>
+          <mat-divider></mat-divider>
+          <button mat-menu-item (click)="logout()">
+            <mat-icon>logout</mat-icon>
+            <span>Logout</span>
+          </button>
+        } @else {
+          <mat-divider></mat-divider>
+          <button mat-menu-item routerLink="/auth/login">
+            <mat-icon>login</mat-icon>
+            <span>Login</span>
+          </button>
+          <button mat-menu-item routerLink="/auth/register">
+            <mat-icon>person_add</mat-icon>
+            <span>Register</span>
+          </button>
+        }
+      </mat-menu>
+    </div>
+  </div>
 </mat-toolbar>
