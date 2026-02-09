@@ -71,6 +71,7 @@ services:
       SSL_ENABLED: true
       SSL_KEY_STORE: file:/app/certs/localhost.p12
       SSL_KEY_STORE_PASSWORD: changeit
+      SSL_KEY_ALIAS: api-gateway
     depends_on:
       - kafka
       - service-registry
