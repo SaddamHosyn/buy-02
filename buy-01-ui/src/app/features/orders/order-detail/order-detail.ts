@@ -47,13 +47,10 @@ export class OrderDetailPage implements OnInit {
   readonly isLoading = this.orderService.isLoadingSignal;
   readonly isActioning = signal<boolean>(false);
 
-  // Status timeline steps
+  // Status timeline steps - simplified to only show used statuses
   readonly statusSteps: OrderStatus[] = [
     OrderStatus.PENDING,
     OrderStatus.CONFIRMED,
-    OrderStatus.PROCESSING,
-    OrderStatus.SHIPPED,
-    OrderStatus.DELIVERED,
   ];
 
   // Computed

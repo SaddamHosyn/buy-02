@@ -261,7 +261,7 @@ export class OrderService {
    * Check if order can be cancelled
    */
   canCancel(order: Order): boolean {
-    return [OrderStatus.PENDING, OrderStatus.CONFIRMED, OrderStatus.PROCESSING].includes(
+    return [OrderStatus.PENDING, OrderStatus.CONFIRMED].includes(
       order.status,
     );
   }
