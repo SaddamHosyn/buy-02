@@ -1,4 +1,4 @@
-# Frontend Implementation Documentation - Saddam
+# Frontend Implementation Documentation
 
 > **Project:** Buy-02 E-Commerce Platform  
 > **Framework:** Angular 19 (Standalone Components)  
