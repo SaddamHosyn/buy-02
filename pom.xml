@@ -67,6 +67,30 @@
 				<version>3.0.0</version>
 			</plugin>
 
+			<!-- JaCoCo: instrument code during tests and generate XML/HTML coverage reports -->
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>0.8.12</version>
+				<executions>
+					<!-- Prepares the JaCoCo agent so Surefire picks it up automatically -->
+					<execution>
+						<id>prepare-agent</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<!-- Generates the coverage report after tests run -->
+					<execution>
+						<id>report</id>
+						<phase>test</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
 			<!-- Compiler plugin left default for modules; remove Lombok annotation-processor config to avoid loading Lombok at compile-time when unused -->
 		</plugins>
 	</build>
