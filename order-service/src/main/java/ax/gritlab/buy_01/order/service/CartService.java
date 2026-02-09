@@ -25,6 +25,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CartService {
 
+    private static final String QUANTITY_FIELD = "quantity";
+    private static final String STOCK_FIELD = "stock";
+
     private final CartRepository cartRepository;
     private final RestTemplate restTemplate;
 
@@ -66,8 +69,14 @@ public class CartService {
         String sellerId = product.get("sellerId").asText();
         String productName = product.get("name").asText();
         Double price = product.get("price").asDouble();
-        int availableStock = product.has("quantity") ? product.get("quantity").asInt() : 
-                            (product.has("stock") ? product.get("stock").asInt() : Integer.MAX_VALUE);
+        int availableStock;
+        if (product.has(QUANTITY_FIELD)) {
+            availableStock = product.get(QUANTITY_FIELD).asInt();
+        } else if (product.has(STOCK_FIELD)) {
+            availableStock = product.get(STOCK_FIELD).asInt();
+        } else {
+            availableStock = Integer.MAX_VALUE;
+        }
 
         // Check if item already in cart
         Optional<CartItem> existingItem = cart.getItems().stream()
@@ -128,8 +137,14 @@ public class CartService {
         // Validate against available stock
         JsonNode product = fetchProductDetails(productId);
         if (product != null) {
-            int availableStock = product.has("quantity") ? product.get("quantity").asInt() : 
-                                (product.has("stock") ? product.get("stock").asInt() : Integer.MAX_VALUE);
+            int availableStock;
+            if (product.has(QUANTITY_FIELD)) {
+                availableStock = product.get(QUANTITY_FIELD).asInt();
+            } else if (product.has(STOCK_FIELD)) {
+                availableStock = product.get(STOCK_FIELD).asInt();
+            } else {
+                availableStock = Integer.MAX_VALUE;
+            }
             String productName = product.has("name") ? product.get("name").asText() : productId;
             
             if (quantity > availableStock) {
@@ -197,7 +212,7 @@ public class CartService {
                 );
             }
 
-            Integer availableStock = product.get("stock").asInt();
+            Integer availableStock = product.get(STOCK_FIELD).asInt();
             if (availableStock < item.getQuantity()) {
                 throw new CheckoutValidationException(
                     "Insufficient stock for '" + item.getCachedProductName() + 

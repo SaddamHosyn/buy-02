@@ -181,64 +181,37 @@ export class ProductDetail implements OnInit {
    * Add to cart
    */
   addToCart(): void {
-    const p = this.product();
-    if (!p) return;
-
-    if (!this.authService.isAuthenticated()) {
+    this.addProductToCart(() => {
       this.snackBar
-        .open('Please login to add items to cart', 'Login', { duration: 3000 })
+        .open(`Added ${this.quantity()} x ${this.product()!.name} to cart!`, 'View Cart', {
+          duration: 3000,
+        })
         .onAction()
         .subscribe(() => {
-          this.router.navigate(['/auth/login']);
+          this.router.navigate(['/cart']);
         });
-      return;
-    }
-
-    this.isAddingToCart.set(true);
-
-    this.cartService
-      .addToCart({
-        productId: p.id,
-        quantity: this.quantity(),
-        sellerId: p.sellerId || '',
-        cachedProductName: p.name,
-        cachedPrice: p.price,
-      })
-      .subscribe({
-        next: () => {
-          this.isAddingToCart.set(false);
-          this.snackBar
-            .open(`Added ${this.quantity()} x ${p.name} to cart!`, 'View Cart', { duration: 3000 })
-            .onAction()
-            .subscribe(() => {
-              this.router.navigate(['/cart']);
-            });
-        },
-        error: (error) => {
-          console.error('Error adding to cart:', error);
-          this.isAddingToCart.set(false);
-          // Error interceptor transforms error to: { status, message, originalError, details }
-          // Also check originalError.error.message for raw backend response
-          const errorMessage =
-            error.message ||
-            error.originalError?.error?.message ||
-            error.error?.message ||
-            'Failed to add to cart. Please try again.';
-          this.snackBar.open(errorMessage, 'Close', { duration: 5000 });
-        },
-      });
+    }, 'Please login to add items to cart');
   }
 
   /**
    * Buy now - add to cart and go to checkout
    */
   buyNow(): void {
+    this.addProductToCart(() => {
+      this.router.navigate(['/checkout']);
+    }, 'Please login to checkout');
+  }
+
+  /**
+   * Shared logic for adding product to cart with auth check and error handling.
+   */
+  private addProductToCart(onSuccess: () => void, loginPrompt: string): void {
     const p = this.product();
     if (!p) return;
 
     if (!this.authService.isAuthenticated()) {
       this.snackBar
-        .open('Please login to checkout', 'Login', { duration: 3000 })
+        .open(loginPrompt, 'Login', { duration: 3000 })
         .onAction()
         .subscribe(() => {
           this.router.navigate(['/auth/login']);
@@ -259,12 +232,11 @@ export class ProductDetail implements OnInit {
       .subscribe({
         next: () => {
           this.isAddingToCart.set(false);
-          this.router.navigate(['/checkout']);
+          onSuccess();
         },
         error: (error) => {
-          console.error('Error adding to cart (buyNow):', error);
+          console.error('Error adding to cart:', error);
           this.isAddingToCart.set(false);
-          // Error interceptor transforms error to: { status, message, originalError, details }
           const errorMessage =
             error.message ||
             error.originalError?.error?.message ||

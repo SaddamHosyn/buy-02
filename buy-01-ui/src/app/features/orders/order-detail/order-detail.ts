@@ -12,9 +12,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatListModule } from '@angular/material/list';
 import {
   OrderService,
-  Order,
   OrderStatus,
-  OrderStatusHistory,
 } from '../../../core/services/order.service';
 import { Auth } from '../../../core/services/auth';
 
