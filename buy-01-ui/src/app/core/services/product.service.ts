@@ -10,6 +10,7 @@ export interface Product {
   description: string;
   price: number;
   stock?: number;
+  category?: string;
   sellerId?: string;
   mediaIds?: string[];
   imageUrls?: string[];
@@ -23,6 +24,7 @@ export interface ProductRequest {
   description: string;
   price: number;
   quantity: number;
+  category?: string;
 }
 
 export interface PagedResponse<T> {

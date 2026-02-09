@@ -92,9 +92,29 @@ export class ProductList implements OnInit {
   }
 
   private loadCategories(): void {
+    // Predefined categories - always show these
+    const predefinedCategories = ['Electronics', 'Clothing', 'Home & Garden', 'Sports', 'Books', 'Toys', 'Automotive', 'Health & Beauty', 'Food & Beverages', 'Other'];
+
     this.productService.getCategories().subscribe({
-      next: (categories) => this.categories.set(categories),
-      error: (err) => console.error('Error loading categories:', err),
+      next: (dbCategories) => {
+        // Always start with predefined categories
+        const allCategories = [...predefinedCategories];
+
+        // Add any database categories that aren't already in the predefined list
+        if (dbCategories && dbCategories.length > 0) {
+          dbCategories.forEach(cat => {
+            if (!allCategories.includes(cat)) {
+              allCategories.push(cat);
+            }
+          });
+        }
+
+        this.categories.set(allCategories);
+      },
+      error: (err) => {
+        console.error('Error loading categories:', err);
+        this.categories.set(predefinedCategories);
+      },
     });
   }
 
