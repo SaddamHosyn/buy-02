@@ -1,63 +1,90 @@
-# safe-zone
+# buy-02 !!!
 
-**Production-ready CI/CD pipeline with automated testing, deployment, and zero-downtime rollback capability.**
+**Full-stack e-commerce marketplace — shopping cart, orders, analytics dashboards, search & filtering — with CI/CD and SonarQube quality gates.**
 
-[![Build Status](http://13.62.141.159:8090/job/buy01-pipeline/badge/icon)](http://13.62.141.159:8090/job/buy01-pipeline/)
-![Security](https://img.shields.io/badge/security-100%25-success)
-![Tests](https://img.shields.io/badge/tests-passing-success)
-
-## 🎯 Quick Start
-
-1. **Jenkins configured** with 6 credentials (see [SECURITY_IMPLEMENTATION_COMPLETE.md](SECURITY_IMPLEMENTATION_COMPLETE.md))
-2. **Push code** → Automatic build & deploy via webhook
-3. **Access app**: http://13.61.234.232:4200
-
-## 📊 Current Status
-
-- ✅ **Build #54**: Deployed successfully
-- ✅ **Audit Score**: 12/12 (100% compliance)
-- ✅ **Security**: All secrets secured in Jenkins Credentials Store
-- ✅ **Rollback**: Build #53 preserved as backup
+![Java](https://img.shields.io/badge/Java-50%25-orange)
+![Docker](https://img.shields.io/badge/Docker-25%25-blue)
+![NoSQL](https://img.shields.io/badge/NoSQL-30%25-green)
+![Backend](https://img.shields.io/badge/Backend-60%25-yellow)
+![Frontend](https://img.shields.io/badge/Frontend-37%25-purple)
 
 ---
 
 ## 📋 Overview
 
-This project sets up a robust **Continuous Integration and Continuous Deployment (CI/CD)** pipeline using **Jenkins** for the e-commerce platform. The pipeline automatically **builds**, **tests**, and **deploys** your application, ensuring consistent and reliable delivery.
+This project finalizes a full e-commerce web application by adding core features: **shopping cart**, **orders**, **user & seller profiles with analytics**, and **product search/filtering**.
 
-**Your role**: DevOps Engineer - Automating the development workflow with a bulletproof CI/CD system.
+It integrates work from previous projects (auth, product/media, microservices) and enforces best practices: **PR workflows**, **CI/CD (Jenkins)**, and **code quality (SonarQube)**.
 
-## ✅ CI/CD Pipeline Features
+**Your role**: Full-stack engineer wrapping up the marketplace for launch.
+**Your mission**: Deliver a secure, performant, and user-friendly experience from **browsing → cart → checkout → order tracking**, with clean code, CI/CD, and clear documentation.
 
-### Automated Build Triggers
+## 🎯 Learning Objectives
 
-- ✅ **GitHub Webhook Integration** - Automatic builds on every commit push
-- ✅ **Build Status Notifications** - Email alerts with detailed results
-- ✅ **Environment Validation** - Checks for required tools (Maven, Node.js, Docker, etc.)
+- Design and extend data models for carts, orders, and profiles
+- Implement RESTful APIs for carts, orders, search, and analytics
+- Build Angular views (cart, checkout, order history, dashboards)
+- Add search & filtering (text + facets) with efficient querying
+- Apply error handling, validation, and role-based security
+- Practice team workflows (PRs, reviews) and CI/CD with Jenkins
+- Measure and improve code quality using SonarQube
+- Write tests (unit, integration, e2e) for critical flows
 
-### Testing & Reporting
+## 🎯 Quick Start
 
-- ✅ **Backend Testing** - Maven + JUnit test execution with SureFire reports
-- ✅ **Frontend Testing** - Karma + Jasmine test runner for Angular
-- ✅ **Test Reporting** - JUnit XML parsing and artifact archiving
-- ✅ **Coverage Reports** - JaCoCo coverage metrics (when applicable)
+1. **Start the CI/CD pipeline:** `cd .pipeline && ./boot-pipeline.sh`
+2. **Push code** → Automatic build, test, quality gate & deploy via webhook
+3. **Access app locally**: http://localhost:4200
+4. **Jenkins**: http://localhost:8088 · **SonarQube**: http://localhost:9000
 
-### Deployment & Fallback
+> See [.pipeline/README.md](.pipeline/README.md) for full CI/CD setup instructions.
 
-- ✅ **AWS Deployment** - Primary deployment target (SSH-based)
-- ✅ **Docker Fallback** - Automatic Docker deployment if AWS fails
-- ✅ **Health Checks** - Verifies deployment success before cleanup
-- ✅ **Rollback Strategy** - Automatic rollback on deployment failure
+## ✅ Implemented Features
 
-### Notifications & Visibility
+### 🛒 Shopping Cart & Checkout
 
-- ✅ **Email Notifications** - HTML-formatted status emails with direct links to:
-  - Test results dashboard
-  - Test artifacts
-  - Build logs
-  - Coverage reports
-- ✅ **Multi-Status Alerts** - Success, Failure, and Unstable build emails
-- ✅ **Build Information** - Job name, build number, duration, Git branch
+- Add/update/remove items in cart
+- Cart persistence across page refreshes
+- Checkout wizard: address → review → confirm
+- "Pay on Delivery" payment method
+- Order creation from cart contents
+
+### 📦 Orders Management
+
+- Order list with search (status, date)
+- Order details with status timeline and totals
+- Cancel, redo, and remove orders
+- Seller view of related orders
+- Order status tracking (PENDING → CONFIRMED → SHIPPED → DELIVERED)
+
+### 👤 User & Seller Profiles with Analytics
+
+- **User dashboard**: total spent, most-bought products, top categories (charts)
+- **Seller dashboard**: revenue, best-selling products, units sold (charts)
+- Profile management with avatar upload
+
+### 🔎 Search & Filtering
+
+- Product search with keyword bar
+- Filters: category, price sliders, sort options
+- Pagination for large result sets
+- Efficient MongoDB querying
+
+### 🔐 Security & Error Handling
+
+- JWT authentication with role-based access (SELLER, CLIENT, ADMIN)
+- Ownership enforcement on mutations
+- Global exception handlers with consistent error schema `{ code, message, details }`
+- Inline form errors + snackbar notifications for API failures
+- HTTPS enforcement, secure CORS at gateway
+
+### ⚙️ CI/CD Pipeline
+
+- **Jenkins**: build → test → SonarQube quality gate → package → deploy
+- **SonarQube**: code quality analysis for both backend and frontend
+- **GitHub Webhook**: automatic builds on push
+- **Docker Compose**: containerized deployment
+- **Branch protection**: PRs required, green pipeline before merge
 
 ## 🔧 Jenkins Setup & Configuration
 
@@ -94,7 +121,7 @@ This project sets up a robust **Continuous Integration and Continuous Deployment
 
 ```bash
 brew install ngrok
-ngrok http 8090
+ngrok http 8088
 # Use the https:// URL provided as your Payload URL
 ```
 
@@ -116,10 +143,10 @@ ngrok http 8090
 1. Create a new **Pipeline** job (or copy an existing one)
 2. **Pipeline** section → **Definition**: Select "Pipeline script from SCM"
 3. **SCM**: Select **Git**
-   - **Repository URL**: `https://github.com/jeeeeedi/mr-jenk.git`
+   - **Repository URL**: `https://github.com/SaddamHosyn/buy-02.git`
    - **Credentials**: Select the GitHub credentials you created
-   - **Branch**: `*/cleanup` (or your working branch)
-4. **Script Path**: `Jenkinsfile` (default)
+   - **Branch**: `*/feature` (or your working branch)
+4. **Script Path**: `.pipeline/Jenkinsfile`
 5. Under **Build Triggers** → Check ☑️ **GitHub hook trigger for GITScm polling**
 6. **Save**
 
@@ -155,46 +182,39 @@ The `Jenkinsfile` defines a multi-stage pipeline with the following flow:
    ├─ Check Maven, Node.js, npm, Docker, docker-compose, Git, Chrome
    └─ Fail if required tools missing
 
-2. Checkout
-   └─ Clone repository from GitHub
+2. Build
+   └─ mvn clean install -DskipTests
 
-3. Build Backend
-   ├─ Compile all Spring Boot microservices
-   └─ Package JAR artifacts
+3. Test (Parallel)
+   ├─ Backend Tests (mvn test + JUnit reports)
+   └─ Frontend Tests (Karma/Jasmine + coverage)
 
-4. Run Tests (Parallel)
-   ├─ Backend Tests
-   │  └─ Execute Maven tests with JUnit reports
-   ├─ Build Frontend
-   │  └─ Build Angular application
+4. SonarQube Analysis (Parallel, main branch only)
+   ├─ Backend Analysis (Maven sonar:sonar)
+   ├─ Frontend Analysis (sonarqube-scanner)
+   └─ Quality Gate check (waitForQualityGate)
 
-5. Test Frontend
-   └─ Run Karma tests for Angular
+5. Deploy (main branch only)
+   ├─ Build Docker images for all services
+   └─ docker compose up (containerized deployment)
 
-6. Deploy
-   ├─ Try: Deploy to AWS via SSH
-   ├─ Catch: Fallback to Docker Compose
-   └─ Health checks and verification
-
-7. Post Actions (Always Runs)
-   ├─ Publish test results
-   ├─ Archive artifacts
-   ├─ Success: Send success email with reports
-   ├─ Failure: Send failure email with troubleshooting
-   └─ Unstable: Send unstable build warning
+6. Post Actions
+   ├─ Archive test reports
+   ├─ Success / Failure notifications
+   └─ Cleanup
 ```
 
 ### Environment Variables
 
 The pipeline uses these key variables:
 
-| Variable          | Purpose                           |
-| ----------------- | --------------------------------- |
-| `JENKINS_SCRIPTS` | Path to Jenkins helper scripts    |
-| `TEAM_EMAIL`      | Team email for notifications      |
-| `AWS_KEY_PATH`    | SSH key for AWS deployment        |
-| `AWS_HOST`        | AWS deployment server address     |
-| `DOCKER_REGISTRY` | Docker registry for image storage |
+| Variable             | Purpose                         |
+| -------------------- | ------------------------------- |
+| `JENKINS_SCRIPTS`    | Path to Jenkins helper scripts  |
+| `SONARQUBE_URL`      | SonarQube server URL            |
+| `MONGO_ROOT_USERNAME`| MongoDB credentials (Jenkins)   |
+| `MONGO_ROOT_PASSWORD`| MongoDB credentials (Jenkins)   |
+| `API_GATEWAY_URL`    | API Gateway URL for services    |
 
 ### Test Report Files
 
@@ -210,11 +230,12 @@ This project implements a modern microservices architecture with the following c
 
 ### Backend Services (Spring Boot 3.5.6 + Java 17)
 
-- **API Gateway** (Port 8090) - HTTP entry point with routing and CORS configuration
+- **API Gateway** (Port 8080) - HTTP entry point with routing and CORS configuration
 - **Service Registry** (Port 8761) - Eureka service discovery for dynamic service registration
 - **User Service** (Port 8081) - User authentication, JWT management, and profile handling
 - **Product Service** (Port 8082) - Product catalog, inventory, and seller management
 - **Media Service** (Port 8083) - File uploads, media storage, and image management
+- **Order Service** (Port 8084) - Order and cart management
 
 ### Frontend
 
@@ -278,8 +299,8 @@ The easiest way to run the entire application:
 
 ```bash
 # Clone the repository
-git clone https://github.com/jeeeeedi/buy-01.git
-cd buy-01
+git clone https://github.com/SaddamHosyn/buy-02.git
+cd buy-02
 
 # Or use the provided helper script
 ./start_docker.sh
@@ -298,9 +319,9 @@ docker-compose ps
 **Access the application:**
 
 - 🔒 **Frontend (HTTPS)**: https://localhost:4201 (self-signed certificate)
-- 🔌 **API Gateway**: http://localhost:8090
+- 🔌 **API Gateway**: http://localhost:8080
 - 📊 **Eureka Dashboard**: http://localhost:8761
-- 🗄️ **MongoDB**: mongodb://root:example@localhost:27017
+- 🗄️ **MongoDB**: mongodb://localhost:27017
 
 ### Local Development Setup
 
@@ -353,19 +374,40 @@ After starting the application, you can:
 
 ## 📊 Service Ports & URLs
 
+### Local Development (via `start_all.sh`)
+
 | Service          | Port  | Protocol | URL                       | Description           |
 | ---------------- | ----- | -------- | ------------------------- | --------------------- |
 | Frontend (HTTPS) | 4201  | HTTPS    | https://localhost:4201    | Secure frontend       |
-| API Gateway      | 8090  | HTTP     | http://localhost:8090     | Main API entry point  |
+| API Gateway      | 8080  | HTTP     | http://localhost:8080     | Main API entry point  |
 | Service Registry | 8761  | HTTP     | http://localhost:8761     | Eureka dashboard      |
 | User Service     | 8081  | HTTP     | Internal                  | User management       |
 | Product Service  | 8082  | HTTP     | Internal                  | Product management    |
 | Media Service    | 8083  | HTTP     | Internal                  | Media/file management |
+| Order Service    | 8084  | HTTP     | Internal                  | Order management      |
 | MongoDB          | 27017 | TCP      | mongodb://localhost:27017 | Database server       |
 | Kafka            | 9092  | TCP      | localhost:9092            | Message broker        |
 | Zookeeper        | 2182  | TCP      | localhost:2182            | Kafka coordination    |
 
-**Note:** Internal services (User, Product, Media) communicate through the API Gateway and are not directly exposed.
+### Pipeline Deployment (via Jenkins / `docker compose`)
+
+Pipeline host ports are offset to allow local dev and pipeline to coexist:
+
+| Service          | Port  | Protocol | URL                       | Description           |
+| ---------------- | ----- | -------- | ------------------------- | --------------------- |
+| Frontend (HTTPS) | 4201  | HTTPS    | https://localhost:4201    | Secure frontend       |
+| API Gateway HTTP | 8090  | HTTP     | http://localhost:8090     | Pipeline API entry    |
+| API Gateway HTTPS| 8444  | HTTPS    | https://localhost:8444    | Pipeline API (HTTPS)  |
+| Service Registry | 8762  | HTTP     | http://localhost:8762     | Eureka dashboard      |
+| User Service     | 8091  | HTTP     | Internal                  | User management       |
+| Product Service  | 8092  | HTTP     | Internal                  | Product management    |
+| Media Service    | 8093  | HTTP     | Internal                  | Media/file management |
+| Order Service    | 8094  | HTTP     | Internal                  | Order management      |
+| MongoDB          | 27018 | TCP      | mongodb://localhost:27018 | Database server       |
+| Kafka            | 9094  | TCP      | localhost:9094            | Message broker        |
+| Zookeeper        | 2182  | TCP      | localhost:2182            | Kafka coordination    |
+
+**Note:** Internal services communicate through the API Gateway and Docker network. The offset ports only affect host-side access.
 
 ## 🔄 Event-Driven Flow
 
@@ -474,7 +516,7 @@ db.media.countDocuments({ userId: "69244af654df39660cbd3294" })
 ## 🗂️ Project Structure
 
 ```
-buy-01/
+buy-02/
 ├── api-gateway/              # API Gateway with routing and CORS
 │   ├── src/main/
 │   │   ├── java/.../apigateway/
@@ -484,7 +526,7 @@ buy-01/
 │   │   └── resources/
 │   │       ├── application.properties
 │   │       ├── application-docker.yml
-│   │       └── application.yml           # Route definitions (Port 8090)
+│   │       └── application.yml           # Route definitions (Port 8080)
 │   ├── Dockerfile
 │   └── pom.xml
 │
@@ -541,6 +583,21 @@ buy-01/
 │   ├── Dockerfile
 │   └── pom.xml
 │
+├── order-service/            # Order & cart management
+│   ├── src/main/
+│   │   ├── java/.../order/
+│   │   │   ├── OrderServiceApplication.java
+│   │   │   ├── config/          # Security, Kafka, MongoDB
+│   │   │   ├── controller/      # Order & Cart REST API
+│   │   │   ├── dto/             # Request/Response DTOs
+│   │   │   ├── model/           # Order, Cart, OrderItem entities
+│   │   │   ├── repository/      # Order & Cart repositories
+│   │   │   └── service/         # Order logic, Kafka consumer
+│   │   └── resources/
+│   │       └── application.properties
+│   ├── Dockerfile
+│   └── pom.xml
+│
 ├── buy-01-ui/               # Angular 20 frontend
 │   ├── src/
 │   │   ├── app/
@@ -551,9 +608,11 @@ buy-01/
 │   │   │   │   └── validators/  # Custom validators
 │   │   │   ├── features/        # Feature modules
 │   │   │   │   ├── auth/        # Login, Register
-│   │   │   │   ├── products/    # Product list, detail
-│   │   │   │   ├── profile/     # User profile
-│   │   │   │   └── seller/      # Seller dashboard
+│   │   │   │   ├── cart/         # Shopping cart & checkout
+│   │   │   │   ├── orders/      # Order list, details, tracking
+│   │   │   │   ├── products/    # Product list, detail, search
+│   │   │   │   ├── profile/     # User profile & analytics
+│   │   │   │   └── seller/      # Seller dashboard & analytics
 │   │   │   └── shared/          # Shared components
 │   │   │       ├── components/  # Reusable UI components
 │   │   │       └── services/    # Shared services
@@ -572,8 +631,13 @@ buy-01/
 │   ├── package.json
 │   └── tsconfig.json
 │
-├── docker-compose.yml           # Multi-container orchestration
-├── pom.xml                      # Maven parent POM
+├── .pipeline/                   # CI/CD infrastructure
+│   ├── Jenkinsfile              # Pipeline definition
+│   ├── docker-compose.yml       # Pipeline container orchestration
+│   ├── boot-pipeline.sh         # Start Jenkins + SonarQube
+│   └── pipeline-tools.sh        # Troubleshooting utilities
+│
+├── pom.xml                      # Maven parent POM (aggregator)
 └── README.md                    # This file
 ```
 
@@ -719,7 +783,7 @@ docker-compose up -d
 
 **Frontend can't reach backend:**
 
-- Ensure API Gateway is running: http://localhost:8090
+- Ensure API Gateway is running: http://localhost:8080
 - Check browser console for CORS errors
 - Verify environment configuration in `buy-01-ui/src/environments/`
 
@@ -765,7 +829,7 @@ lsof -i :8090
 **Via API:**
 
 ```bash
-curl -X POST http://localhost:8090/api/auth/register \
+curl -X POST http://localhost:8080/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "name": "John Seller",
@@ -777,13 +841,13 @@ curl -X POST http://localhost:8090/api/auth/register \
 
 ### User Roles
 
-- **SELLER**: Can create, edit, and delete products; upload media; manage inventory
-- **CLIENT**: Can browse products, view details, manage profile
+- **SELLER**: Create/edit/delete products, upload media, manage inventory, view orders & analytics
+- **CLIENT**: Browse & search products, manage cart, place orders, track order status, view spending analytics
 - **ADMIN**: Full system access (future implementation)
 
 ## 📚 API Documentation
 
-All API endpoints are accessed through the API Gateway: `http://localhost:8090`
+All API endpoints are accessed through the API Gateway: `http://localhost:8080`
 
 ### Authentication Endpoints
 
@@ -831,7 +895,7 @@ All API endpoints are accessed through the API Gateway: `http://localhost:8090`
 **Login:**
 
 ```bash
-curl -X POST http://localhost:8090/api/auth/login \
+curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "seller@example.com",
@@ -842,7 +906,7 @@ curl -X POST http://localhost:8090/api/auth/login \
 **Create Product (requires JWT token):**
 
 ```bash
-curl -X POST http://localhost:8090/api/products \
+curl -X POST http://localhost:8080/api/products \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
@@ -857,42 +921,47 @@ curl -X POST http://localhost:8090/api/products \
 **Upload Media:**
 
 ```bash
-curl -X POST http://localhost:8090/api/media/upload \
+curl -X POST http://localhost:8080/api/media/upload \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -F "file=@/path/to/image.jpg"
 ```
 
 ## 🎯 Use Cases
 
-### For Sellers
-
-1. **Register as SELLER** → Access seller dashboard
-2. **Upload Media** → Add product images
-3. **Create Products** → List items with details, pricing, and images
-4. **Manage Inventory** → Edit or delete products
-5. **View Analytics** → Track product performance
-
 ### For Clients
 
 1. **Register as CLIENT** → Browse marketplace
-2. **View Products** → Search and filter products
-3. **Product Details** → View images, descriptions, pricing
-4. **Manage Profile** → Update info and avatar
+2. **Search & Filter** → Find products by keyword, category, price range
+3. **Add to Cart** → Build shopping cart with quantity controls
+4. **Checkout** → Complete purchase with "Pay on Delivery"
+5. **Track Orders** → View order status timeline
+6. **View Dashboard** → Total spent, most-bought products, top categories
+7. **Manage Profile** → Update info and avatar
+
+### For Sellers
+
+1. **Register as SELLER** → Access seller dashboard
+2. **Create Products** → List items with details, pricing, and images
+3. **Manage Inventory** → Edit or delete products
+4. **View Orders** → See customer orders for your products
+5. **Manage Orders** → Update order status (confirm, ship, deliver)
+6. **View Analytics** → Revenue, best-selling products, units sold
+7. **Upload Media** → Add product images and files
 
 ### System Features
 
-- **Cascade Deletion**: Deleting a user automatically removes their products and associated media
+- **Cascade Deletion**: Deleting a user removes their products, media, and orders
 - **Event-Driven**: Kafka ensures data consistency across services
 - **Service Discovery**: Eureka enables dynamic service registration and load balancing
 
-## 🚧 Future Enhancements
+## 📋 Project Constraints
 
-- 🛒 Shopping cart functionality (Refinement)
-- 💳 Payment integration
-- 📧 Email notifications
-- ⭐ Product reviews and ratings
-- 🌐 Multi-language support
-- 📱 Mobile app (React Native)
+- Must implement: **Cart**, **Orders**, **Profiles (analytics)**, **Search/Filter**, **Pay on Delivery**
+- Public endpoints are read-only (e.g., product search); all mutations require auth
+- Pipeline must include tests + SonarQube quality gate
+- Feature branches required; PRs for every change
+- Code reviews (security, performance, readability) before merge
+- Main branch protected: require approved reviews and green pipeline
 
 ## 📖 Documentation
 
@@ -903,6 +972,7 @@ curl -X POST http://localhost:8090/api/media/upload \
 - **Database**: MongoDB with database-per-service pattern
 - **Messaging**: Kafka for event-driven architecture
 - **Containerization**: Docker Compose for multi-container deployment
+- **CI/CD**: Jenkins pipeline with SonarQube quality gates
 
 ### Key Design Patterns
 
@@ -921,11 +991,5 @@ This project is developed for educational purposes as part of a university proje
 
 - [@jeeeeedi](https://github.com/jeeeeedi)
 - [@oafilali](https://github.com/oafilali)
-- [@Anastasia](https://github.com/An1Su)
+- [@ejmilli](https://github.com/ejmilli)
 - [@SaddamHosyn](https://github.com/SaddamHosyn)
-
----
-
-**Built with ❤️ using Spring Boot, Angular, Kafka, and MongoDB**
-
-_For questions or issues, please open an issue on GitHub._

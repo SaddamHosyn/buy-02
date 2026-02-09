@@ -1,367 +1,159 @@
 pipeline {
     agent any
     
-    parameters {
-        choice(
-            name: 'DEPLOYMENT_TARGET',
-            choices: ['AWS', 'Local Docker', 'Both'],
-            description: 'Choose deployment target'
-        )
-        booleanParam(
-            name: 'SKIP_TESTS',
-            defaultValue: false,
-            description: 'Skip test execution (not recommended for production)'
-        )
-        booleanParam(
-            name: 'SKIP_FRONTEND_BUILD',
-            defaultValue: false,
-            description: 'Skip frontend build (backend changes only)'
-        )
-        booleanParam(
-            name: 'FORCE_REBUILD',
-            defaultValue: false,
-            description: 'Force clean rebuild (ignore cache)'
-        )
-        string(
-            name: 'CUSTOM_TAG',
-            defaultValue: '',
-            description: 'Custom Docker tag (leave empty for build number)'
-        )
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        disableConcurrentBuilds()
+        timeout(time: 60, unit: 'MINUTES')
     }
     
     triggers {
-        githubPush()  // Trigger on GitHub webhook push
+        githubPush()
     }
-
-    options {
-        // Keep last 30 builds
-        buildDiscarder(logRotator(numToKeepStr: '30'))
-        // Prevent concurrent builds
-        disableConcurrentBuilds()
-    }
-
+    
     environment {
-        // Load configuration from external file
-        MAVEN_HOME = '/opt/apache-maven-3.9.9'
-        NODEJS_HOME = '/usr/bin'
-        PATH = "${MAVEN_HOME}/bin:${NODEJS_HOME}:${env.PATH}"
+        // Credentials
+        TEAM_EMAIL = credentials('team-email')
+        MONGO_ROOT_USERNAME = credentials('mongo-root-username')
+        MONGO_ROOT_PASSWORD = credentials('mongo-root-password')
+        API_GATEWAY_URL = credentials('api-gateway-url')
+        GITHUB_TOKEN = credentials('github-token')
         
-        // Email Configuration - Use credentials for sensitive data
-        TEAM_EMAIL = credentials('team-email')  // Store in Jenkins Credentials
-        
-        // AWS Configuration - Use credentials for sensitive data
-        AWS_DEPLOY_HOST = credentials('aws-deploy-host')  // Store in Jenkins Credentials
-        AWS_DEPLOY_USER = credentials('aws-deploy-user')  // Store in Jenkins Credentials
-        // AWS_SSH_KEY is handled via withCredentials block for proper Secret File binding
-        
-        // MongoDB Credentials - Use credentials for sensitive data
-        MONGO_ROOT_USERNAME = credentials('mongo-root-username')  // Store in Jenkins Credentials
-        MONGO_ROOT_PASSWORD = credentials('mongo-root-password')  // Store in Jenkins Credentials
-        
-        // API Gateway URL - REQUIRED for deployment
-        API_GATEWAY_URL = credentials('api-gateway-url')  // Store in Jenkins Credentials
-        
-        // Docker Configuration
-        DOCKER_IMAGE_PREFIX = 'buy01-pipeline'
-        SERVICE_REGISTRY_IMAGE = 'buy01-pipeline-service-registry'
-        API_GATEWAY_IMAGE = 'buy01-pipeline-api-gateway'
-        USER_SERVICE_IMAGE = 'buy01-pipeline-user-service'
-        PRODUCT_SERVICE_IMAGE = 'buy01-pipeline-product-service'
-        MEDIA_SERVICE_IMAGE = 'buy01-pipeline-media-service'
-        FRONTEND_IMAGE = 'buy01-pipeline-frontend'
+        // SonarQube
+        SONARQUBE_URL = "http://host.docker.internal:9000"
         
         // Paths
         JENKINS_SCRIPTS = './.pipeline/jenkins'
-        FRONTEND_DIR = 'buy-01-ui'
     }
 
     stages {
-        stage('Validate Environment') {
+        stage('Validate') {
             steps {
-                echo 'Validating build environment...'
-                sh '${JENKINS_SCRIPTS}/validate-environment.sh'
+                sh "${JENKINS_SCRIPTS}/validate-environment.sh"
             }
         }
         
-        stage('Checkout') {
-            options {
-                timeout(time: 10, unit: 'MINUTES')
-            }
+        stage('Build') {
             steps {
-                checkout scm
-            }
-        }
-        stage('Build Backend') {
-            options {
-                timeout(time: 30, unit: 'MINUTES')
-            }
-            steps {
-                echo 'Building backend services...'
-                script {
-                    if (params.FORCE_REBUILD) {
-                        sh 'mvn clean install -DskipTests -U'  // Force update dependencies
-                    } else {
-                        sh 'mvn clean install -DskipTests'
-                    }
-                }
+                sh 'mvn clean install -DskipTests'
             }
         }
         
-        stage('Parallel Build & Test') {
-            options {
-                timeout(time: 45, unit: 'MINUTES')
-            }
+        stage('Test') {
             parallel {
                 stage('Backend Tests') {
-                    when {
-                        expression { !params.SKIP_TESTS }
-                    }
                     steps {
-                        echo 'Running JUnit tests...'
-                        sh '''
-                            set -e
-                            mvn test
-                        '''
+                        sh 'mvn test'
                     }
                     post {
                         always {
-                            junit '**/target/surefire-reports/*.xml'
+                            junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
                         }
                     }
                 }
-                
-                stage('Frontend Pre-check') {
-                    when {
-                        expression { !params.SKIP_FRONTEND_BUILD }
-                    }
+                stage('Frontend Tests') {
                     steps {
-                        echo 'Checking frontend dependencies...'
                         dir('buy-01-ui') {
-                            // Only run install if we need it for tests later, 
-                            // but Docker handles the main build
-                            sh 'npm install --legacy-peer-deps'
+                            sh '''
+                                npm install --legacy-peer-deps
+                                export CHROME_BIN=$(which chromium || which chromium-browser || echo "/usr/bin/chromium")
+                                npm test -- --watch=false --browsers=ChromeHeadlessCI --code-coverage
+                            '''
                         }
                     }
                 }
             }
         }
         
-        stage('Test Frontend') {
+        stage('SonarQube Analysis') {
             when {
-                expression { !params.SKIP_TESTS }
+                branch 'main'
             }
-            options {
-                timeout(time: 20, unit: 'MINUTES')
-            }
-            steps {
-                echo 'Running frontend tests...'
-                dir('buy-01-ui') {
-                    sh '''
-                        set -e
-                        mkdir -p target/surefire-reports
-                        
-                        # Detect Chrome binary location
-                        export CHROME_BIN=$(which chromium-browser || which google-chrome || which chrome || echo "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" 2>/dev/null || echo "")
-                        
-                        if [ -z "$CHROME_BIN" ] || [ ! -f "$CHROME_BIN" ]; then
-                            echo "❌ Error: Chrome not found! Frontend tests cannot be executed."
-                            echo "To fix: Install Chrome/Chromium on the build agent or set CHROME_BIN environment variable."
-                            exit 1
-                        fi
-                        
-                        echo "Using Chrome: $CHROME_BIN"
-                        npm test -- --watch=false --browsers=ChromeHeadless
-                        if [ $? -ne 0 ]; then
-                            echo "❌ Frontend tests FAILED! Pipeline will STOP here."
-                            exit 1
-                        fi
-                    '''
+            parallel {
+                stage('Backend Analysis') {
+                    steps {
+                        withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
+                            withSonarQubeEnv('SonarQube') {
+                                script {
+                                    def branch = env.GIT_BRANCH?.replace('origin/', '') ?: 'main'
+                                    sh "mvn sonar:sonar -Dsonar.host.url=${SONARQUBE_URL} -Dsonar.token=${SONAR_TOKEN}"
+                                }
+                            }
+                            // Check Quality Gate immediately for backend
+                            timeout(time: 5, unit: 'MINUTES') {
+                                script {
+                                    def qg = waitForQualityGate()
+                                    if (qg.status != 'OK') {
+                                        error "Backend Quality Gate failed: ${qg.status}"
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
-            }
-        }
-        stage('Deploy') {
-            options {
-                timeout(time: 60, unit: 'MINUTES')
-            }
-            steps {
-                echo 'Deploying application...'
-                script {
-                    // Create production .env file from Jenkins credentials
-                    // This ensures secrets are available on AWS even though ignored in Git
-                    sh """
-                        echo "Generating production environment file..."
-                        echo "MONGO_ROOT_USERNAME=${MONGO_ROOT_USERNAME}" > .pipeline/.env.production
-                        echo "MONGO_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}" >> .pipeline/.env.production
-                        echo "API_GATEWAY_URL=${API_GATEWAY_URL}" >> .pipeline/.env.production
-                        echo "AWS_DEPLOY_HOST=${AWS_DEPLOY_HOST}" >> .pipeline/.env.production
-                        echo "AWS_DEPLOY_USER=${AWS_DEPLOY_USER}" >> .pipeline/.env.production
-                    """
-                    
-                    sh '''
-                        # Make scripts executable
-                        chmod +x ${JENKINS_SCRIPTS}/*.sh
-                        
-                        # Pre-deployment cleanup
-                        ${JENKINS_SCRIPTS}/pre-deployment-cleanup.sh
-                        
-                        # Build Docker images
-                        ${JENKINS_SCRIPTS}/build-docker-images.sh ${BUILD_NUMBER}
-                    '''
-                    
-                    // Try AWS deployment first
-                    def awsDeploymentSuccessful = false
-                    
-                    // Use withCredentials to properly bind the SSH key and SSL certs
-                   withCredentials([
-                    file(credentialsId: 'aws-ssh-key-file', variable: 'AWS_SSH_KEY_FILE'),
-                    file(credentialsId: 'frontend-ssl-cert', variable: 'SSL_CERT_FILE'),
-                    file(credentialsId: 'frontend-ssl-key', variable: 'SSL_KEY_FILE')
-                   ]) {
-                        try {
-                            echo '=========================================='
-                            echo '🚀 Deploying to AWS...'
-                            echo '🚀 Transferring SSL Certificates...'
-                            echo '=========================================='
-                            sh '''
-                                export AWS_SSH_KEY="${AWS_SSH_KEY_FILE}"
-                                chmod 600 "${AWS_SSH_KEY}"
-                                
-                                # Ensure remote certs directory exists
-                                ssh -i "${AWS_SSH_KEY}" -o StrictHostKeyChecking=no "${AWS_DEPLOY_USER}@${AWS_DEPLOY_HOST}" "sudo mkdir -p /home/${AWS_DEPLOY_USER}/buy-01-app/certs && sudo chown -R ${AWS_DEPLOY_USER}:${AWS_DEPLOY_USER} /home/${AWS_DEPLOY_USER}/buy-01-app && sudo chmod -R 755 /home/${AWS_DEPLOY_USER}/buy-01-app"
-                                # Transfer SSL certificates as expected by Nginx config
-                                scp -i "${AWS_SSH_KEY}" -o StrictHostKeyChecking=no "${SSL_CERT_FILE}" "${AWS_DEPLOY_USER}@${AWS_DEPLOY_HOST}:/home/${AWS_DEPLOY_USER}/buy-01-app/certs/localhost.pem"
-                                scp -i "${AWS_SSH_KEY}" -o StrictHostKeyChecking=no "${SSL_KEY_FILE}" "${AWS_DEPLOY_USER}@${AWS_DEPLOY_HOST}:/home/${AWS_DEPLOY_USER}/buy-01-app/certs/localhost-key.pem"
-                                
-                                ${JENKINS_SCRIPTS}/deploy.sh ${BUILD_NUMBER}
-                            '''
-                            awsDeploymentSuccessful = true
-                            
-                            // Post-deployment cleanup on success
-                            sh '${JENKINS_SCRIPTS}/post-deployment-cleanup.sh'
-                        } catch (Exception e) {
-                            echo "⚠️ AWS Deployment failed: ${e.message}"
-                            echo "Reason: Typically SSH key not found or AWS credentials unavailable"
-                            awsDeploymentSuccessful = false
-                            
-                            // Attempt rollback INSIDE withCredentials so it has access to the SSH key
-                            try {
-                                echo "Rolling back changes..."
-                                sh '''
-                                    export AWS_SSH_KEY="${AWS_SSH_KEY_FILE}"
-                                    chmod 600 "${AWS_SSH_KEY}"
-                                    ${JENKINS_SCRIPTS}/rollback.sh
-                                '''
-                            } catch (Exception rollbackError) {
-                                echo "⚠️ Rollback also failed: ${rollbackError.message}"
+                stage('Frontend Analysis') {
+                    steps {
+                        withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
+                            withSonarQubeEnv('SonarQube') {
+                                dir('buy-01-ui') {
+                                    script {
+                                        def branch = env.GIT_BRANCH?.replace('origin/', '') ?: 'main'
+                                        // Install sonar-scanner if not present
+                                        sh '''
+                                            if ! command -v sonar-scanner &> /dev/null; then
+                                                npm install -g sonarqube-scanner
+                                            fi
+                                        '''
+                                        // Run SonarQube analysis
+                                        sh """
+                                            npx sonarqube-scanner \
+                                                -Dsonar.host.url=${SONARQUBE_URL} \
+                                                -Dsonar.token=${SONAR_TOKEN}
+                                        """
+                                    }
+                                }
+                            }
+                            // Check Quality Gate immediately for frontend
+                            timeout(time: 5, unit: 'MINUTES') {
+                                script {
+                                    def qg = waitForQualityGate()
+                                    if (qg.status != 'OK') {
+                                        error "Frontend Quality Gate failed: ${qg.status}"
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
         }
+        
+        stage('Deploy') {
+            when {
+                branch 'main'
+            }
+            steps {
+                sh "${JENKINS_SCRIPTS}/build-docker-images.sh ${BUILD_NUMBER}"
+                dir('.pipeline') {
+                    sh '''
+                        docker compose up -d mongodb zookeeper kafka \
+                            service-registry api-gateway user-service product-service order-service media-service frontend
+                    '''
+                }
+                echo "✅ Deployed successfully"
+            }
+        }
     }
 
     post {
         always {
-            echo '=========================================='
-            echo 'Publishing test results...'
-            echo '=========================================='
-            
-            // Parse backend JUnit reports
-            junit(
-                testResults: '**/target/surefire-reports/*.xml',
-                allowEmptyResults: true
-            )
-            
-            // Archive test reports
-            archiveArtifacts(
-                artifacts: '**/target/surefire-reports/**/*.xml',
-                allowEmptyArchive: true,
-                fingerprint: true
-            )
-            
-            // Archive coverage reports if they exist
-            archiveArtifacts(
-                artifacts: '**/target/site/jacoco/**/*,buy-01-ui/coverage/**/*',
-                allowEmptyArchive: true,
-                fingerprint: true
-            )
+            archiveArtifacts artifacts: '**/target/surefire-reports/**/*.xml', allowEmptyArchive: true
         }
         success {
-            echo '=========================================='
-            echo '✅ Pipeline completed successfully!'
-            echo '=========================================='
-            
-            script {
-                try {
-                    def template = readFile("${JENKINS_SCRIPTS}/email-success.html")
-                    def emailBody = template
-                        .replace('${BUILD_URL}', env.BUILD_URL ?: '')
-                        .replace('${BUILD_NUMBER}', env.BUILD_NUMBER ?: '')
-                        .replace('${JOB_NAME}', env.JOB_NAME ?: '')
-                        .replace('${BUILD_DURATION}', currentBuild.durationString ?: '')
-                        .replace('${BUILD_TIMESTAMP}', new Date().format('yyyy-MM-dd HH:mm:ss'))
-                        .replace('${GIT_BRANCH}', env.GIT_BRANCH ?: 'main')
-                    mail(
-                        subject: "✅ BUILD SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                        body: emailBody,
-                        to: "${TEAM_EMAIL}",
-                        mimeType: 'text/html'
-                    )
-                } catch (Exception e) {
-                    echo "⚠️ Email notification failed: ${e.message}"
-                }
-            }
+            echo '✅ Pipeline SUCCESS'
         }
         failure {
-            echo '=========================================='
-            echo '❌ Pipeline failed! Immediate action required'
-            echo '=========================================='
-            
-            script {
-                try {
-                    def template = readFile("${JENKINS_SCRIPTS}/email-failure.html")
-                    def emailBody = template
-                        .replace('${BUILD_URL}', env.BUILD_URL ?: '')
-                        .replace('${BUILD_NUMBER}', env.BUILD_NUMBER ?: '')
-                        .replace('${JOB_NAME}', env.JOB_NAME ?: '')
-                        .replace('${BUILD_DURATION}', currentBuild.durationString ?: '')
-                        .replace('${BUILD_TIMESTAMP}', new Date().format('yyyy-MM-dd HH:mm:ss'))
-                        .replace('${GIT_BRANCH}', env.GIT_BRANCH ?: 'main')
-                    mail(
-                        subject: "❌ BUILD FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                        body: emailBody,
-                        to: "${TEAM_EMAIL}",
-                        mimeType: 'text/html'
-                    )
-                } catch (Exception e) {
-                    echo "⚠️ Email notification failed: ${e.message}"
-                }
-            }
-        }
-        unstable {
-            echo '⚠️ Pipeline unstable - some tests may have failed'
-            
-            script {
-                try {
-                    def template = readFile("${JENKINS_SCRIPTS}/email-unstable.html")
-                    def emailBody = template
-                        .replace('${BUILD_URL}', env.BUILD_URL ?: '')
-                        .replace('${BUILD_NUMBER}', env.BUILD_NUMBER ?: '')
-                        .replace('${JOB_NAME}', env.JOB_NAME ?: '')
-                        .replace('${BUILD_DURATION}', currentBuild.durationString ?: '')
-                        .replace('${BUILD_TIMESTAMP}', new Date().format('yyyy-MM-dd HH:mm:ss'))
-                        .replace('${GIT_BRANCH}', env.GIT_BRANCH ?: 'main')
-                    mail(
-                        subject: "⚠️ BUILD UNSTABLE: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                        body: emailBody,
-                        to: "${TEAM_EMAIL}",
-                        mimeType: 'text/html'
-                    )
-                } catch (Exception e) {
-                    echo "⚠️ Email notification failed: ${e.message}"
-                }
-            }
+            echo '❌ Pipeline FAILED'
         }
     }
 }

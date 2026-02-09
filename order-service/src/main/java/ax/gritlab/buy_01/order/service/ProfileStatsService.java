@@ -122,24 +122,12 @@ public class ProfileStatsService {
 
             // Count orders by status
             switch (order.getStatus()) {
-                case PENDING:
-                case PROCESSING:
-                case SHIPPED:
+                case PENDING, PROCESSING, SHIPPED:
                     pendingOrders++;
                     break;
-                case CONFIRMED:
-                    // MVP: Count confirmed orders as completed since we skip the full flow
+                case CONFIRMED, DELIVERED:
+                    // MVP: Count confirmed and delivered orders as completed
                     deliveredOrders++;
-                    for (OrderItem item : sellerItems) {
-                        totalEarned += item.getSubtotal();
-                        totalProductsSold += item.getQuantity();
-                        productStats.computeIfAbsent(item.getProductId(), k -> new ProductStatAggregator())
-                                .addItem(item);
-                    }
-                    break;
-                case DELIVERED:
-                    deliveredOrders++;
-                    // Calculate earnings only from delivered orders
                     for (OrderItem item : sellerItems) {
                         totalEarned += item.getSubtotal();
                         totalProductsSold += item.getQuantity();

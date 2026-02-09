@@ -1,29 +1,3 @@
-# =====================================================
-# Dockerfile for Order Service
-# =====================================================
-FROM eclipse-temurin:21-jdk-alpine AS builder
-
-WORKDIR /app
-
-# Copy Maven wrapper and pom.xml
-COPY mvnw .
-COPY .mvn .mvn
-COPY pom.xml .
-COPY order-service/pom.xml order-service/
-
-# Download dependencies (cached layer)
-RUN chmod +x mvnw && \
-   ./mvnw dependency:go-offline -pl order-service -am -B
-
-# Copy source code
-COPY order-service/src order-service/src
-
-# Build the application
-RUN ./mvnw package -pl order-service -am -DskipTests -B
-
-# =====================================================
-# Runtime Stage
-# =====================================================
 FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
@@ -32,8 +6,9 @@ WORKDIR /app
 RUN addgroup -S spring && adduser -S spring -G spring
 USER spring:spring
 
-# Copy the built JAR
-COPY --from=builder /app/order-service/target/*.jar app.jar
+# Copy built jar from the build context
+# Jenkins builds the jar first, then runs docker build with the module dir as context
+COPY target/order-service-0.0.1-SNAPSHOT.jar app.jar
 
 # Expose port
 EXPOSE 8084
