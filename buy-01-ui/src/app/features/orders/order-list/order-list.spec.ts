@@ -162,6 +162,42 @@ describe('OrderListPage', () => {
         jasmine.objectContaining({ status: OrderStatus.CONFIRMED })
       );
     });
+
+    it('should pass startDate filter when set', () => {
+      const d = new Date('2026-01-01T00:00:00Z');
+      component.startDate.set(d);
+      component.loadOrders();
+      expect(mockOrderService.getMyOrders).toHaveBeenCalledWith(
+        jasmine.objectContaining({ startDate: d.toISOString() })
+      );
+    });
+
+    it('should pass endDate filter when set', () => {
+      const d = new Date('2026-12-31T00:00:00Z');
+      component.endDate.set(d);
+      component.loadOrders();
+      expect(mockOrderService.getMyOrders).toHaveBeenCalledWith(
+        jasmine.objectContaining({ endDate: d.toISOString() })
+      );
+    });
+
+    it('should show snackbar on seller orders error', () => {
+      const snack = (component as any).snackBar;
+      spyOn(snack, 'open');
+      component.viewMode.set('seller');
+      mockOrderService.getSellerOrders.and.returnValue(throwError(() => new Error('fail')));
+      component.loadOrders();
+      expect(snack.open).toHaveBeenCalledWith('Failed to load orders', 'Close', jasmine.any(Object));
+    });
+
+    it('should show snackbar on buyer orders error', () => {
+      const snack = (component as any).snackBar;
+      spyOn(snack, 'open');
+      component.viewMode.set('buyer');
+      mockOrderService.getMyOrders.and.returnValue(throwError(() => new Error('fail')));
+      component.loadOrders();
+      expect(snack.open).toHaveBeenCalledWith('Failed to load orders', 'Close', jasmine.any(Object));
+    });
   });
 
   // ==================== View Mode ====================
@@ -230,6 +266,13 @@ describe('OrderListPage', () => {
     it('should handle non-array orders gracefully', () => {
       ordersSignal.set(null as any);
       expect(component.filteredOrders()).toEqual([]);
+    });
+
+    it('should handle truthy non-array orders with console warning', () => {
+      spyOn(console, 'warn');
+      ordersSignal.set({ notAnArray: true } as any);
+      expect(component.filteredOrders()).toEqual([]);
+      expect(console.warn).toHaveBeenCalledWith('Orders is not an array:', jasmine.anything());
     });
   });
 

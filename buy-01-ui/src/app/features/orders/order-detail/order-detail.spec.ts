@@ -1,10 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter, ActivatedRoute } from '@angular/router';
+import { provideRouter, ActivatedRoute, Router } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { signal } from '@angular/core';
 import { of, throwError } from 'rxjs';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { OrderDetailPage } from './order-detail';
 import {
   OrderService,
@@ -165,6 +166,34 @@ describe('OrderDetailPage', () => {
       const router = TestBed.inject(ActivatedRoute);
       component.ngOnInit();
       expect(mockOrderService.getOrderById).not.toHaveBeenCalled();
+    });
+
+    it('should redirect to /orders when route has no id', () => {
+      TestBed.resetTestingModule();
+      mockAuthService = jasmine.createSpyObj('Auth', ['isAuthenticated', 'logout'], {
+        currentUser: signal({ id: 'buyer-1', name: 'John', role: 'CLIENT' }),
+      });
+      mockAuthService.isAuthenticated.and.returnValue(true);
+      TestBed.configureTestingModule({
+        imports: [OrderDetailPage, NoopAnimationsModule],
+        providers: [
+          provideRouter([]),
+          provideHttpClient(),
+          provideHttpClientTesting(),
+          { provide: OrderService, useValue: mockOrderService },
+          { provide: Auth, useValue: mockAuthService },
+          {
+            provide: ActivatedRoute,
+            useValue: { snapshot: { paramMap: { get: () => null } } },
+          },
+        ],
+      }).compileComponents();
+      const f = TestBed.createComponent(OrderDetailPage);
+      const c = f.componentInstance;
+      const r = TestBed.inject(Router);
+      spyOn(r, 'navigate');
+      c.ngOnInit();
+      expect(r.navigate).toHaveBeenCalledWith(['/orders']);
     });
   });
 
@@ -329,6 +358,28 @@ describe('OrderDetailPage', () => {
       component.redoOrder();
 
       expect(component.isActioning()).toBeFalse();
+    });
+
+    it('should fall back to error.error.error when no message', () => {
+      spyOn(window, 'confirm').and.returnValue(true);
+      const snack = (component as any).snackBar;
+      spyOn(snack, 'open').and.returnValue({ onAction: () => of(undefined) } as any);
+      mockOrderService.redoOrder.and.returnValue(
+        throwError(() => ({ error: { error: 'Bad request' } }))
+      );
+      component.redoOrder();
+      expect(snack.open).toHaveBeenCalledWith('Bad request', 'Close', jasmine.any(Object));
+    });
+
+    it('should use default message when error has no details', () => {
+      spyOn(window, 'confirm').and.returnValue(true);
+      const snack = (component as any).snackBar;
+      spyOn(snack, 'open').and.returnValue({ onAction: () => of(undefined) } as any);
+      mockOrderService.redoOrder.and.returnValue(
+        throwError(() => ({ error: {} }))
+      );
+      component.redoOrder();
+      expect(snack.open).toHaveBeenCalledWith('Failed to redo order', 'Close', jasmine.any(Object));
     });
   });
 

@@ -96,6 +96,14 @@ describe('ProductDetail', () => {
       expect(mockProductService.getProductById).toHaveBeenCalledWith('prod-1');
     });
 
+    it('should handle product without sellerId (skip loadSeller)', () => {
+      mockProductService.getProductById.and.returnValue(
+        of(createMockProduct({ sellerId: undefined }))
+      );
+      component.ngOnInit();
+      expect(component.isLoading()).toBeFalse();
+    });
+
     it('should set error when product ID is not found', () => {
       TestBed.resetTestingModule();
       TestBed.configureTestingModule({
@@ -220,6 +228,48 @@ describe('ProductDetail', () => {
       mockCartService.addToCart.and.returnValue(throwError(() => new Error('Out of stock')));
       component.addToCart();
       expect(component.isAddingToCart()).toBeFalse();
+    });
+
+    it('should show originalError.error.message when present', () => {
+      const snack = (component as any).snackBar;
+      spyOn(snack, 'open').and.returnValue({ onAction: () => of(undefined) } as any);
+      component.product.set(createMockProduct());
+      mockCartService.addToCart.and.returnValue(
+        throwError(() => ({ originalError: { error: { message: 'Limit exceeded' } } }))
+      );
+      component.addToCart();
+      expect(snack.open).toHaveBeenCalledWith('Limit exceeded', 'Close', jasmine.any(Object));
+    });
+
+    it('should show error.error.message when no top-level message', () => {
+      const snack = (component as any).snackBar;
+      spyOn(snack, 'open').and.returnValue({ onAction: () => of(undefined) } as any);
+      component.product.set(createMockProduct());
+      mockCartService.addToCart.and.returnValue(
+        throwError(() => ({ error: { message: 'Server error' } }))
+      );
+      component.addToCart();
+      expect(snack.open).toHaveBeenCalledWith('Server error', 'Close', jasmine.any(Object));
+    });
+
+    it('should show default message when error has no message fields', () => {
+      const snack = (component as any).snackBar;
+      spyOn(snack, 'open').and.returnValue({ onAction: () => of(undefined) } as any);
+      component.product.set(createMockProduct());
+      mockCartService.addToCart.and.returnValue(
+        throwError(() => ({}))
+      );
+      component.addToCart();
+      expect(snack.open).toHaveBeenCalledWith('Failed to add to cart. Please try again.', 'Close', jasmine.any(Object));
+    });
+
+    it('should handle addToCart with product missing sellerId', () => {
+      component.product.set(createMockProduct({ sellerId: undefined }));
+      mockCartService.addToCart.and.returnValue(of({} as any));
+      component.addToCart();
+      expect(mockCartService.addToCart).toHaveBeenCalledWith(
+        jasmine.objectContaining({ sellerId: '' })
+      );
     });
 
     it('should not add to cart if product is null', () => {
