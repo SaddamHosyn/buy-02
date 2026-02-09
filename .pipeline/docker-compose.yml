@@ -110,7 +110,7 @@ services:
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://service-registry:8761/eureka/
       EUREKA_INSTANCE_HOSTNAME: product-service
       EUREKA_INSTANCE_PREFER_IP_ADDRESS: false
-      MEDIA_PUBLIC_URL: ${API_GATEWAY_URL}/api/media
+      MEDIA_PUBLIC_URL: https://localhost:8443/api/media
     depends_on:
       - kafka
       - service-registry
@@ -151,9 +151,9 @@ services:
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://service-registry:8761/eureka/
       EUREKA_INSTANCE_HOSTNAME: media-service
       EUREKA_INSTANCE_PREFER_IP_ADDRESS: false
-      API_GATEWAY_URL: ${API_GATEWAY_URL}/api/media
+      API_GATEWAY_URL: https://localhost:8443/api/media
     volumes:
-      - ./media-service/uploads:/app/uploads
+      - ../media-service/uploads:/app/uploads
     depends_on:
       - kafka
       - service-registry
