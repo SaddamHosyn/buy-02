@@ -143,9 +143,9 @@ ngrok http 8088
 1. Create a new **Pipeline** job (or copy an existing one)
 2. **Pipeline** section → **Definition**: Select "Pipeline script from SCM"
 3. **SCM**: Select **Git**
-   - **Repository URL**: `https://github.com/jeeeeedi/mr-jenk.git`
+   - **Repository URL**: `https://github.com/SaddamHosyn/buy-02.git`
    - **Credentials**: Select the GitHub credentials you created
-   - **Branch**: `*/cleanup` (or your working branch)
+   - **Branch**: `*/feature` (or your working branch)
 4. **Script Path**: `.pipeline/Jenkinsfile`
 5. Under **Build Triggers** → Check ☑️ **GitHub hook trigger for GITScm polling**
 6. **Save**
@@ -299,8 +299,8 @@ The easiest way to run the entire application:
 
 ```bash
 # Clone the repository
-git clone https://github.com/jeeeeedi/buy-01.git
-cd buy-01
+git clone https://github.com/SaddamHosyn/buy-02.git
+cd buy-02
 
 # Or use the provided helper script
 ./start_docker.sh
@@ -1017,7 +1017,7 @@ This project is developed for educational purposes as part of a university proje
 
 - [@jeeeeedi](https://github.com/jeeeeedi)
 - [@oafilali](https://github.com/oafilali)
-- [@Anastasia](https://github.com/An1Su)
+- [@ejmilli](https://github.com/ejmilli)
 - [@SaddamHosyn](https://github.com/SaddamHosyn)
 
 ---
