@@ -122,13 +122,10 @@ public class ProfileStatsService {
 
             // Count orders by status
             switch (order.getStatus()) {
-                case PENDING:
-                case PROCESSING:
-                case SHIPPED:
+                case PENDING, PROCESSING, SHIPPED:
                     pendingOrders++;
                     break;
-                case CONFIRMED:
-                case DELIVERED:
+                case CONFIRMED, DELIVERED:
                     // MVP: Count confirmed and delivered orders as completed
                     deliveredOrders++;
                     for (OrderItem item : sellerItems) {

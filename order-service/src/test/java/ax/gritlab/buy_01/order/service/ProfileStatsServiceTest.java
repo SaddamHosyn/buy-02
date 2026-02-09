@@ -139,12 +139,12 @@ class ProfileStatsServiceTest {
         BuyerProfileStatsDto stats = profileStatsService.getBuyerStats("buyer-empty");
 
         assertThat(stats.getUserId()).isEqualTo("buyer-empty");
-        assertThat(stats.getTotalOrders()).isEqualTo(0);
-        assertThat(stats.getTotalSpent()).isEqualTo(0.0);
-        assertThat(stats.getPendingOrders()).isEqualTo(0);
-        assertThat(stats.getDeliveredOrders()).isEqualTo(0);
-        assertThat(stats.getCancelledOrders()).isEqualTo(0);
-        assertThat(stats.getAverageOrderValue()).isEqualTo(0.0);
+        assertThat(stats.getTotalOrders()).isZero();
+        assertThat(stats.getTotalSpent()).isZero();
+        assertThat(stats.getPendingOrders()).isZero();
+        assertThat(stats.getDeliveredOrders()).isZero();
+        assertThat(stats.getCancelledOrders()).isZero();
+        assertThat(stats.getAverageOrderValue()).isZero();
         assertThat(stats.getTopProductsByAmount()).isEmpty();
         assertThat(stats.getMostBoughtProducts()).isEmpty();
     }
@@ -192,7 +192,7 @@ class ProfileStatsServiceTest {
 
         // PENDING + PROCESSING + SHIPPED = 3 pending
         assertThat(stats.getPendingOrders()).isEqualTo(3);
-        assertThat(stats.getDeliveredOrders()).isEqualTo(0);
+        assertThat(stats.getDeliveredOrders()).isZero();
     }
 
     // ==================== Seller Stats Tests ====================
@@ -213,7 +213,7 @@ class ProfileStatsServiceTest {
         // Total products sold: 2 + 3 = 5
         assertThat(stats.getTotalProductsSold()).isEqualTo(5);
         // pendingOrder has seller-2 items, so it's skipped for seller-1
-        assertThat(stats.getPendingOrders()).isEqualTo(0);
+        assertThat(stats.getPendingOrders()).isZero();
         // DELIVERED + CONFIRMED
         assertThat(stats.getDeliveredOrders()).isEqualTo(2);
         assertThat(stats.getCancelledOrders()).isEqualTo(1);
@@ -230,13 +230,13 @@ class ProfileStatsServiceTest {
         SellerProfileStatsDto stats = profileStatsService.getSellerStats("seller-empty");
 
         assertThat(stats.getSellerId()).isEqualTo("seller-empty");
-        assertThat(stats.getTotalOrders()).isEqualTo(0);
-        assertThat(stats.getTotalEarned()).isEqualTo(0.0);
-        assertThat(stats.getTotalProductsSold()).isEqualTo(0);
-        assertThat(stats.getPendingOrders()).isEqualTo(0);
-        assertThat(stats.getDeliveredOrders()).isEqualTo(0);
-        assertThat(stats.getCancelledOrders()).isEqualTo(0);
-        assertThat(stats.getAverageOrderValue()).isEqualTo(0.0);
+        assertThat(stats.getTotalOrders()).isZero();
+        assertThat(stats.getTotalEarned()).isZero();
+        assertThat(stats.getTotalProductsSold()).isZero();
+        assertThat(stats.getPendingOrders()).isZero();
+        assertThat(stats.getDeliveredOrders()).isZero();
+        assertThat(stats.getCancelledOrders()).isZero();
+        assertThat(stats.getAverageOrderValue()).isZero();
         assertThat(stats.getBestSellingByAmount()).isEmpty();
         assertThat(stats.getBestSellingByQuantity()).isEmpty();
     }
@@ -307,10 +307,10 @@ class ProfileStatsServiceTest {
 
         SellerProfileStatsDto stats = profileStatsService.getSellerStats("seller-1");
 
-        assertThat(stats.getTotalEarned()).isEqualTo(0.0);
-        assertThat(stats.getTotalProductsSold()).isEqualTo(0);
-        assertThat(stats.getDeliveredOrders()).isEqualTo(0);
-        assertThat(stats.getPendingOrders()).isEqualTo(0);
+        assertThat(stats.getTotalEarned()).isZero();
+        assertThat(stats.getTotalProductsSold()).isZero();
+        assertThat(stats.getDeliveredOrders()).isZero();
+        assertThat(stats.getPendingOrders()).isZero();
     }
 
     @Test
@@ -352,8 +352,8 @@ class ProfileStatsServiceTest {
         SellerProfileStatsDto stats = profileStatsService.getSellerStats("seller-1");
 
         assertThat(stats.getPendingOrders()).isEqualTo(3);
-        assertThat(stats.getDeliveredOrders()).isEqualTo(0);
-        assertThat(stats.getTotalEarned()).isEqualTo(0.0);
+        assertThat(stats.getDeliveredOrders()).isZero();
+        assertThat(stats.getTotalEarned()).isZero();
     }
 
     @Test
