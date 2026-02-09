@@ -121,7 +121,7 @@ It integrates work from previous projects (auth, product/media, microservices) a
 
 ```bash
 brew install ngrok
-ngrok http 8090
+ngrok http 8088
 # Use the https:// URL provided as your Payload URL
 ```
 
