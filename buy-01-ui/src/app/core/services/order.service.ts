@@ -248,7 +248,7 @@ export class OrderService {
   }
 
   /**
-   * Redo a cancelled order (create new order with same items)
+   * Redo a cancelled order - creates a new order with same items
    */
   redoOrder(id: string): Observable<Order> {
     return this.http

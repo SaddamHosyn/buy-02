@@ -99,14 +99,14 @@
           <mat-divider></mat-divider>
 
           <div class="order-items">
-            @for (item of order.items.slice(0, 3); track item.productId) {
+            @for (item of (order.items || []).slice(0, 3); track item.productId) {
               <div class="order-item">
                 <span class="item-name">{{ item.productName }}</span>
                 <span class="item-qty">x{{ item.quantity }}</span>
-                <span class="item-price">${{ item.subtotal.toFixed(2) }}</span>
+                <span class="item-price">${{ (item.subtotal ?? 0).toFixed(2) }}</span>
               </div>
             }
-            @if (order.items.length > 3) {
+            @if ((order.items || []).length > 3) {
               <div class="more-items">+{{ order.items.length - 3 }} more item(s)</div>
             }
           </div>
@@ -116,7 +116,7 @@
           <div class="order-footer">
             <div class="order-total">
               <span class="total-label">Total:</span>
-              <span class="total-value">${{ order.totalAmount.toFixed(2) }}</span>
+              <span class="total-value">${{ (order.totalAmount ?? 0).toFixed(2) }}</span>
             </div>
 
             <div class="order-actions">

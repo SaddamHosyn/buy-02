@@ -248,28 +248,24 @@ export class OrderListPage implements OnInit {
   }
 
   /**
-   * Redo cancelled order
+   * Redo cancelled order - creates a new order
    */
   redoOrder(order: Order, event: Event): void {
     event.stopPropagation();
 
     const confirmMessage =
       `Create a new order with the same items as ${order.orderNumber}?\n\n` +
-      `Note: Prices and availability will be checked at checkout.`;
+      `Note: Current prices will be used.`;
 
     if (!confirm(confirmMessage)) {
       return;
     }
 
     this.orderService.redoOrder(order.id).subscribe({
-      next: (response: any) => {
-        const newOrder = response.order || response;
-        const message = response.message || 'New order created!';
-        const note = response.note || '';
-
+      next: (newOrder: Order) => {
         this.snackBar
-          .open(`${message}${note ? ' - ' + note : ''}`, 'View Order', {
-            duration: 7000,
+          .open('New order created!', 'View Order', {
+            duration: 5000,
             panelClass: ['success-snackbar'],
           })
           .onAction()
@@ -282,12 +278,11 @@ export class OrderListPage implements OnInit {
       error: (error) => {
         console.error('Error redoing order:', error);
 
-        let errorMessage = 'Failed to recreate order';
-        if (error.error?.error) {
+        let errorMessage = 'Failed to redo order';
+        if (error.error?.message) {
+          errorMessage = error.error.message;
+        } else if (error.error?.error) {
           errorMessage = error.error.error;
-          if (error.error.reason) {
-            errorMessage += `: ${error.error.reason}`;
-          }
         }
 
         this.snackBar.open(errorMessage, 'Close', {

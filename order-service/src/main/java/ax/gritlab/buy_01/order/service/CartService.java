@@ -66,11 +66,24 @@ public class CartService {
         String sellerId = product.get("sellerId").asText();
         String productName = product.get("name").asText();
         Double price = product.get("price").asDouble();
+        int availableStock = product.has("quantity") ? product.get("quantity").asInt() : 
+                            (product.has("stock") ? product.get("stock").asInt() : Integer.MAX_VALUE);
 
         // Check if item already in cart
         Optional<CartItem> existingItem = cart.getItems().stream()
                 .filter(item -> item.getProductId().equals(request.getProductId()))
                 .findFirst();
+
+        // Calculate total quantity (existing + new)
+        int currentQtyInCart = existingItem.map(CartItem::getQuantity).orElse(0);
+        int totalRequestedQty = currentQtyInCart + request.getQuantity();
+        
+        // Validate against available stock
+        if (totalRequestedQty > availableStock) {
+            throw new CheckoutValidationException(
+                String.format("Cannot add %d of '%s' to cart. Available stock: %d, Already in cart: %d",
+                    request.getQuantity(), productName, availableStock, currentQtyInCart));
+        }
 
         if (existingItem.isPresent()) {
             // Update existing item quantity
@@ -111,6 +124,20 @@ public class CartService {
                 .filter(i -> i.getProductId().equals(productId))
                 .findFirst()
                 .orElseThrow(() -> new CheckoutValidationException("Product not in cart"));
+
+        // Validate against available stock
+        JsonNode product = fetchProductDetails(productId);
+        if (product != null) {
+            int availableStock = product.has("quantity") ? product.get("quantity").asInt() : 
+                                (product.has("stock") ? product.get("stock").asInt() : Integer.MAX_VALUE);
+            String productName = product.has("name") ? product.get("name").asText() : productId;
+            
+            if (quantity > availableStock) {
+                throw new CheckoutValidationException(
+                    String.format("Cannot set quantity to %d for '%s'. Available stock: %d",
+                        quantity, productName, availableStock));
+            }
+        }
 
         item.setQuantity(quantity);
         item.setUpdatedAt(LocalDateTime.now());

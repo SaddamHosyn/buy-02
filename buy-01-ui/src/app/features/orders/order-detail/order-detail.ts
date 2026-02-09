@@ -116,7 +116,7 @@ export class OrderDetailPage implements OnInit {
   }
   
   /**
-   * Redo cancelled order
+   * Redo cancelled order - creates a new order
    */
   redoOrder(): void {
     const order = this.order();
@@ -130,13 +130,17 @@ export class OrderDetailPage implements OnInit {
     this.orderService.redoOrder(order.id).subscribe({
       next: (newOrder) => {
         this.isActioning.set(false);
-        this.snackBar.open('New order created!', 'Close', { duration: 3000 });
+        this.snackBar.open('New order created!', 'View Order', { duration: 5000 })
+          .onAction()
+          .subscribe(() => this.router.navigate(['/orders', newOrder.id]));
+        // Navigate to the new order
         this.router.navigate(['/orders', newOrder.id]);
       },
       error: (error) => {
         console.error('Error redoing order:', error);
         this.isActioning.set(false);
-        this.snackBar.open('Failed to redo order', 'Close', { duration: 3000 });
+        const errorMsg = error.error?.message || error.error?.error || 'Failed to redo order';
+        this.snackBar.open(errorMsg, 'Close', { duration: 5000 });
       }
     });
   }

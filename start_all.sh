@@ -51,7 +51,7 @@ wait_for_port() {
 }
 
 # Check if MongoDB is running
-echo -e "${YELLOW}[1/8] Checking MongoDB...${NC}"
+echo -e "${YELLOW}[1/9] Checking MongoDB...${NC}"
 if ! pgrep -x "mongod" > /dev/null; then
     echo -e "${YELLOW}MongoDB is not running. Starting it via brew...${NC}"
     brew services start mongodb-community
@@ -60,7 +60,7 @@ fi
 echo -e "${GREEN}✓ MongoDB is running${NC}"
 
 # Check if Kafka is running (Kafka 4.x uses KRaft mode - no Zookeeper needed)
-echo -e "${YELLOW}[2/8] Checking Kafka...${NC}"
+echo -e "${YELLOW}[2/9] Checking Kafka...${NC}"
 if ! pgrep -f "kafka.Kafka\|kafka.server.KafkaServer\|org.apache.kafka" > /dev/null; then
     echo -e "${YELLOW}Kafka is not running. Starting it via brew...${NC}"
     brew services start kafka
@@ -70,7 +70,7 @@ echo -e "${GREEN}✓ Kafka check complete${NC}"
 echo ""
 
 # Start Service Registry (Eureka)
-echo -e "${YELLOW}[3/8] Starting Service Registry (Eureka)...${NC}"
+echo -e "${YELLOW}[3/9] Starting Service Registry (Eureka)...${NC}"
 cd "$PROJECT_ROOT/service-registry"
 mvn spring-boot:run > "$PROJECT_ROOT/logs/service-registry.log" 2>&1 &
 SERVICE_REGISTRY_PID=$!
@@ -81,7 +81,7 @@ wait_for_port 8761 "Service Registry" 90
 echo ""
 
 # Start User Service
-echo -e "${YELLOW}[4/8] Starting User Service...${NC}"
+echo -e "${YELLOW}[4/9] Starting User Service...${NC}"
 cd "$PROJECT_ROOT/user-service"
 mvn spring-boot:run > "$PROJECT_ROOT/logs/user-service.log" 2>&1 &
 USER_SERVICE_PID=$!
@@ -91,7 +91,7 @@ echo -e "${GREEN}  Port: 8081${NC}"
 echo ""
 
 # Start Product Service
-echo -e "${YELLOW}[5/8] Starting Product Service...${NC}"
+echo -e "${YELLOW}[5/9] Starting Product Service...${NC}"
 cd "$PROJECT_ROOT/product-service"
 mvn spring-boot:run > "$PROJECT_ROOT/logs/product-service.log" 2>&1 &
 PRODUCT_SERVICE_PID=$!
@@ -101,7 +101,7 @@ echo -e "${GREEN}  Port: 8082${NC}"
 echo ""
 
 # Start Media Service
-echo -e "${YELLOW}[6/8] Starting Media Service...${NC}"
+echo -e "${YELLOW}[6/9] Starting Media Service...${NC}"
 cd "$PROJECT_ROOT/media-service"
 mvn spring-boot:run > "$PROJECT_ROOT/logs/media-service.log" 2>&1 &
 MEDIA_SERVICE_PID=$!
@@ -111,7 +111,7 @@ echo -e "${GREEN}  Port: 8083${NC}"
 echo ""
 
 # Start Order Service
-echo -e "${YELLOW}[7/8] Starting Order Service...${NC}"
+echo -e "${YELLOW}[7/9] Starting Order Service...${NC}"
 cd "$PROJECT_ROOT/order-service"
 mvn spring-boot:run > "$PROJECT_ROOT/logs/order-service.log" 2>&1 &
 ORDER_SERVICE_PID=$!
@@ -129,7 +129,7 @@ wait_for_port 8084 "Order Service" 60
 echo ""
 
 # Start API Gateway
-echo -e "${YELLOW}[8/8] Starting API Gateway...${NC}"
+echo -e "${YELLOW}[8/9] Starting API Gateway...${NC}"
 cd "$PROJECT_ROOT/api-gateway"
 mvn spring-boot:run > "$PROJECT_ROOT/logs/api-gateway.log" 2>&1 &
 API_GATEWAY_PID=$!
