@@ -1,6 +1,6 @@
 import { Injectable, inject, signal, effect } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, BehaviorSubject, tap } from 'rxjs';
+import { Observable, BehaviorSubject, tap, map } from 'rxjs';
 import { Auth } from './auth';
 import { environment } from '../../../environments/environment';
 
@@ -115,6 +115,15 @@ export interface SellerStats {
   bestSellingByAmount: ProductStat[];
   bestSellingByQuantity: ProductStat[];
   averageOrderValue: number;
+}
+
+// Paginated response from backend
+interface PagedOrderResponse {
+  content: Order[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
 }
 
 // ==================== Service ====================
@@ -321,10 +330,11 @@ export class OrderService {
     }
     const url = queryParams ? `${this.API_URL}/seller?${queryParams}` : `${this.API_URL}/seller`;
     return this.http
-      .get<Order[]>(url, {
+      .get<PagedOrderResponse>(url, {
         headers: this.getHeaders(),
       })
       .pipe(
+        map((response) => response.content || []),
         tap((orders) => {
           this.ordersSignal.set(orders);
           this.isLoadingSignal.set(false);

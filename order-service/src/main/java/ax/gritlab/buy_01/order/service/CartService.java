@@ -51,6 +51,11 @@ public class CartService {
         Cart cart = cartRepository.findByUserId(userId)
                 .orElseGet(() -> createNewCart(userId));
 
+        // Reset cart to ACTIVE if it was PURCHASED (user is starting a new shopping session)
+        if (cart.getStatus() == CartStatus.PURCHASED) {
+            cart.setStatus(CartStatus.ACTIVE);
+        }
+
         // Fetch product details
         JsonNode product = fetchProductDetails(request.getProductId());
         
