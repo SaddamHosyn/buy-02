@@ -142,7 +142,9 @@
               <div class="summary-row">
                 <span>Shipping</span>
                 <span>{{
-                  (order()?.shippingCost ?? 0) === 0 ? 'Free' : '$' + (order()?.shippingCost ?? 0).toFixed(2)
+                  (order()?.shippingCost ?? 0) === 0
+                    ? 'Free'
+                    : '$' + (order()?.shippingCost ?? 0).toFixed(2)
                 }}</span>
               </div>
               @if ((order()?.taxAmount ?? 0) > 0) {
