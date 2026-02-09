@@ -1,4 +1,4 @@
-# buy-02
+# buy-02 !!!
 
 **Full-stack e-commerce marketplace — shopping cart, orders, analytics dashboards, search & filtering — with CI/CD and SonarQube quality gates.**
 
