@@ -1019,9 +1019,3 @@ This project is developed for educational purposes as part of a university proje
 - [@oafilali](https://github.com/oafilali)
 - [@ejmilli](https://github.com/ejmilli)
 - [@SaddamHosyn](https://github.com/SaddamHosyn)
-
----
-
-**Built with ❤️ using Spring Boot, Angular, Kafka, and MongoDB**
-
-_For questions or issues, please open an issue on GitHub._
