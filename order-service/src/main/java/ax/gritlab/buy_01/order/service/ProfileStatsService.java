@@ -128,18 +128,9 @@ public class ProfileStatsService {
                     pendingOrders++;
                     break;
                 case CONFIRMED:
-                    // MVP: Count confirmed orders as completed since we skip the full flow
-                    deliveredOrders++;
-                    for (OrderItem item : sellerItems) {
-                        totalEarned += item.getSubtotal();
-                        totalProductsSold += item.getQuantity();
-                        productStats.computeIfAbsent(item.getProductId(), k -> new ProductStatAggregator())
-                                .addItem(item);
-                    }
-                    break;
                 case DELIVERED:
+                    // MVP: Count confirmed and delivered orders as completed
                     deliveredOrders++;
-                    // Calculate earnings only from delivered orders
                     for (OrderItem item : sellerItems) {
                         totalEarned += item.getSubtotal();
                         totalProductsSold += item.getQuantity();
