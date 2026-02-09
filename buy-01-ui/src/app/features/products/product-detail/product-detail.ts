@@ -213,7 +213,9 @@ export class ProductDetail implements OnInit {
       error: (error) => {
         console.error('Error adding to cart:', error);
         this.isAddingToCart.set(false);
-        this.snackBar.open('Failed to add to cart. Please try again.', 'Close', { duration: 3000 });
+        // Extract error message from backend if available
+        const errorMessage = error.error?.message || 'Failed to add to cart. Please try again.';
+        this.snackBar.open(errorMessage, 'Close', { duration: 4000 });
       }
     });
   }
@@ -249,7 +251,9 @@ export class ProductDetail implements OnInit {
       error: (error) => {
         console.error('Error adding to cart:', error);
         this.isAddingToCart.set(false);
-        this.snackBar.open('Failed to add to cart. Please try again.', 'Close', { duration: 3000 });
+        // Extract error message from backend if available
+        const errorMessage = error.error?.message || 'Failed to add to cart. Please try again.';
+        this.snackBar.open(errorMessage, 'Close', { duration: 4000 });
       }
     });
   }

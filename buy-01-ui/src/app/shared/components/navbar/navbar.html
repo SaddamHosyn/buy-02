@@ -22,6 +22,11 @@
             }
 
             @if (authService.isAuthenticated()) {
+            <button mat-button routerLink="/orders" routerLinkActive="active-link" matTooltip="Your Orders">
+                <mat-icon>receipt_long</mat-icon>
+                <span>Orders</span>
+            </button>
+
             @if (authService.isSeller()) {
             <button mat-button (click)="goToDashboard()" routerLinkActive="active-link">
                 <mat-icon>dashboard</mat-icon>
@@ -59,6 +64,16 @@
                 </button>
 
                 @if (authService.isAuthenticated()) {
+                @if (!authService.isSeller() && !authService.isAdmin()) {
+                <button mat-menu-item routerLink="/cart">
+                    <mat-icon [matBadge]="cartCount()" [matBadgeHidden]="cartCount() === 0" matBadgeColor="warn" matBadgeSize="small">shopping_cart</mat-icon>
+                    <span>Cart</span>
+                </button>
+                }
+                <button mat-menu-item routerLink="/orders">
+                    <mat-icon>receipt_long</mat-icon>
+                    <span>My Orders</span>
+                </button>
                 <mat-divider></mat-divider>
                 @if (authService.isSeller()) {
                 <button mat-menu-item (click)="goToDashboard()">

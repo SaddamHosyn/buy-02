@@ -23,29 +23,24 @@
       <!-- Checkout Steps -->
       <div class="checkout-steps">
         <mat-card>
-          <!-- Step Indicators -->
+          <!-- Step Indicators - Simplified -->
           <div class="step-indicators">
             <div
               class="step"
-              [class.active]="currentStep() >= 0"
+              [class.active]="currentStep() === 0"
               [class.completed]="currentStep() > 0"
             >
-              <div class="step-number">1</div>
-              <span>Shipping Address</span>
+              <div class="step-number">{{ currentStep() > 0 ? '✓' : '1' }}</div>
+              <span>Shipping</span>
             </div>
             <div class="step-line" [class.active]="currentStep() > 0"></div>
             <div
               class="step"
-              [class.active]="currentStep() >= 1"
+              [class.active]="currentStep() === 1"
               [class.completed]="currentStep() > 1"
             >
-              <div class="step-number">2</div>
-              <span>Review Order</span>
-            </div>
-            <div class="step-line" [class.active]="currentStep() > 1"></div>
-            <div class="step" [class.active]="currentStep() >= 2">
-              <div class="step-number">3</div>
-              <span>Confirm</span>
+              <div class="step-number">{{ currentStep() > 1 ? '✓' : '2' }}</div>
+              <span>Review</span>
             </div>
           </div>
 
@@ -178,35 +173,10 @@
                   </div>
                 </div>
 
-                <div class="step-actions">
-                  <button mat-button (click)="prevStep()">
-                    <mat-icon>arrow_back</mat-icon>
-                    Back
-                  </button>
-                  <button mat-raised-button color="primary" (click)="nextStep()">
-                    Continue to Confirm
-                    <mat-icon>arrow_forward</mat-icon>
-                  </button>
-                </div>
-              </div>
-            }
-
-            <!-- Step 3: Confirm -->
-            @if (currentStep() === 2) {
-              <div class="confirm-step">
-                <h2>Confirm Your Order</h2>
-
-                <div class="confirm-message">
-                  <mat-icon class="confirm-icon">check_circle</mat-icon>
-                  <p>
-                    You're about to place an order for <strong>{{ totalItems() }} item(s)</strong>
-                  </p>
+                <!-- Order Total Summary -->
+                <div class="confirm-message" style="margin-top: 16px; text-align: center;">
                   <p class="total-highlight">
                     Total: <strong>${{ totalAmount().toFixed(2) }}</strong>
-                  </p>
-                  <p class="payment-note">
-                    <mat-icon>info</mat-icon>
-                    Payment will be collected upon delivery
                   </p>
                 </div>
 

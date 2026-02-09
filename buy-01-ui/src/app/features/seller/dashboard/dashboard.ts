@@ -133,7 +133,7 @@ export class Dashboard implements OnInit {
       labels: stats.bestSellingByQuantity.slice(0, 5).map((p) => p.productName),
       datasets: [
         {
-          data: stats.bestSellingByQuantity.slice(0, 5).map((p) => p.quantity),
+          data: stats.bestSellingByQuantity.slice(0, 5).map((p) => p.totalQuantity || p.quantity),
           label: 'Units Sold',
           backgroundColor: '#2196f3',
           borderColor: '#2196f3',

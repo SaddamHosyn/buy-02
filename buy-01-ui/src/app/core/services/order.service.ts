@@ -100,7 +100,8 @@ export interface BuyerStats {
 export interface ProductStat {
   productId: string;
   productName: string;
-  quantity: number;
+  totalQuantity: number;
+  quantity: number; // alias for totalQuantity in some contexts
   totalAmount: number;
 }
 

@@ -93,16 +93,11 @@ export class OrderListPage implements OnInit {
 
   readonly isSeller = computed(() => this.authService.isSeller());
 
-  // Status options for filter
+  // Status options for filter - simplified to actual order states
   readonly statusOptions: { value: OrderStatus | ''; label: string }[] = [
     { value: '', label: 'All Statuses' },
-    { value: OrderStatus.PENDING, label: 'Pending' },
     { value: OrderStatus.CONFIRMED, label: 'Confirmed' },
-    { value: OrderStatus.PROCESSING, label: 'Processing' },
-    { value: OrderStatus.SHIPPED, label: 'Shipped' },
-    { value: OrderStatus.DELIVERED, label: 'Delivered' },
     { value: OrderStatus.CANCELLED, label: 'Cancelled' },
-    { value: OrderStatus.RETURNED, label: 'Returned' },
   ];
 
   ngOnInit(): void {
