@@ -963,32 +963,6 @@ curl -X POST http://localhost:8080/api/media/upload \
 - Code reviews (security, performance, readability) before merge
 - Main branch protected: require approved reviews and green pipeline
 
-## 📝 Audit Checklist
-
-### Functional
-
-- [ ] Database design correctly implemented with new relationships
-- [ ] PRs and code reviews followed throughout development
-- [ ] Orders MicroService, User Profile, Search/Filtering, Shopping Cart implemented
-- [ ] Cart items persist across page refresh with correct quantities
-- [ ] SonarQube issues identified and addressed
-- [ ] UI is user-friendly and responsive
-- [ ] Error handling and validation in place with appropriate messages
-- [ ] Security measures consistently applied
-
-### Collaboration & Process
-
-- [ ] Code reviews performed for each PR
-- [ ] CI/CD pipeline (Jenkins) correctly set up and used for PRs
-- [ ] Branches merged correctly, main codebase up-to-date
-- [ ] Application passes comprehensive testing of all new features
-- [ ] Unit tests in place for critical parts of the application
-
-### Bonus
-
-- [ ] Wishlist feature (save for later)
-- [ ] Additional payment methods (simulate gateway integration)
-
 ## 📖 Documentation
 
 ### For Developers
