@@ -66,6 +66,7 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://service-registry:8761/eureka/
       EUREKA_INSTANCE_HOSTNAME: api-gateway
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: false
       # SSL Configuration - HTTPS enabled
       SERVER_PORT: 8443
       SSL_ENABLED: true
@@ -89,6 +90,7 @@ services:
       SPRING_DATA_MONGODB_URI: mongodb://${MONGO_ROOT_USERNAME:-admin}:${MONGO_ROOT_PASSWORD:-admin123}@mongodb:27017/userdb?authSource=admin
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://service-registry:8761/eureka/
       EUREKA_INSTANCE_HOSTNAME: user-service
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: false
     depends_on:
       - kafka
       - service-registry
@@ -107,6 +109,7 @@ services:
       SPRING_DATA_MONGODB_URI: mongodb://${MONGO_ROOT_USERNAME:-admin}:${MONGO_ROOT_PASSWORD:-admin123}@mongodb:27017/productdb?authSource=admin
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://service-registry:8761/eureka/
       EUREKA_INSTANCE_HOSTNAME: product-service
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: false
       MEDIA_PUBLIC_URL: ${API_GATEWAY_URL}/api/media
     depends_on:
       - kafka
@@ -126,6 +129,7 @@ services:
       SPRING_DATA_MONGODB_URI: mongodb://${MONGO_ROOT_USERNAME:-admin}:${MONGO_ROOT_PASSWORD:-admin123}@mongodb:27017/orderdb?authSource=admin
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://service-registry:8761/eureka/
       EUREKA_INSTANCE_HOSTNAME: order-service
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: false
       PRODUCT_SERVICE_URL: http://product-service:8082/products
       USER_SERVICE_URL: http://user-service:8081/users
     depends_on:
@@ -146,6 +150,7 @@ services:
       SPRING_DATA_MONGODB_URI: mongodb://${MONGO_ROOT_USERNAME:-admin}:${MONGO_ROOT_PASSWORD:-admin123}@mongodb:27017/mediadb?authSource=admin
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://service-registry:8761/eureka/
       EUREKA_INSTANCE_HOSTNAME: media-service
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: false
       API_GATEWAY_URL: ${API_GATEWAY_URL}/api/media
     volumes:
       - ./media-service/uploads:/app/uploads
