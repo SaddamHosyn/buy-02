@@ -57,8 +57,8 @@ services:
     image: buy01-pipeline-api-gateway:latest
     container_name: buy-01-api-gateway
     ports:
-      - "8090:8080"   # HTTP - offset to avoid local API Gateway conflict
-      - "8444:8443"   # HTTPS - offset
+      - "8090:8080"   # HTTP
+      - "8443:8443"   # HTTPS - must match frontend environment.prod.ts
     volumes:
       - buy01-certs:/app/certs:ro
     environment:
