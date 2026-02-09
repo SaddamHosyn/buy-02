@@ -118,15 +118,15 @@ public class OrderController {
     }
 
     /**
-     * Redo order - copy items to cart.
+     * Redo order - create a new order from a cancelled order.
      */
     @PostMapping("/{id}/redo")
-    public ResponseEntity<CartResponse> redoOrder(
+    public ResponseEntity<OrderResponse> redoOrder(
             @PathVariable String id,
             Authentication authentication) {
         User user = (User) authentication.getPrincipal();
-        CartResponse cart = orderService.redoOrder(id, user.getId());
-        return ResponseEntity.ok(cart);
+        OrderResponse newOrder = orderService.redoOrder(id, user.getId());
+        return ResponseEntity.ok(newOrder);
     }
 
     /**

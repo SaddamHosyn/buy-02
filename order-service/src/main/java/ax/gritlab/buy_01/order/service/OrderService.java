@@ -187,80 +187,91 @@ public class OrderService {
     }
 
     /**
-     * Redo order - copy items from cancelled order to cart.
+     * Redo order - create a new order from a cancelled order.
      */
-    public CartResponse redoOrder(String orderId, String userId) {
-        Order order = orderRepository.findById(orderId)
+    public OrderResponse redoOrder(String orderId, String userId) {
+        Order originalOrder = orderRepository.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException("Order not found with id: " + orderId));
         
         // Only buyer can redo their order
-        if (!order.getBuyerId().equals(userId)) {
+        if (!originalOrder.getBuyerId().equals(userId)) {
             throw new UnauthorizedException("You can only redo your own orders");
         }
         
         // Only allow redo for cancelled orders
-        if (order.getStatus() != OrderStatus.CANCELLED) {
+        if (originalOrder.getStatus() != OrderStatus.CANCELLED) {
             throw new InvalidStatusTransitionException("Can only redo cancelled orders");
         }
         
-        // Get user's cart
-        Cart cart = cartService.getCartEntity(userId);
+        // Create new order
+        Order newOrder = new Order();
+        newOrder.setBuyerId(userId);
+        newOrder.setBuyerName(originalOrder.getBuyerName());
+        newOrder.setBuyerEmail(originalOrder.getBuyerEmail());
+        newOrder.setOrderNumber(generateOrderNumber());
+        newOrder.setOriginalOrderId(orderId); // Link to original cancelled order
         
-        int addedCount = 0;
-        int skippedCount = 0;
+        // Process items - update prices from current product data
+        List<OrderItem> newItems = new ArrayList<>();
+        Set<String> sellerIds = new HashSet<>();
         
-        // Add available items to cart
-        for (OrderItem orderItem : order.getItems()) {
-            JsonNode product = fetchProductDetails(orderItem.getProductId());
+        for (OrderItem originalItem : originalOrder.getItems()) {
+            JsonNode product = fetchProductDetails(originalItem.getProductId());
             
-            if (product != null && product.get("stock").asInt() > 0) {
-                // Add to cart
-                CartItem cartItem = CartItem.builder()
-                        .productId(orderItem.getProductId())
-                        .quantity(orderItem.getQuantity())
-                        .sellerId(orderItem.getSellerId())
-                        .addedAt(LocalDateTime.now())
-                        .updatedAt(LocalDateTime.now())
-                        .cachedProductName(product.get("name").asText())
-                        .cachedPrice(product.get("price").asDouble())
-                        .build();
-                
-                cart.getItems().add(cartItem);
-                addedCount++;
-            } else {
-                skippedCount++;
+            if (product == null || product.get("stock").asInt() < originalItem.getQuantity()) {
+                throw new InvalidStatusTransitionException(
+                    "Product '" + originalItem.getProductName() + "' is no longer available or has insufficient stock"
+                );
             }
+            
+            // Create new item with current prices
+            OrderItem newItem = OrderItem.builder()
+                    .productId(originalItem.getProductId())
+                    .productName(product.get("name").asText())
+                    .sellerId(originalItem.getSellerId())
+                    .sellerName(originalItem.getSellerName())
+                    .quantity(originalItem.getQuantity())
+                    .priceAtPurchase(product.get("price").asDouble()) // Current price
+                    .subtotal(product.get("price").asDouble() * originalItem.getQuantity())
+                    .thumbnailMediaId(product.has("mediaIds") && product.get("mediaIds").size() > 0 
+                            ? product.get("mediaIds").get(0).asText() : null)
+                    .build();
+            
+            newItems.add(newItem);
+            sellerIds.add(newItem.getSellerId());
         }
         
-        cart.setUpdatedAt(LocalDateTime.now());
+        newOrder.setItems(newItems);
+        newOrder.setSellerIds(sellerIds);
         
-        // Recalculate totals
-        int totalItems = cart.getItems().stream().mapToInt(CartItem::getQuantity).sum();
-        double subtotal = cart.getItems().stream()
-                .mapToDouble(item -> item.getCachedPrice() * item.getQuantity())
-                .sum();
+        // Calculate totals
+        double subtotal = newItems.stream().mapToDouble(OrderItem::getSubtotal).sum();
+        newOrder.setSubtotal(subtotal);
+        newOrder.setShippingCost(0.0);
+        newOrder.setTaxAmount(0.0);
+        newOrder.setDiscountAmount(0.0);
+        newOrder.setTotalAmount(subtotal);
         
-        cart.setTotalItems(totalItems);
-        cart.setCachedSubtotal(subtotal);
+        // Copy shipping and payment from original order
+        newOrder.setPaymentMethod(originalOrder.getPaymentMethod());
+        newOrder.setPaymentStatus("PAID");
+        newOrder.setShippingAddress(originalOrder.getShippingAddress());
+        newOrder.setDeliveryNotes(originalOrder.getDeliveryNotes());
         
-        // Save cart (using repository directly to avoid service method)
-        Cart savedCart = cartService.getCartEntity(userId);
-        savedCart.setItems(cart.getItems());
-        savedCart.setTotalItems(cart.getTotalItems());
-        savedCart.setCachedSubtotal(cart.getCachedSubtotal());
-        savedCart.setUpdatedAt(cart.getUpdatedAt());
+        // Status - Set to CONFIRMED
+        newOrder.setStatus(OrderStatus.CONFIRMED);
+        newOrder.setStatusHistory(new ArrayList<>());
+        addStatusHistoryEntry(newOrder, null, OrderStatus.CONFIRMED, userId, Role.CLIENT, "Order redone from cancelled order " + originalOrder.getOrderNumber());
         
-        // Build message
-        String message;
-        if (skippedCount == 0) {
-            message = "All items added to cart";
-        } else if (addedCount == 0) {
-            message = "No items available from this order";
-        } else {
-            message = String.format("%d items added to cart. %d items no longer available.", addedCount, skippedCount);
-        }
+        // Dates
+        newOrder.setEstimatedDeliveryDate(LocalDateTime.now().plusDays(7));
+        newOrder.setCreatedAt(LocalDateTime.now());
+        newOrder.setUpdatedAt(LocalDateTime.now());
+        newOrder.setIsRemoved(false);
         
-        return cartService.getCart(userId); // Return refreshed cart
+        // Save and return
+        Order savedOrder = orderRepository.save(newOrder);
+        return toOrderResponse(savedOrder);
     }
 
     /**

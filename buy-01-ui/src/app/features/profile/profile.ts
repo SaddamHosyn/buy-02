@@ -113,7 +113,7 @@ export class Profile implements OnInit {
       labels: stats.mostBoughtProducts.slice(0, 5).map((p) => p.productName),
       datasets: [
         {
-          data: stats.mostBoughtProducts.slice(0, 5).map((p) => p.quantity),
+          data: stats.mostBoughtProducts.slice(0, 5).map((p) => p.totalQuantity || p.quantity),
           label: 'Quantity Purchased',
           backgroundColor: '#3b82f6',
           barThickness: 40,
