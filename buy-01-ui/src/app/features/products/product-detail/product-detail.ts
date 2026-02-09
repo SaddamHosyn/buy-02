@@ -217,9 +217,14 @@ export class ProductDetail implements OnInit {
         error: (error) => {
           console.error('Error adding to cart:', error);
           this.isAddingToCart.set(false);
-          // Extract error message from backend if available
-          const errorMessage = error.error?.message || 'Failed to add to cart. Please try again.';
-          this.snackBar.open(errorMessage, 'Close', { duration: 4000 });
+          // Error interceptor transforms error to: { status, message, originalError, details }
+          // Also check originalError.error.message for raw backend response
+          const errorMessage =
+            error.message ||
+            error.originalError?.error?.message ||
+            error.error?.message ||
+            'Failed to add to cart. Please try again.';
+          this.snackBar.open(errorMessage, 'Close', { duration: 5000 });
         },
       });
   }
@@ -257,11 +262,15 @@ export class ProductDetail implements OnInit {
           this.router.navigate(['/checkout']);
         },
         error: (error) => {
-          console.error('Error adding to cart:', error);
+          console.error('Error adding to cart (buyNow):', error);
           this.isAddingToCart.set(false);
-          // Extract error message from backend if available
-          const errorMessage = error.error?.message || 'Failed to add to cart. Please try again.';
-          this.snackBar.open(errorMessage, 'Close', { duration: 4000 });
+          // Error interceptor transforms error to: { status, message, originalError, details }
+          const errorMessage =
+            error.message ||
+            error.originalError?.error?.message ||
+            error.error?.message ||
+            'Failed to add to cart. Please try again.';
+          this.snackBar.open(errorMessage, 'Close', { duration: 5000 });
         },
       });
   }
