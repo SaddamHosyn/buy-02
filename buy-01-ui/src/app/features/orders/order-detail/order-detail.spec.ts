@@ -78,6 +78,7 @@ describe('OrderDetailPage', () => {
   let component: OrderDetailPage;
   let fixture: ComponentFixture<OrderDetailPage>;
   let mockAuthService: jasmine.SpyObj<Auth>;
+  let router: Router;
 
   const orderSignal = signal<Order | null>(null);
   const loadingSignal = signal<boolean>(false);
@@ -139,6 +140,7 @@ describe('OrderDetailPage', () => {
 
     fixture = TestBed.createComponent(OrderDetailPage);
     component = fixture.componentInstance;
+    router = TestBed.inject(Router);
   });
 
   afterEach(() => {
@@ -325,10 +327,14 @@ describe('OrderDetailPage', () => {
       spyOn(window, 'confirm').and.returnValue(true);
       const newOrder = createMockOrder({ id: 'order-2', status: OrderStatus.PENDING });
       mockOrderService.redoOrder.and.returnValue(of(newOrder));
+      const snack = (component as any).snackBar;
+      spyOn(snack, 'open').and.returnValue({ onAction: () => of(undefined) } as any);
+      spyOn(router, 'navigate');
 
       component.redoOrder();
 
       expect(mockOrderService.redoOrder).toHaveBeenCalledWith('order-1');
+      expect(router.navigate).toHaveBeenCalledWith(['/orders', 'order-2']);
     });
 
     it('should not redo when user declines', () => {

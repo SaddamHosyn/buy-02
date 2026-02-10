@@ -278,6 +278,67 @@ describe('OrderListPage', () => {
     });
   });
 
+  // ==================== redoOrder ====================
+
+  describe('redoOrder', () => {
+    const mockEvent = { stopPropagation: jasmine.createSpy('stopPropagation') } as any;
+
+    beforeEach(() => {
+      mockEvent.stopPropagation.calls.reset();
+    });
+
+    it('should redo order on confirm', () => {
+      spyOn(window, 'confirm').and.returnValue(true);
+      const newOrder = createMockOrder({ id: 'order-new', status: OrderStatus.PENDING });
+      mockOrderService.redoOrder.and.returnValue(of(newOrder));
+
+      const snack = (component as any).snackBar;
+      spyOn(snack, 'open').and.returnValue({ onAction: () => of(undefined) } as any);
+
+      component.redoOrder(createMockOrder({ status: OrderStatus.CANCELLED }), mockEvent);
+      expect(mockOrderService.redoOrder).toHaveBeenCalledWith('order-1');
+    });
+
+    it('should not redo when user declines', () => {
+      spyOn(window, 'confirm').and.returnValue(false);
+      component.redoOrder(createMockOrder({ status: OrderStatus.CANCELLED }), mockEvent);
+      expect(mockOrderService.redoOrder).not.toHaveBeenCalled();
+    });
+
+    it('should show error.error.message on redo error', () => {
+      spyOn(window, 'confirm').and.returnValue(true);
+      const snack = (component as any).snackBar;
+      spyOn(snack, 'open');
+      mockOrderService.redoOrder.and.returnValue(
+        throwError(() => ({ error: { message: 'Out of stock' } }))
+      );
+      component.redoOrder(createMockOrder({ status: OrderStatus.CANCELLED }), mockEvent);
+      expect(snack.open).toHaveBeenCalledWith('Out of stock', 'Close', jasmine.any(Object));
+    });
+
+    it('should fall back to error.error.error when no message', () => {
+      spyOn(window, 'confirm').and.returnValue(true);
+      const snack = (component as any).snackBar;
+      spyOn(snack, 'open');
+      mockOrderService.redoOrder.and.returnValue(
+        throwError(() => ({ error: { error: 'Bad request' } }))
+      );
+      component.redoOrder(createMockOrder({ status: OrderStatus.CANCELLED }), mockEvent);
+      expect(snack.open).toHaveBeenCalledWith('Bad request', 'Close', jasmine.any(Object));
+    });
+
+    it('should use default message when error has no details', () => {
+      spyOn(window, 'confirm').and.returnValue(true);
+      const snack = (component as any).snackBar;
+      spyOn(snack, 'open');
+      mockOrderService.redoOrder.and.returnValue(
+        throwError(() => ({ error: {} }))
+      );
+      component.redoOrder(createMockOrder({ status: OrderStatus.CANCELLED }), mockEvent);
+      expect(snack.open).toHaveBeenCalledWith('Failed to redo order', 'Close', jasmine.any(Object));
+    });
+  });
+
   // ==================== Navigation ====================
 
   describe('viewOrder', () => {
