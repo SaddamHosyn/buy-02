@@ -1,5 +1,6 @@
 package ax.gritlab.buy_01.user.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -38,6 +39,7 @@ public class User implements UserDetails {
 
     @NotNull
     @Size(min = 8, max = 100)
+    @JsonIgnore
     private String password;
 
     @NotNull

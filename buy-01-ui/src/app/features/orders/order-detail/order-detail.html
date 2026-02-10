@@ -105,7 +105,7 @@
 
           <mat-card-content>
             <div class="items-list">
-              @for (item of order()!.items; track item.productId) {
+              @for (item of order()?.items ?? []; track item.productId) {
                 <div class="order-item">
                   <div class="item-details">
                     <h4 class="item-name">{{ item.productName }}</h4>
@@ -116,9 +116,9 @@
                   </div>
                   <div class="item-pricing">
                     <span class="item-price"
-                      >${{ item.priceAtPurchase.toFixed(2) }} × {{ item.quantity }}</span
+                      >${{ (item.priceAtPurchase ?? 0).toFixed(2) }} × {{ item.quantity }}</span
                     >
-                    <span class="item-subtotal">${{ item.subtotal.toFixed(2) }}</span>
+                    <span class="item-subtotal">${{ (item.subtotal ?? 0).toFixed(2) }}</span>
                   </div>
                 </div>
               }
@@ -137,24 +137,26 @@
             <mat-card-content>
               <div class="summary-row">
                 <span>Subtotal</span>
-                <span>${{ order()!.subtotal.toFixed(2) }}</span>
+                <span>${{ (order()?.subtotal ?? 0).toFixed(2) }}</span>
               </div>
               <div class="summary-row">
                 <span>Shipping</span>
                 <span>{{
-                  order()!.shippingCost === 0 ? 'Free' : '$' + order()!.shippingCost.toFixed(2)
+                  (order()?.shippingCost ?? 0) === 0
+                    ? 'Free'
+                    : '$' + (order()?.shippingCost ?? 0).toFixed(2)
                 }}</span>
               </div>
-              @if (order()!.taxAmount > 0) {
+              @if ((order()?.taxAmount ?? 0) > 0) {
                 <div class="summary-row">
                   <span>Tax</span>
-                  <span>${{ order()!.taxAmount.toFixed(2) }}</span>
+                  <span>${{ (order()?.taxAmount ?? 0).toFixed(2) }}</span>
                 </div>
               }
-              @if (order()!.discountAmount > 0) {
+              @if ((order()?.discountAmount ?? 0) > 0) {
                 <div class="summary-row discount">
                   <span>Discount</span>
-                  <span>-${{ order()!.discountAmount.toFixed(2) }}</span>
+                  <span>-${{ (order()?.discountAmount ?? 0).toFixed(2) }}</span>
                 </div>
               }
 
@@ -162,7 +164,7 @@
 
               <div class="summary-row total">
                 <span>Total</span>
-                <span>${{ order()!.totalAmount.toFixed(2) }}</span>
+                <span>${{ (order()?.totalAmount ?? 0).toFixed(2) }}</span>
               </div>
 
               <div class="payment-info">

@@ -1,4 +1,3 @@
-
 // Mock data for Buy-02
 const client_id = "mock_client_id";
 const seller_id = "mock_seller_id";
@@ -11,31 +10,29 @@ const password_hash =
 // using MediaService.getMediaUrl(id) → `${environment.mediaUrl}/images/${id}`
 
 // 1. Setup Users
-db = db.getSiblingDB('userdb');
+db = db.getSiblingDB("userdb");
 db.users.drop();
 db.users.insertMany([
-    {
-        _id: client_id,
-        name: "John Client",
-        email: "client@test.com",
-        password: password_hash,
-        role: "CLIENT",
-        _class: "ax.gritlab.buy_01.user.model.User"
-    },
-    {
-        _id: seller_id,
-        name: "Jane Seller",
-        email: "seller@test.com",
-        password: password_hash,
-        role: "SELLER",
-        _class: "ax.gritlab.buy_01.user.model.User"
-    }
+  {
+    _id: client_id,
+    name: "John Client",
+    email: "client@test.com",
+    password: password_hash,
+    role: "CLIENT",
+    _class: "ax.gritlab.buy_01.user.model.User",
+  },
+  {
+    _id: seller_id,
+    name: "Jane Seller",
+    email: "seller@test.com",
+    password: password_hash,
+    role: "SELLER",
+    _class: "ax.gritlab.buy_01.user.model.User",
+  },
 ]);
 
-const media_url_prefix = "http://localhost:8090/api/media/images/";
-
 // 2. Setup Products
-db = db.getSiblingDB('productdb');
+db = db.getSiblingDB("productdb");
 db.products.drop();
 db.products.insertMany([
   {
@@ -81,7 +78,7 @@ db.products.insertMany([
 ]);
 
 // 2.5 Setup Media Metadata
-db = db.getSiblingDB('mediadb');
+db = db.getSiblingDB("mediadb");
 db.media.drop();
 db.media.insertMany([
     {
@@ -89,7 +86,7 @@ db.media.insertMany([
         originalFilename: "nokia.jpg",
         contentType: "image/jpeg",
         size: 552143,
-        filePath: "/Users/jedi.reston/buy-02/media-service/uploads/63e3aea6-318c-414e-a87e-8482febbaa61.jpg",
+        filePath: "63e3aea6-318c-414e-a87e-8482febbaa61.jpg",
         userId: seller_id,
         productId: "prod_1",
         url: "/api/media/images/63e3aea6-318c-414e-a87e-8482febbaa61",
@@ -102,7 +99,7 @@ db.media.insertMany([
         originalFilename: "bazooka.jpg",
         contentType: "image/jpeg",
         size: 18486,
-        filePath: "/Users/jedi.reston/buy-02/media-service/uploads/e7915468-ff09-406b-b843-529a0a4849bb.jpg",
+        filePath: "e7915468-ff09-406b-b843-529a0a4849bb.jpg",
         userId: seller_id,
         productId: "prod_2",
         url: "/api/media/images/e7915468-ff09-406b-b843-529a0a4849bb",
@@ -115,7 +112,7 @@ db.media.insertMany([
         originalFilename: "samsung.jpg",
         contentType: "image/jpeg",
         size: 450424,
-        filePath: "/Users/jedi.reston/buy-02/media-service/uploads/796e3151-0fb0-48e6-bcc0-b6f1ce9608c7.jpg",
+        filePath: "796e3151-0fb0-48e6-bcc0-b6f1ce9608c7.jpg",
         userId: seller_id,
         productId: "prod_3",
         url: "/api/media/images/796e3151-0fb0-48e6-bcc0-b6f1ce9608c7",
@@ -126,7 +123,7 @@ db.media.insertMany([
 ]);
 
 // 3. Setup Orders
-db = db.getSiblingDB('orderdb');
+db = db.getSiblingDB("orderdb");
 db.orders.drop();
 db.orders.insertMany([
   {

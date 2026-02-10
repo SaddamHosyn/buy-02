@@ -38,22 +38,22 @@ public class ProfileStatsService {
         Map<OrderStatus, Long> ordersByStatus = allOrders.stream()
                 .collect(Collectors.groupingBy(Order::getStatus, Collectors.counting()));
 
-        // Get delivered orders for financial calculations
-        List<Order> deliveredOrders = allOrders.stream()
-                .filter(o -> o.getStatus() == OrderStatus.DELIVERED)
+        // MVP: Get completed orders (CONFIRMED or DELIVERED) for financial calculations
+        List<Order> completedOrders = allOrders.stream()
+                .filter(o -> o.getStatus() == OrderStatus.DELIVERED || o.getStatus() == OrderStatus.CONFIRMED)
                 .collect(Collectors.toList());
 
-        // Calculate total spent (from delivered orders only)
-        double totalSpent = deliveredOrders.stream()
+        // Calculate total spent (from completed orders)
+        double totalSpent = completedOrders.stream()
                 .mapToDouble(Order::getTotalAmount)
                 .sum();
 
         // Calculate average order value
-        double avgOrderValue = deliveredOrders.isEmpty() ? 0 : totalSpent / deliveredOrders.size();
+        double avgOrderValue = completedOrders.isEmpty() ? 0 : totalSpent / completedOrders.size();
 
-        // Aggregate product statistics from delivered orders
+        // Aggregate product statistics from completed orders
         Map<String, ProductStatAggregator> productStats = new HashMap<>();
-        for (Order order : deliveredOrders) {
+        for (Order order : completedOrders) {
             for (OrderItem item : order.getItems()) {
                 productStats.computeIfAbsent(item.getProductId(), k -> new ProductStatAggregator())
                         .addItem(item);
@@ -74,15 +74,18 @@ public class ProfileStatsService {
                 .map(ProductStatAggregator::toDto)
                 .collect(Collectors.toList());
 
+        // MVP: Count CONFIRMED as delivered for display
+        int deliveredCount = ordersByStatus.getOrDefault(OrderStatus.DELIVERED, 0L).intValue() +
+                             ordersByStatus.getOrDefault(OrderStatus.CONFIRMED, 0L).intValue();
+
         return BuyerProfileStatsDto.builder()
                 .userId(buyerId)
                 .totalSpent(totalSpent)
                 .totalOrders(allOrders.size())
                 .pendingOrders(ordersByStatus.getOrDefault(OrderStatus.PENDING, 0L).intValue() +
-                               ordersByStatus.getOrDefault(OrderStatus.CONFIRMED, 0L).intValue() +
                                ordersByStatus.getOrDefault(OrderStatus.PROCESSING, 0L).intValue() +
                                ordersByStatus.getOrDefault(OrderStatus.SHIPPED, 0L).intValue())
-                .deliveredOrders(ordersByStatus.getOrDefault(OrderStatus.DELIVERED, 0L).intValue())
+                .deliveredOrders(deliveredCount)
                 .cancelledOrders(ordersByStatus.getOrDefault(OrderStatus.CANCELLED, 0L).intValue())
                 .topProductsByAmount(topByAmount)
                 .mostBoughtProducts(mostBought)
@@ -119,15 +122,12 @@ public class ProfileStatsService {
 
             // Count orders by status
             switch (order.getStatus()) {
-                case PENDING:
-                case CONFIRMED:
-                case PROCESSING:
-                case SHIPPED:
+                case PENDING, PROCESSING, SHIPPED:
                     pendingOrders++;
                     break;
-                case DELIVERED:
+                case CONFIRMED, DELIVERED:
+                    // MVP: Count confirmed and delivered orders as completed
                     deliveredOrders++;
-                    // Calculate earnings only from delivered orders
                     for (OrderItem item : sellerItems) {
                         totalEarned += item.getSubtotal();
                         totalProductsSold += item.getQuantity();

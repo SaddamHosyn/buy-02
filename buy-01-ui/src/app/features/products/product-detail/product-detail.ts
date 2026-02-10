@@ -15,10 +15,9 @@ import { MatDialog } from '@angular/material/dialog';
 import { ProductService, Product } from '../../../core/services/product.service';
 import { CartService } from '../../../core/services/cart.service';
 import { Auth, User } from '../../../core/services/auth';
-import { ImageLightbox } from '../../../shared/components/image-lightbox/image-lightbox';   
+import { ImageLightbox } from '../../../shared/components/image-lightbox/image-lightbox';
 
 import { environment } from '../../../../environments/environment';
-
 
 @Component({
   selector: 'app-product-detail',
@@ -33,7 +32,7 @@ import { environment } from '../../../../environments/environment';
     MatProgressSpinnerModule,
     MatTooltipModule,
     MatBadgeModule,
-    MatSnackBarModule
+    MatSnackBarModule,
   ],
   templateUrl: './product-detail.html',
   styleUrl: './product-detail.css',
@@ -47,7 +46,7 @@ export class ProductDetail implements OnInit {
   private readonly snackBar = inject(MatSnackBar);
   private readonly http = inject(HttpClient);
   private readonly dialog = inject(MatDialog);
-  
+
   // Signals for reactive state
   readonly product = signal<Product | null>(null);
   readonly seller = signal<User | null>(null);
@@ -56,7 +55,7 @@ export class ProductDetail implements OnInit {
   readonly selectedImageIndex = signal<number>(0);
   readonly quantity = signal<number>(1);
   readonly isAddingToCart = signal<boolean>(false);
-  
+
   // Computed signals
   readonly currentUser = this.authService.currentUser;
   readonly hasImages = computed(() => {
@@ -80,7 +79,7 @@ export class ProductDetail implements OnInit {
     const p = this.product();
     return p ? p.price * this.quantity() : 0;
   });
-  
+
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
@@ -90,14 +89,14 @@ export class ProductDetail implements OnInit {
       this.isLoading.set(false);
     }
   }
-  
+
   /**
    * Load product details
    */
   loadProduct(id: string): void {
     this.isLoading.set(true);
     this.errorMessage.set('');
-    
+
     this.productService.getProductById(id).subscribe({
       next: (product) => {
         this.product.set(product);
@@ -112,16 +111,15 @@ export class ProductDetail implements OnInit {
         console.error('Error loading product:', error);
         this.errorMessage.set('Product not found');
         this.isLoading.set(false);
-      }
+      },
     });
   }
-  
+
   /**
    * Load seller information
    */
   loadSeller(sellerId: string): void {
-   this.http.get<User>(`${environment.usersUrl}/${sellerId}`).subscribe({
-
+    this.http.get<User>(`${environment.usersUrl}/${sellerId}`).subscribe({
       next: (seller) => {
         this.seller.set(seller);
         this.isLoading.set(false);
@@ -130,168 +128,163 @@ export class ProductDetail implements OnInit {
         console.error('Error loading seller:', error);
         // Still show product even if seller info fails
         this.isLoading.set(false);
-      }
+      },
     });
   }
-  
+
   /**
    * Select image in gallery
    */
   selectImage(index: number): void {
     this.selectedImageIndex.set(index);
   }
-  
+
   /**
    * Navigate to previous image
    */
   previousImage(): void {
     const p = this.product();
     if (!p?.imageUrls) return;
-    
+
     const current = this.selectedImageIndex();
     const newIndex = current === 0 ? p.imageUrls.length - 1 : current - 1;
     this.selectedImageIndex.set(newIndex);
   }
-  
+
   /**
    * Navigate to next image
    */
   nextImage(): void {
     const p = this.product();
     if (!p?.imageUrls) return;
-    
+
     const current = this.selectedImageIndex();
     const newIndex = current === p.imageUrls.length - 1 ? 0 : current + 1;
     this.selectedImageIndex.set(newIndex);
   }
-  
+
   /**
    * Increase quantity
    */
   increaseQuantity(): void {
-    this.quantity.update(q => q + 1);
+    this.quantity.update((q) => q + 1);
   }
-  
+
   /**
    * Decrease quantity
    */
   decreaseQuantity(): void {
-    this.quantity.update(q => q > 1 ? q - 1 : 1);
+    this.quantity.update((q) => (q > 1 ? q - 1 : 1));
   }
-  
+
   /**
    * Add to cart
    */
   addToCart(): void {
-    const p = this.product();
-    if (!p) return;
-    
-    if (!this.authService.isAuthenticated()) {
-      this.snackBar.open('Please login to add items to cart', 'Login', { duration: 3000 })
-        .onAction().subscribe(() => {
-          this.router.navigate(['/auth/login']);
+    this.addProductToCart(() => {
+      this.snackBar
+        .open(`Added ${this.quantity()} x ${this.product()!.name} to cart!`, 'View Cart', {
+          duration: 3000,
+        })
+        .onAction()
+        .subscribe(() => {
+          this.router.navigate(['/cart']);
         });
-      return;
-    }
-    
-    this.isAddingToCart.set(true);
-    
-    this.cartService.addToCart({
-      productId: p.id,
-      quantity: this.quantity(),
-      sellerId: p.sellerId || '',
-      cachedProductName: p.name,
-      cachedPrice: p.price
-    }).subscribe({
-      next: () => {
-        this.isAddingToCart.set(false);
-        this.snackBar.open(`Added ${this.quantity()} x ${p.name} to cart!`, 'View Cart', { duration: 3000 })
-          .onAction().subscribe(() => {
-            this.router.navigate(['/cart']);
-          });
-      },
-      error: (error) => {
-        console.error('Error adding to cart:', error);
-        this.isAddingToCart.set(false);
-        this.snackBar.open('Failed to add to cart. Please try again.', 'Close', { duration: 3000 });
-      }
-    });
+    }, 'Please login to add items to cart');
   }
-  
+
   /**
    * Buy now - add to cart and go to checkout
    */
   buyNow(): void {
+    this.addProductToCart(() => {
+      this.router.navigate(['/checkout']);
+    }, 'Please login to checkout');
+  }
+
+  /**
+   * Shared logic for adding product to cart with auth check and error handling.
+   */
+  private addProductToCart(onSuccess: () => void, loginPrompt: string): void {
     const p = this.product();
     if (!p) return;
-    
+
     if (!this.authService.isAuthenticated()) {
-      this.snackBar.open('Please login to checkout', 'Login', { duration: 3000 })
-        .onAction().subscribe(() => {
+      this.snackBar
+        .open(loginPrompt, 'Login', { duration: 3000 })
+        .onAction()
+        .subscribe(() => {
           this.router.navigate(['/auth/login']);
         });
       return;
     }
-    
+
     this.isAddingToCart.set(true);
-    
-    this.cartService.addToCart({
-      productId: p.id,
-      quantity: this.quantity(),
-      sellerId: p.sellerId || '',
-      cachedProductName: p.name,
-      cachedPrice: p.price
-    }).subscribe({
-      next: () => {
-        this.isAddingToCart.set(false);
-        this.router.navigate(['/checkout']);
-      },
-      error: (error) => {
-        console.error('Error adding to cart:', error);
-        this.isAddingToCart.set(false);
-        this.snackBar.open('Failed to add to cart. Please try again.', 'Close', { duration: 3000 });
-      }
-    });
+
+    this.cartService
+      .addToCart({
+        productId: p.id,
+        quantity: this.quantity(),
+        sellerId: p.sellerId || '',
+        cachedProductName: p.name,
+        cachedPrice: p.price,
+      })
+      .subscribe({
+        next: () => {
+          this.isAddingToCart.set(false);
+          onSuccess();
+        },
+        error: (error) => {
+          console.error('Error adding to cart:', error);
+          this.isAddingToCart.set(false);
+          const errorMessage =
+            error.message ||
+            error.originalError?.error?.message ||
+            error.error?.message ||
+            'Failed to add to cart. Please try again.';
+          this.snackBar.open(errorMessage, 'Close', { duration: 5000 });
+        },
+      });
   }
-  
+
   /**
    * Edit product (for seller)
    */
   editProduct(): void {
     const p = this.product();
     if (!p) return;
-    
+
     this.router.navigate(['/seller/product-form', p.id]);
   }
-  
+
   /**
    * Go back to products list
    */
   goBack(): void {
     this.router.navigate(['/products']);
   }
-  
+
   /**
    * Open image lightbox
    */
   openImageLightbox(index: number): void {
     const p = this.product();
     if (!p || !p.imageUrls || p.imageUrls.length === 0) return;
-    
+
     this.dialog.open(ImageLightbox, {
       data: {
         images: p.imageUrls,
         initialIndex: index,
-        title: p.name
+        title: p.name,
       },
       maxWidth: '100vw',
       maxHeight: '100vh',
       width: '100vw',
       height: '100vh',
-      panelClass: 'lightbox-dialog'
+      panelClass: 'lightbox-dialog',
     });
   }
-  
+
   /**
    * Format date
    */
@@ -301,7 +294,7 @@ export class ProductDetail implements OnInit {
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
     });
   }
 }

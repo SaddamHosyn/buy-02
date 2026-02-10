@@ -10,6 +10,7 @@ export interface Product {
   description: string;
   price: number;
   stock?: number;
+  category?: string;
   sellerId?: string;
   mediaIds?: string[];
   imageUrls?: string[];
@@ -23,6 +24,7 @@ export interface ProductRequest {
   description: string;
   price: number;
   quantity: number;
+  category?: string;
 }
 
 export interface PagedResponse<T> {
@@ -152,7 +154,12 @@ export class ProductService {
     if (params.maxPrice !== undefined) queryParams.maxPrice = params.maxPrice;
     if (params.page !== undefined) queryParams.page = params.page;
     if (params.size !== undefined) queryParams.size = params.size;
-    if (params.sort) queryParams.sort = params.sort;
+    // Backend expects sort and direction as separate params
+    if (params.sort) {
+      const [field, direction] = params.sort.split(',');
+      queryParams.sort = field;
+      if (direction) queryParams.direction = direction;
+    }
 
     return this.http.get<PagedResponse<Product>>(`${this.API_URL}/search`, { params: queryParams });
   }

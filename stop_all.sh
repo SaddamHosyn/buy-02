@@ -30,22 +30,34 @@ stop_service() {
     if [ -f "$pid_file" ]; then
         local pid=$(cat "$pid_file")
         if ps -p $pid > /dev/null 2>&1; then
+            # Kill all child processes first (Java spawned by Maven)
             pkill -P $pid > /dev/null 2>&1
             kill $pid > /dev/null 2>&1
             sleep 1
+            # Force kill if still running
+            if ps -p $pid > /dev/null 2>&1; then
+                kill -9 $pid > /dev/null 2>&1
+            fi
         fi
-        rm "$pid_file"
+        rm -f "$pid_file"
     fi
 
-    # 2. Aggressive cleanup: Kill any Java process on the specific port
+    # 2. Kill any process on the specific port
     if [ ! -z "$port" ]; then
-        local port_pid=$(lsof -t -i:$port)
-        if [ ! -z "$port_pid" ]; then
-            echo -e "${YELLOW}  Cleaning up ghost process on port $port (PID: $port_pid)...${NC}"
-            kill -9 $port_pid > /dev/null 2>&1
+        local port_pids=$(lsof -t -i:$port 2>/dev/null)
+        if [ ! -z "$port_pids" ]; then
+            echo -e "${YELLOW}  Cleaning up processes on port $port...${NC}"
+            echo "$port_pids" | xargs kill -9 > /dev/null 2>&1
+            sleep 1
         fi
     fi
-    echo -e "${GREEN}✓ $service_name cleaned up${NC}"
+    
+    # 3. Verify port is free
+    if [ ! -z "$port" ] && lsof -i:$port > /dev/null 2>&1; then
+        echo -e "${RED}  ✗ Warning: Port $port may still be in use${NC}"
+    else
+        echo -e "${GREEN}✓ $service_name stopped${NC}"
+    fi
 }
 
 # Stop services in reverse order

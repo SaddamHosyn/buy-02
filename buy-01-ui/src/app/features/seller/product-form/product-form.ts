@@ -11,6 +11,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSelectModule } from '@angular/material/select';
 import { ProductService, Product, ProductRequest } from '../../../core/services/product.service';
 import { MediaService, Media } from '../../../core/services/media.service';
 import { Auth } from '../../../core/services/auth';
@@ -39,6 +40,7 @@ import { forkJoin } from 'rxjs';
     MatToolbarModule,
     MatChipsModule,
     MatTooltipModule,
+    MatSelectModule,
   ],
   templateUrl: './product-form.html',
   styleUrl: './product-form.css',
@@ -66,23 +68,58 @@ export class ProductForm implements OnInit {
   readonly existingImageUrls = signal<string[]>([]);
   readonly uploadError = signal<string>('');
   readonly deletedMediaIds = signal<string[]>([]); // NEW: Track deleted media IDs
-  
+  readonly availableCategories = signal<string[]>([]);
+
 
   // Reactive form
   productForm: FormGroup = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(100)]],
     description: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(2000)]],
     price: [0, [Validators.required, priceValidator(0.01, 999999.99, 2)]],
-    quantity: [1, [Validators.required, Validators.min(0)]]
+    quantity: [1, [Validators.required, Validators.min(0)]],
+    category: ['', []]
   });
 
   ngOnInit(): void {
+    // Fetch available categories
+    this.loadCategories();
+
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.productId.set(id);
       this.isEditMode.set(true);
       this.loadProduct(id);
     }
+  }
+
+  /**
+   * Load available categories from backend
+   */
+  loadCategories(): void {
+    // Predefined categories - always show these
+    const predefinedCategories = ['Electronics', 'Clothing', 'Home & Garden', 'Sports', 'Books', 'Toys', 'Automotive', 'Health & Beauty', 'Food & Beverages', 'Other'];
+
+    this.productService.getCategories().subscribe({
+      next: (dbCategories) => {
+        // Always start with predefined categories
+        const allCategories = [...predefinedCategories];
+
+        // Add any database categories that aren't already in the predefined list
+        if (dbCategories && dbCategories.length > 0) {
+          dbCategories.forEach(cat => {
+            if (!allCategories.includes(cat)) {
+              allCategories.push(cat);
+            }
+          });
+        }
+
+        this.availableCategories.set(allCategories);
+      },
+      error: (error) => {
+        console.error('Error loading categories:', error);
+        this.availableCategories.set(predefinedCategories);
+      }
+    });
   }
 
   /**
@@ -98,9 +135,10 @@ export class ProductForm implements OnInit {
           name: product.name,
           description: product.description,
           price: product.price,
-          quantity: product.stock || 0
+          quantity: product.stock || 0,
+          category: product.category || ''
         });
-        
+
         if (product.imageUrls && product.imageUrls.length > 0) {
           this.existingImageUrls.set(product.imageUrls);
         }
@@ -163,70 +201,70 @@ export class ProductForm implements OnInit {
       };
       reader.readAsDataURL(file);
     }
-    
+
     this.selectedImages.set([...this.selectedImages(), ...validFiles]);
   }
-  
+
   removeNewImage(index: number): void {
     this.selectedImages.update((images) => images.filter((_, i) => i !== index));
     this.imagePreviews.update((previews) => previews.filter((_, i) => i !== index));
   }
-  
- 
 
 
-/**
- * Remove existing image URL and DELETE from backend
- */
-/**
- * Remove existing image URL and DELETE from backend
- */
-removeExistingImage(index: number): void {
-  const urls = this.existingImageUrls();
-  const urlToRemove = urls[index];
-  
-  const urlParts = urlToRemove.split('/');
-  const mediaId = urlParts[urlParts.length - 1];
-  
-  if (mediaId && mediaId.length > 0) {
-    this.dialogService.confirm({
-      title: 'Delete Image',
-      message: 'Are you sure you want to delete this image? This action cannot be undone.',
-      confirmText: 'Delete',
-      cancelText: 'Cancel',
-      type: 'danger',
-      icon: 'delete'
-    }).subscribe(confirmed => {
-      if (!confirmed) {
-        return;
-      }
-      
-      this.isSaving.set(true);
-      
-      const productId = this.productId();
-      if (productId) {
-        // Call Product Service to remove media from product
-        this.productService.removeMediaFromProduct(productId, mediaId).subscribe({
-          next: () => {
-            // Remove from UI immediately
-            this.existingImageUrls.update(urls => urls.filter((_, i) => i !== index));
-            this.successMessage.set('Image removed successfully');
-            this.isSaving.set(false);
-            setTimeout(() => this.successMessage.set(''), 3000);
-          },
-          error: (error) => {
-            console.error('Error removing image:', error);
-            this.errorMessage.set('Failed to remove image');
-            this.isSaving.set(false);
-            setTimeout(() => this.errorMessage.set(''), 5000);
-          }
-        });
-      }
-    });
-  } else {
-    this.existingImageUrls.update(urls => urls.filter((_, i) => i !== index));
+
+
+  /**
+   * Remove existing image URL and DELETE from backend
+   */
+  /**
+   * Remove existing image URL and DELETE from backend
+   */
+  removeExistingImage(index: number): void {
+    const urls = this.existingImageUrls();
+    const urlToRemove = urls[index];
+
+    const urlParts = urlToRemove.split('/');
+    const mediaId = urlParts[urlParts.length - 1];
+
+    if (mediaId && mediaId.length > 0) {
+      this.dialogService.confirm({
+        title: 'Delete Image',
+        message: 'Are you sure you want to delete this image? This action cannot be undone.',
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
+        type: 'danger',
+        icon: 'delete'
+      }).subscribe(confirmed => {
+        if (!confirmed) {
+          return;
+        }
+
+        this.isSaving.set(true);
+
+        const productId = this.productId();
+        if (productId) {
+          // Call Product Service to remove media from product
+          this.productService.removeMediaFromProduct(productId, mediaId).subscribe({
+            next: () => {
+              // Remove from UI immediately
+              this.existingImageUrls.update(urls => urls.filter((_, i) => i !== index));
+              this.successMessage.set('Image removed successfully');
+              this.isSaving.set(false);
+              setTimeout(() => this.successMessage.set(''), 3000);
+            },
+            error: (error) => {
+              console.error('Error removing image:', error);
+              this.errorMessage.set('Failed to remove image');
+              this.isSaving.set(false);
+              setTimeout(() => this.errorMessage.set(''), 5000);
+            }
+          });
+        }
+      });
+    } else {
+      this.existingImageUrls.update(urls => urls.filter((_, i) => i !== index));
+    }
   }
-}
 
 
 
@@ -241,42 +279,43 @@ removeExistingImage(index: number): void {
 
 
 
-  
- onSubmit(): void {
-  if (this.productForm.invalid) {
-    this.productForm.markAllAsTouched();
-    return;
+
+  onSubmit(): void {
+    if (this.productForm.invalid) {
+      this.productForm.markAllAsTouched();
+      return;
+    }
+
+    // Clear any previous error messages
+    this.errorMessage.set('');
+    this.successMessage.set('');
+    this.uploadError.set('');
+
+    this.isSaving.set(true);
+
+    const formData = this.productForm.value;
+
+    const productData: Partial<Product> = {
+      name: formData.name,
+      description: formData.description,
+      price: Number(formData.price),
+      stock: Number(formData.quantity),
+      category: formData.category || undefined,
+      sellerId: this.authService.currentUser()?.id || '',
+      imageUrls: [
+        ...this.existingImageUrls(),
+        ...this.imagePreviews()
+      ]
+    };
+
+    if (this.isEditMode()) {
+      this.updateProduct(productData);
+    } else {
+      this.createProduct(productData);
+    }
   }
-  
-  // Clear any previous error messages
-  this.errorMessage.set('');
-  this.successMessage.set('');
-  this.uploadError.set('');
-  
-  this.isSaving.set(true);
-  
-  const formData = this.productForm.value;
-  
-  const productData: Partial<Product> = {
-    name: formData.name,
-    description: formData.description,
-    price: Number(formData.price),
-    stock: Number(formData.quantity),
-    sellerId: this.authService.currentUser()?.id || '',
-    imageUrls: [
-      ...this.existingImageUrls(),
-      ...this.imagePreviews()
-    ]
-  };
-  
-  if (this.isEditMode()) {
-    this.updateProduct(productData);
-  } else {
-    this.createProduct(productData);
-  }
-}
 
-  
+
   private createProduct(productData: Partial<Product>): void {
     const selectedFiles = this.selectedImages();
 
@@ -308,7 +347,8 @@ removeExistingImage(index: number): void {
       name: productData.name!,
       description: productData.description!,
       price: productData.price!,
-      quantity: productData.stock || 0
+      quantity: productData.stock || 0,
+      category: productData.category || undefined
     };
 
     this.productService.createProduct(productRequest).subscribe({
@@ -332,17 +372,17 @@ removeExistingImage(index: number): void {
       },
     });
   }
-  
+
   private associateMediaWithProduct(productId: string, mediaIds: string[]): void {
-    const associations = mediaIds.map(mediaId => 
+    const associations = mediaIds.map(mediaId =>
       this.productService.associateMedia(productId, mediaId)
     );
-    
+
     forkJoin(associations).subscribe({
       next: () => {
         this.successMessage.set('Product created successfully with images!');
         this.isSaving.set(false);
-        
+
         setTimeout(() => {
           this.router.navigate(['/seller/dashboard']);
         }, 1000);
@@ -361,10 +401,10 @@ removeExistingImage(index: number): void {
   private updateProduct(productData: Partial<Product>): void {
     const id = this.productId();
     if (!id) return;
-    
+
     const selectedFiles = this.selectedImages();
     const deletedIds = this.deletedMediaIds();
-    
+
     // Step 1: Remove deleted media IDs from product (if any)
     if (deletedIds.length > 0) {
       this.removeDeletedMediaFromProduct(id, deletedIds, () => {
@@ -374,7 +414,7 @@ removeExistingImage(index: number): void {
       this.proceedWithUpdate(id, selectedFiles, productData);
     }
   }
-  
+
   /**
    * Helper method to continue update flow
    */
@@ -383,11 +423,11 @@ removeExistingImage(index: number): void {
       this.mediaService.uploadFiles(selectedFiles).subscribe({
         next: (mediaList) => {
           const newMediaIds = mediaList.map(m => m.id);
-          
-          const associations = newMediaIds.map(mediaId => 
+
+          const associations = newMediaIds.map(mediaId =>
             this.productService.associateMedia(id, mediaId)
           );
-          
+
           forkJoin(associations).subscribe({
             next: () => {
               this.updateProductDetails(id, productData);
@@ -409,7 +449,7 @@ removeExistingImage(index: number): void {
       this.updateProductDetails(id, productData);
     }
   }
-  
+
   /**
    * Remove deleted media IDs from product's mediaIds array
    */
@@ -419,13 +459,13 @@ removeExistingImage(index: number): void {
     console.log('Deleted media IDs:', deletedIds);
     callback();
   }
-  
+
   /**
    * Update product details
    */
   private updateProductDetails(id: string, productData: Partial<Product>): void {
- 
-    
+
+
 
     // Prepare update request with ONLY the fields backend expects
     const updateRequest = {
@@ -433,13 +473,14 @@ removeExistingImage(index: number): void {
       description: productData.description,
       price: productData.price,
       quantity: productData.stock || 0,
+      category: productData.category || undefined
     };
 
     this.productService.updateProduct(id, updateRequest).subscribe({
       next: (product) => {
         this.successMessage.set('Product updated successfully!');
         this.isSaving.set(false);
-        
+
         setTimeout(() => {
           this.router.navigate(['/seller/dashboard']);
         }, 1000);
@@ -451,7 +492,7 @@ removeExistingImage(index: number): void {
       },
     });
   }
-  
+
   cancel(): void {
     if (this.productForm.dirty) {
       this.dialogService.confirmDiscard().subscribe((confirmed) => {
@@ -463,19 +504,19 @@ removeExistingImage(index: number): void {
       this.router.navigate(['/seller/dashboard']);
     }
   }
-  
+
   getErrorMessage(controlName: string): string {
     const control = this.productForm.get(controlName);
 
     if (!control || !control.errors) {
       return '';
     }
-    
+
     if (controlName === 'quantity') {
       if (control.hasError('required')) return 'Quantity is required';
       if (control.hasError('min')) return 'Quantity cannot be negative';
     }
-    
+
     return getValidationMessage(control.errors, controlName);
   }
 }

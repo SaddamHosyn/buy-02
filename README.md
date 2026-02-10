@@ -1,4 +1,4 @@
-# buy-02
+# buy-02 !!!
 
 **Full-stack e-commerce marketplace — shopping cart, orders, analytics dashboards, search & filtering — with CI/CD and SonarQube quality gates.**
 
@@ -143,9 +143,9 @@ ngrok http 8088
 1. Create a new **Pipeline** job (or copy an existing one)
 2. **Pipeline** section → **Definition**: Select "Pipeline script from SCM"
 3. **SCM**: Select **Git**
-   - **Repository URL**: `https://github.com/jeeeeedi/mr-jenk.git`
+   - **Repository URL**: `https://github.com/SaddamHosyn/buy-02.git`
    - **Credentials**: Select the GitHub credentials you created
-   - **Branch**: `*/cleanup` (or your working branch)
+   - **Branch**: `*/feature` (or your working branch)
 4. **Script Path**: `.pipeline/Jenkinsfile`
 5. Under **Build Triggers** → Check ☑️ **GitHub hook trigger for GITScm polling**
 6. **Save**
@@ -299,8 +299,8 @@ The easiest way to run the entire application:
 
 ```bash
 # Clone the repository
-git clone https://github.com/jeeeeedi/buy-01.git
-cd buy-01
+git clone https://github.com/SaddamHosyn/buy-02.git
+cd buy-02
 
 # Or use the provided helper script
 ./start_docker.sh
@@ -963,32 +963,6 @@ curl -X POST http://localhost:8080/api/media/upload \
 - Code reviews (security, performance, readability) before merge
 - Main branch protected: require approved reviews and green pipeline
 
-## 📝 Audit Checklist
-
-### Functional
-
-- [ ] Database design correctly implemented with new relationships
-- [ ] PRs and code reviews followed throughout development
-- [ ] Orders MicroService, User Profile, Search/Filtering, Shopping Cart implemented
-- [ ] Cart items persist across page refresh with correct quantities
-- [ ] SonarQube issues identified and addressed
-- [ ] UI is user-friendly and responsive
-- [ ] Error handling and validation in place with appropriate messages
-- [ ] Security measures consistently applied
-
-### Collaboration & Process
-
-- [ ] Code reviews performed for each PR
-- [ ] CI/CD pipeline (Jenkins) correctly set up and used for PRs
-- [ ] Branches merged correctly, main codebase up-to-date
-- [ ] Application passes comprehensive testing of all new features
-- [ ] Unit tests in place for critical parts of the application
-
-### Bonus
-
-- [ ] Wishlist feature (save for later)
-- [ ] Additional payment methods (simulate gateway integration)
-
 ## 📖 Documentation
 
 ### For Developers
@@ -1017,11 +991,5 @@ This project is developed for educational purposes as part of a university proje
 
 - [@jeeeeedi](https://github.com/jeeeeedi)
 - [@oafilali](https://github.com/oafilali)
-- [@Anastasia](https://github.com/An1Su)
+- [@ejmilli](https://github.com/ejmilli)
 - [@SaddamHosyn](https://github.com/SaddamHosyn)
-
----
-
-**Built with ❤️ using Spring Boot, Angular, Kafka, and MongoDB**
-
-_For questions or issues, please open an issue on GitHub._

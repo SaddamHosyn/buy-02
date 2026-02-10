@@ -54,7 +54,21 @@
             <mat-hint>Minimum 10 characters</mat-hint>
           </mat-form-field>
 
+          <!-- Category -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Category</mat-label>
+            <mat-select formControlName="category" placeholder="Select a category (optional)">
+              <mat-option value="">None</mat-option>
+              @for (category of availableCategories(); track category) {
+              <mat-option [value]="category">{{ category }}</mat-option>
+              }
+            </mat-select>
+            <mat-icon matPrefix>category</mat-icon>
+            <mat-hint>Select a category to help buyers find your product</mat-hint>
+          </mat-form-field>
+
           <!-- Price and Stock Row -->
+
           <div class="form-row">
             <!-- Price -->
             <mat-form-field appearance="outline" class="half-width">

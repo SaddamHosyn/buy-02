@@ -1,6 +1,6 @@
 import { Injectable, inject, signal, effect } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, BehaviorSubject, tap } from 'rxjs';
+import { Observable, BehaviorSubject, tap, map } from 'rxjs';
 import { Auth } from './auth';
 import { environment } from '../../../environments/environment';
 
@@ -100,7 +100,8 @@ export interface BuyerStats {
 export interface ProductStat {
   productId: string;
   productName: string;
-  quantity: number;
+  totalQuantity: number;
+  quantity: number; // alias for totalQuantity in some contexts
   totalAmount: number;
 }
 
@@ -115,6 +116,15 @@ export interface SellerStats {
   bestSellingByAmount: ProductStat[];
   bestSellingByQuantity: ProductStat[];
   averageOrderValue: number;
+}
+
+// Paginated response from backend
+interface PagedOrderResponse {
+  content: Order[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
 }
 
 // ==================== Service ====================
@@ -239,7 +249,7 @@ export class OrderService {
   }
 
   /**
-   * Redo a cancelled order (create new order with same items)
+   * Redo a cancelled order - creates a new order with same items
    */
   redoOrder(id: string): Observable<Order> {
     return this.http
@@ -251,7 +261,7 @@ export class OrderService {
    * Check if order can be cancelled
    */
   canCancel(order: Order): boolean {
-    return [OrderStatus.PENDING, OrderStatus.CONFIRMED, OrderStatus.PROCESSING].includes(
+    return [OrderStatus.PENDING, OrderStatus.CONFIRMED].includes(
       order.status,
     );
   }
@@ -321,10 +331,11 @@ export class OrderService {
     }
     const url = queryParams ? `${this.API_URL}/seller?${queryParams}` : `${this.API_URL}/seller`;
     return this.http
-      .get<Order[]>(url, {
+      .get<PagedOrderResponse>(url, {
         headers: this.getHeaders(),
       })
       .pipe(
+        map((response) => response.content || []),
         tap((orders) => {
           this.ordersSignal.set(orders);
           this.isLoadingSignal.set(false);
