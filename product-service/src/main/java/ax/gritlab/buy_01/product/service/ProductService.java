@@ -42,6 +42,8 @@ import ax.gritlab.buy_01.product.dto.PagedResponse;
 @Service
 @RequiredArgsConstructor
 public class ProductService {
+    private static final String PRODUCT_NOT_FOUND = "Product not found";
+
     // Delete all products for a user and publish product.deleted events
     public void deleteProductsByUserId(String userId) {
         List<Product> products = productRepository.findByUserId(userId);
@@ -235,7 +237,7 @@ public class ProductService {
      */
     public void removeMediaFromProduct(String productId, String mediaId) {
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new RuntimeException("Product not found"));
+                .orElseThrow(() -> new RuntimeException(PRODUCT_NOT_FOUND));
 
         product.getMediaIds().remove(mediaId);
         productRepository.save(product);
@@ -447,38 +449,56 @@ public class ProductService {
     /**
      * Decrement stock for multiple products after order checkout.
      * This is called by order-service after successful checkout to update inventory.
-     * 
-     * @param request The stock update request containing product IDs and quantities to decrement
-     * @return StockUpdateResponse with results for each product
      */
     public StockUpdateResponse decrementStock(StockUpdateRequest request) {
+        return updateStock(request, false);
+    }
+
+    /**
+     * Increment stock for multiple products after order cancellation.
+     * This is called by order-service after an order is cancelled to restore inventory.
+     */
+    public StockUpdateResponse incrementStock(StockUpdateRequest request) {
+        return updateStock(request, true);
+    }
+
+    /**
+     * Shared helper for stock update operations.
+     * @param request  The stock update request
+     * @param increment true to add stock (restore), false to subtract (decrement)
+     */
+    private StockUpdateResponse updateStock(StockUpdateRequest request, boolean increment) {
         List<StockUpdateResponse.StockUpdateResult> results = new ArrayList<>();
         boolean allSuccess = true;
-        
+        String action = increment ? "restoring" : "updating";
+
         for (StockUpdateRequest.StockUpdateItem item : request.getItems()) {
             StockUpdateResponse.StockUpdateResult result;
-            
+
             try {
                 Product product = productRepository.findById(item.getProductId())
                         .orElse(null);
-                
+
                 if (product == null) {
                     result = StockUpdateResponse.StockUpdateResult.builder()
                             .productId(item.getProductId())
                             .success(false)
-                            .error("Product not found")
+                            .error(PRODUCT_NOT_FOUND)
                             .build();
                     allSuccess = false;
                 } else {
                     int previousStock = product.getQuantity();
-                    int newStock = previousStock - item.getQuantity();
-                    
-                    if (newStock < 0) {
+                    int newStock = increment
+                            ? previousStock + item.getQuantity()
+                            : previousStock - item.getQuantity();
+
+                    if (!increment && newStock < 0) {
                         result = StockUpdateResponse.StockUpdateResult.builder()
                                 .productId(item.getProductId())
                                 .productName(product.getName())
                                 .success(false)
-                                .error("Insufficient stock. Available: " + previousStock + ", Requested: " + item.getQuantity())
+                                .error("Insufficient stock. Available: " + previousStock
+                                        + ", Requested: " + item.getQuantity())
                                 .previousStock(previousStock)
                                 .build();
                         allSuccess = false;
@@ -486,7 +506,7 @@ public class ProductService {
                         product.setQuantity(newStock);
                         product.setUpdatedAt(java.time.LocalDateTime.now());
                         productRepository.save(product);
-                        
+
                         result = StockUpdateResponse.StockUpdateResult.builder()
                                 .productId(item.getProductId())
                                 .productName(product.getName())
@@ -500,77 +520,20 @@ public class ProductService {
                 result = StockUpdateResponse.StockUpdateResult.builder()
                         .productId(item.getProductId())
                         .success(false)
-                        .error("Error updating stock: " + e.getMessage())
+                        .error("Error " + action + " stock: " + e.getMessage())
                         .build();
                 allSuccess = false;
             }
-            
-            results.add(result);
-        }
-        
-        return StockUpdateResponse.builder()
-                .success(allSuccess)
-                .message(allSuccess ? "All stock updates successful" : "Some stock updates failed")
-                .results(results)
-                .build();
-    }
 
-    /**
-     * Increment stock for multiple products after order cancellation.
-     * This is called by order-service after an order is cancelled to restore inventory.
-     * 
-     * @param request The stock update request containing product IDs and quantities to restore
-     * @return StockUpdateResponse with results for each product
-     */
-    public StockUpdateResponse incrementStock(StockUpdateRequest request) {
-        List<StockUpdateResponse.StockUpdateResult> results = new ArrayList<>();
-        boolean allSuccess = true;
-        
-        for (StockUpdateRequest.StockUpdateItem item : request.getItems()) {
-            StockUpdateResponse.StockUpdateResult result;
-            
-            try {
-                Product product = productRepository.findById(item.getProductId())
-                        .orElse(null);
-                
-                if (product == null) {
-                    result = StockUpdateResponse.StockUpdateResult.builder()
-                            .productId(item.getProductId())
-                            .success(false)
-                            .error("Product not found")
-                            .build();
-                    allSuccess = false;
-                } else {
-                    int previousStock = product.getQuantity();
-                    int newStock = previousStock + item.getQuantity();
-                    
-                    product.setQuantity(newStock);
-                    product.setUpdatedAt(java.time.LocalDateTime.now());
-                    productRepository.save(product);
-                    
-                    result = StockUpdateResponse.StockUpdateResult.builder()
-                            .productId(item.getProductId())
-                            .productName(product.getName())
-                            .success(true)
-                            .previousStock(previousStock)
-                            .newStock(newStock)
-                            .build();
-                }
-            } catch (Exception e) {
-                result = StockUpdateResponse.StockUpdateResult.builder()
-                        .productId(item.getProductId())
-                        .success(false)
-                        .error("Error restoring stock: " + e.getMessage())
-                        .build();
-                allSuccess = false;
-            }
-            
             results.add(result);
         }
-        
+
+        String successMsg = increment ? "All stock restored successfully" : "All stock updates successful";
+        String failMsg = increment ? "Some stock restorations failed" : "Some stock updates failed";
+
         return StockUpdateResponse.builder()
                 .success(allSuccess)
-                .message(allSuccess ? "All stock restored successfully" : "Some stock restorations failed")
+                .message(allSuccess ? successMsg : failMsg)
                 .results(results)
                 .build();
     }

@@ -282,11 +282,11 @@ erDiagram
 
 #### Are there unit tests in place for critical parts of the application?
 
-> **Yes.** 10 backend test classes (113 tests) + 7 frontend spec files (162 tests) = **275 tests total**.
+> **Yes.** 10 backend test classes (124 tests) + 7 frontend spec files (162 tests) = **286 tests total**.
 >
 > ---
 >
-> **Backend — 113 tests** (JUnit 5, Mockito)
+> **Backend — 124 tests** (JUnit 5, Mockito)
 >
 > `ApiGatewayApplicationTest` — 3 tests
 > - Context loads, 404 on non-existent route, actuator available
@@ -300,8 +300,10 @@ erDiagram
 > `JwtServiceTest` — 7 tests
 > - Generate token, extract username, token with extra claims, validate correct/incorrect UserDetails, reject expired token, extract custom claim
 >
-> `ProductServiceTest` — 9 tests
+> `ProductServiceTest` — 20 tests
 > - Get all, get by ID, product not found, create, update, unauthorized update, delete, unauthorized delete, delete all by user
+> - **Decrement stock** (6): single product success, decrement to zero, insufficient stock, product not found, multiple products mixed results, repository exception
+> - **Increment stock** (5): single product success, increment from zero, product not found, multiple products all success, repository exception
 >
 > `MediaServiceTest` — 8 tests
 > - Find by userId, associate with product, unauthorized association, non-existent media, delete by userId, delete by productId (empty), delete by IDs (empty list, empty result)

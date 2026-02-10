@@ -124,41 +124,9 @@ public class OrderService {
      * Called after checkout to update inventory.
      */
     private void decrementStockForOrder(List<OrderItem> orderItems) {
-        try {
-            // Build stock update request
-            List<StockUpdateRequest.StockUpdateItem> items = orderItems.stream()
-                    .map(item -> StockUpdateRequest.StockUpdateItem.builder()
-                            .productId(item.getProductId())
-                            .quantity(item.getQuantity())
-                            .build())
-                    .collect(Collectors.toList());
-            
-            StockUpdateRequest stockRequest = StockUpdateRequest.builder()
-                    .items(items)
-                    .build();
-            
-            // Call product service to decrement stock
-            String url = productServiceUrl + "/internal/decrement-stock";
-            log.info("Decrementing stock for {} items via: {}", items.size(), url);
-            
-            StockUpdateResponse response = restTemplate.postForObject(url, stockRequest, StockUpdateResponse.class);
-            
-            if (response != null && !response.isSuccess()) {
-                log.warn("Some stock updates failed: {}", response.getMessage());
-                // Log individual failures
-                response.getResults().stream()
-                        .filter(r -> !r.isSuccess())
-                        .forEach(r -> log.warn("Failed to update stock for product {}: {}", 
-                                r.getProductId(), r.getError()));
-            } else {
-                log.info("Stock decremented successfully for all items");
-            }
-        } catch (Exception e) {
-            // Log error but don't fail the order - stock decrement is best effort
-            // In a production system, you might want to use a saga pattern or 
-            // message queue for guaranteed delivery
-            log.error("Failed to decrement stock: {}. Order will still be placed.", e.getMessage());
-        }
+        callStockEndpoint(orderItems, "/internal/decrement-stock",
+                "Decrementing stock", "Stock decremented successfully",
+                "Failed to decrement stock: {}. Order will still be placed.");
     }
 
     /**
@@ -166,38 +134,44 @@ public class OrderService {
      * Called after order cancellation to restore inventory.
      */
     private void incrementStockForOrder(List<OrderItem> orderItems) {
+        callStockEndpoint(orderItems, "/internal/increment-stock",
+                "Restoring stock", "Stock restored successfully",
+                "Failed to restore stock: {}. Order cancellation will still proceed.");
+    }
+
+    /**
+     * Shared helper to call product-service stock update endpoints.
+     */
+    private void callStockEndpoint(List<OrderItem> orderItems, String endpoint,
+                                   String actionLabel, String successMsg, String errorMsg) {
         try {
-            // Build stock update request
             List<StockUpdateRequest.StockUpdateItem> items = orderItems.stream()
                     .map(item -> StockUpdateRequest.StockUpdateItem.builder()
                             .productId(item.getProductId())
                             .quantity(item.getQuantity())
                             .build())
                     .collect(Collectors.toList());
-            
+
             StockUpdateRequest stockRequest = StockUpdateRequest.builder()
                     .items(items)
                     .build();
-            
-            // Call product service to increment stock
-            String url = productServiceUrl + "/internal/increment-stock";
-            log.info("Restoring stock for {} items via: {}", items.size(), url);
-            
+
+            String url = productServiceUrl + endpoint;
+            log.info("{} for {} items via: {}", actionLabel, items.size(), url);
+
             StockUpdateResponse response = restTemplate.postForObject(url, stockRequest, StockUpdateResponse.class);
-            
+
             if (response != null && !response.isSuccess()) {
-                log.warn("Some stock restorations failed: {}", response.getMessage());
-                // Log individual failures
+                log.warn("Some stock operations failed: {}", response.getMessage());
                 response.getResults().stream()
                         .filter(r -> !r.isSuccess())
-                        .forEach(r -> log.warn("Failed to restore stock for product {}: {}", 
+                        .forEach(r -> log.warn("Failed stock operation for product {}: {}",
                                 r.getProductId(), r.getError()));
             } else {
-                log.info("Stock restored successfully for all items");
+                log.info("{} for all items", successMsg);
             }
         } catch (Exception e) {
-            // Log error but don't fail the cancellation
-            log.error("Failed to restore stock: {}. Order cancellation will still proceed.", e.getMessage());
+            log.error(errorMsg, e.getMessage());
         }
     }
 
