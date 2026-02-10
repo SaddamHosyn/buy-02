@@ -36,6 +36,7 @@ public class SecurityConfig {
                         // Inter-service communication
                         .requestMatchers("/products/*/remove-media/*").permitAll()
                         .requestMatchers("/products/cleanup-orphaned-media").permitAll()
+                        .requestMatchers("/products/internal/**").permitAll()
                         // All other requests require authentication
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

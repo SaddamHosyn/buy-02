@@ -14,7 +14,7 @@
         Browse
       </button>
 
-      @if (!authService.isSeller() && !authService.isAdmin()) {
+      @if (authService.isAuthenticated()) {
         <button mat-button routerLink="/cart" routerLinkActive="active-link" matTooltip="Your Cart">
           <mat-icon
             [matBadge]="cartCount()"
@@ -25,9 +25,6 @@
           >
           <span>Cart</span>
         </button>
-      }
-
-      @if (authService.isAuthenticated()) {
         <button
           mat-button
           routerLink="/orders"
@@ -77,18 +74,16 @@
         </button>
 
         @if (authService.isAuthenticated()) {
-          @if (!authService.isSeller() && !authService.isAdmin()) {
-            <button mat-menu-item routerLink="/cart">
-              <mat-icon
-                [matBadge]="cartCount()"
-                [matBadgeHidden]="cartCount() === 0"
-                matBadgeColor="warn"
-                matBadgeSize="small"
-                >shopping_cart</mat-icon
-              >
-              <span>Cart</span>
-            </button>
-          }
+          <button mat-menu-item routerLink="/cart">
+            <mat-icon
+              [matBadge]="cartCount()"
+              [matBadgeHidden]="cartCount() === 0"
+              matBadgeColor="warn"
+              matBadgeSize="small"
+              >shopping_cart</mat-icon
+            >
+            <span>Cart</span>
+          </button>
           <button mat-menu-item routerLink="/orders">
             <mat-icon>receipt_long</mat-icon>
             <span>My Orders</span>

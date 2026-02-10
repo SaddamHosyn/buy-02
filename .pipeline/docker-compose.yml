@@ -19,7 +19,7 @@ services:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-admin}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-admin123}
     volumes:
-      - ./uploads:/data/db
+      - mongodb_data:/data/db
     networks:
       - buy-01-network
 
@@ -214,6 +214,7 @@ networks:
     driver: bridge
 
 volumes:
+  mongodb_data:
   sonarqube_data:
   sonarqube_logs:
   sonarqube_extensions:

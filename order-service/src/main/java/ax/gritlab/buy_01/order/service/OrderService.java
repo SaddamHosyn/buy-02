@@ -4,6 +4,8 @@ import ax.gritlab.buy_01.order.dto.request.CheckoutRequest;
 import ax.gritlab.buy_01.order.dto.response.CartResponse;
 import ax.gritlab.buy_01.order.dto.response.OrderItemResponse;
 import ax.gritlab.buy_01.order.dto.response.OrderResponse;
+import ax.gritlab.buy_01.order.dto.StockUpdateRequest;
+import ax.gritlab.buy_01.order.dto.StockUpdateResponse;
 import ax.gritlab.buy_01.order.exception.InvalidStatusTransitionException;
 import ax.gritlab.buy_01.order.exception.OrderNotFoundException;
 import ax.gritlab.buy_01.order.exception.UnauthorizedException;
@@ -11,6 +13,7 @@ import ax.gritlab.buy_01.order.model.*;
 import ax.gritlab.buy_01.order.repository.OrderRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,6 +25,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderService {
@@ -103,6 +107,9 @@ public class OrderService {
         order.setUpdatedAt(LocalDateTime.now());
         order.setIsRemoved(false);
         
+        // Decrement stock for all items in the order
+        decrementStockForOrder(orderItems);
+        
         // Save order
         Order savedOrder = orderRepository.save(order);
         
@@ -110,6 +117,88 @@ public class OrderService {
         cartService.markCartAsPurchased(userId);
         
         return toOrderResponse(savedOrder);
+    }
+
+    /**
+     * Decrement stock for all items in an order.
+     * Called after checkout to update inventory.
+     */
+    private void decrementStockForOrder(List<OrderItem> orderItems) {
+        try {
+            // Build stock update request
+            List<StockUpdateRequest.StockUpdateItem> items = orderItems.stream()
+                    .map(item -> StockUpdateRequest.StockUpdateItem.builder()
+                            .productId(item.getProductId())
+                            .quantity(item.getQuantity())
+                            .build())
+                    .collect(Collectors.toList());
+            
+            StockUpdateRequest stockRequest = StockUpdateRequest.builder()
+                    .items(items)
+                    .build();
+            
+            // Call product service to decrement stock
+            String url = productServiceUrl + "/internal/decrement-stock";
+            log.info("Decrementing stock for {} items via: {}", items.size(), url);
+            
+            StockUpdateResponse response = restTemplate.postForObject(url, stockRequest, StockUpdateResponse.class);
+            
+            if (response != null && !response.isSuccess()) {
+                log.warn("Some stock updates failed: {}", response.getMessage());
+                // Log individual failures
+                response.getResults().stream()
+                        .filter(r -> !r.isSuccess())
+                        .forEach(r -> log.warn("Failed to update stock for product {}: {}", 
+                                r.getProductId(), r.getError()));
+            } else {
+                log.info("Stock decremented successfully for all items");
+            }
+        } catch (Exception e) {
+            // Log error but don't fail the order - stock decrement is best effort
+            // In a production system, you might want to use a saga pattern or 
+            // message queue for guaranteed delivery
+            log.error("Failed to decrement stock: {}. Order will still be placed.", e.getMessage());
+        }
+    }
+
+    /**
+     * Increment stock for all items in an order.
+     * Called after order cancellation to restore inventory.
+     */
+    private void incrementStockForOrder(List<OrderItem> orderItems) {
+        try {
+            // Build stock update request
+            List<StockUpdateRequest.StockUpdateItem> items = orderItems.stream()
+                    .map(item -> StockUpdateRequest.StockUpdateItem.builder()
+                            .productId(item.getProductId())
+                            .quantity(item.getQuantity())
+                            .build())
+                    .collect(Collectors.toList());
+            
+            StockUpdateRequest stockRequest = StockUpdateRequest.builder()
+                    .items(items)
+                    .build();
+            
+            // Call product service to increment stock
+            String url = productServiceUrl + "/internal/increment-stock";
+            log.info("Restoring stock for {} items via: {}", items.size(), url);
+            
+            StockUpdateResponse response = restTemplate.postForObject(url, stockRequest, StockUpdateResponse.class);
+            
+            if (response != null && !response.isSuccess()) {
+                log.warn("Some stock restorations failed: {}", response.getMessage());
+                // Log individual failures
+                response.getResults().stream()
+                        .filter(r -> !r.isSuccess())
+                        .forEach(r -> log.warn("Failed to restore stock for product {}: {}", 
+                                r.getProductId(), r.getError()));
+            } else {
+                log.info("Stock restored successfully for all items");
+            }
+        } catch (Exception e) {
+            // Log error but don't fail the cancellation
+            log.error("Failed to restore stock: {}. Order cancellation will still proceed.", e.getMessage());
+        }
     }
 
     /**
@@ -181,6 +270,9 @@ public class OrderService {
         order.setStatus(OrderStatus.CANCELLED);
         order.setUpdatedAt(LocalDateTime.now());
         addStatusHistoryEntry(order, oldStatus, OrderStatus.CANCELLED, userId, Role.CLIENT, reason);
+        
+        // Restore stock for all items in the cancelled order
+        incrementStockForOrder(order.getItems());
         
         Order saved = orderRepository.save(order);
         return toOrderResponse(saved);

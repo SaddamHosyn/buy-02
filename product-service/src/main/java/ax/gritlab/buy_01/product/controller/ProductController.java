@@ -4,6 +4,8 @@ import ax.gritlab.buy_01.product.dto.ProductRequest;
 import ax.gritlab.buy_01.product.dto.ProductResponse;
 import ax.gritlab.buy_01.product.dto.ProductSearchRequest;
 import ax.gritlab.buy_01.product.dto.ProductSearchResponse;
+import ax.gritlab.buy_01.product.dto.StockUpdateRequest;
+import ax.gritlab.buy_01.product.dto.StockUpdateResponse;
 import ax.gritlab.buy_01.product.model.User;
 import ax.gritlab.buy_01.product.service.ProductService;
 import jakarta.validation.Valid;
@@ -183,5 +185,35 @@ public class ProductController {
     public ResponseEntity<String> cleanupOrphanedMedia() {
         String result = productService.cleanupOrphanedMedia();
         return ResponseEntity.ok(result);
+    }
+
+    /**
+     * Internal endpoint for stock decrement during order checkout.
+     * Called by order-service after successful checkout to update inventory.
+     * This is an internal service-to-service call, no auth required.
+     */
+    @PostMapping("/internal/decrement-stock")
+    public ResponseEntity<StockUpdateResponse> decrementStock(@Valid @RequestBody StockUpdateRequest request) {
+        StockUpdateResponse response = productService.decrementStock(request);
+        if (response.isSuccess()) {
+            return ResponseEntity.ok(response);
+        } else {
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    /**
+     * Internal endpoint for stock increment after order cancellation.
+     * Called by order-service when an order is cancelled to restore inventory.
+     * This is an internal service-to-service call, no auth required.
+     */
+    @PostMapping("/internal/increment-stock")
+    public ResponseEntity<StockUpdateResponse> incrementStock(@Valid @RequestBody StockUpdateRequest request) {
+        StockUpdateResponse response = productService.incrementStock(request);
+        if (response.isSuccess()) {
+            return ResponseEntity.ok(response);
+        } else {
+            return ResponseEntity.badRequest().body(response);
+        }
     }
 }

@@ -21,7 +21,10 @@
 <div class="container">
   <!-- View Mode Tabs (for Sellers) -->
   @if (isSeller()) {
-    <mat-tab-group (selectedTabChange)="switchViewMode($event.index === 0 ? 'seller' : 'buyer')">
+    <mat-tab-group
+      [selectedIndex]="viewMode() === 'seller' ? 0 : 1"
+      (selectedTabChange)="switchViewMode($event.index === 0 ? 'seller' : 'buyer')"
+    >
       <mat-tab label="Sales (Seller View)"></mat-tab>
       <mat-tab label="Purchases (Buyer View)"></mat-tab>
     </mat-tab-group>
