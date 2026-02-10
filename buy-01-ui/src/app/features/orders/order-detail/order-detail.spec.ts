@@ -220,13 +220,10 @@ describe('OrderDetailPage', () => {
   // ==================== Timeline Steps ====================
 
   describe('timeline steps', () => {
-    it('should have 5 status steps from PENDING to DELIVERED', () => {
+    it('should have 2 status steps: PENDING and CONFIRMED', () => {
       expect(component.statusSteps).toEqual([
         OrderStatus.PENDING,
         OrderStatus.CONFIRMED,
-        OrderStatus.PROCESSING,
-        OrderStatus.SHIPPED,
-        OrderStatus.DELIVERED,
       ]);
     });
 
@@ -241,10 +238,9 @@ describe('OrderDetailPage', () => {
     });
 
     it('should mark step as completed when before current', () => {
-      orderSignal.set(createMockOrder({ status: OrderStatus.PROCESSING }));
+      orderSignal.set(createMockOrder({ status: OrderStatus.CONFIRMED }));
       expect(component.isStepCompleted(OrderStatus.PENDING)).toBeTrue();
-      expect(component.isStepCompleted(OrderStatus.CONFIRMED)).toBeTrue();
-      expect(component.isStepCompleted(OrderStatus.PROCESSING)).toBeFalse();
+      expect(component.isStepCompleted(OrderStatus.CONFIRMED)).toBeFalse();
     });
 
     it('should mark step as active when it matches current status', () => {

@@ -79,7 +79,9 @@ describe('OrderListPage', () => {
 
   beforeEach(async () => {
     mockOrderService.getMyOrders.calls.reset();
+    mockOrderService.getMyOrders.and.returnValue(of([]));
     mockOrderService.getSellerOrders.calls.reset();
+    mockOrderService.getSellerOrders.and.returnValue(of([]));
     mockOrderService.cancelOrder.calls.reset();
     mockOrderService.redoOrder.calls.reset();
 
