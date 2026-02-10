@@ -470,61 +470,12 @@ public class ProductService {
     private StockUpdateResponse updateStock(StockUpdateRequest request, boolean increment) {
         List<StockUpdateResponse.StockUpdateResult> results = new ArrayList<>();
         boolean allSuccess = true;
-        String action = increment ? "restoring" : "updating";
 
         for (StockUpdateRequest.StockUpdateItem item : request.getItems()) {
-            StockUpdateResponse.StockUpdateResult result;
-
-            try {
-                Product product = productRepository.findById(item.getProductId())
-                        .orElse(null);
-
-                if (product == null) {
-                    result = StockUpdateResponse.StockUpdateResult.builder()
-                            .productId(item.getProductId())
-                            .success(false)
-                            .error(PRODUCT_NOT_FOUND)
-                            .build();
-                    allSuccess = false;
-                } else {
-                    int previousStock = product.getQuantity();
-                    int newStock = increment
-                            ? previousStock + item.getQuantity()
-                            : previousStock - item.getQuantity();
-
-                    if (!increment && newStock < 0) {
-                        result = StockUpdateResponse.StockUpdateResult.builder()
-                                .productId(item.getProductId())
-                                .productName(product.getName())
-                                .success(false)
-                                .error("Insufficient stock. Available: " + previousStock
-                                        + ", Requested: " + item.getQuantity())
-                                .previousStock(previousStock)
-                                .build();
-                        allSuccess = false;
-                    } else {
-                        product.setQuantity(newStock);
-                        product.setUpdatedAt(java.time.LocalDateTime.now());
-                        productRepository.save(product);
-
-                        result = StockUpdateResponse.StockUpdateResult.builder()
-                                .productId(item.getProductId())
-                                .productName(product.getName())
-                                .success(true)
-                                .previousStock(previousStock)
-                                .newStock(newStock)
-                                .build();
-                    }
-                }
-            } catch (Exception e) {
-                result = StockUpdateResponse.StockUpdateResult.builder()
-                        .productId(item.getProductId())
-                        .success(false)
-                        .error("Error " + action + " stock: " + e.getMessage())
-                        .build();
+            StockUpdateResponse.StockUpdateResult result = processStockItem(item, increment);
+            if (!result.isSuccess()) {
                 allSuccess = false;
             }
-
             results.add(result);
         }
 
@@ -536,5 +487,55 @@ public class ProductService {
                 .message(allSuccess ? successMsg : failMsg)
                 .results(results)
                 .build();
+    }
+
+    /** Processes a single stock update item. */
+    private StockUpdateResponse.StockUpdateResult processStockItem(
+            StockUpdateRequest.StockUpdateItem item, boolean increment) {
+        try {
+            Product product = productRepository.findById(item.getProductId()).orElse(null);
+            if (product == null) {
+                return StockUpdateResponse.StockUpdateResult.builder()
+                        .productId(item.getProductId())
+                        .success(false)
+                        .error(PRODUCT_NOT_FOUND)
+                        .build();
+            }
+
+            int previousStock = product.getQuantity();
+            int newStock = increment
+                    ? previousStock + item.getQuantity()
+                    : previousStock - item.getQuantity();
+
+            if (!increment && newStock < 0) {
+                return StockUpdateResponse.StockUpdateResult.builder()
+                        .productId(item.getProductId())
+                        .productName(product.getName())
+                        .success(false)
+                        .error("Insufficient stock. Available: " + previousStock
+                                + ", Requested: " + item.getQuantity())
+                        .previousStock(previousStock)
+                        .build();
+            }
+
+            product.setQuantity(newStock);
+            product.setUpdatedAt(java.time.LocalDateTime.now());
+            productRepository.save(product);
+
+            return StockUpdateResponse.StockUpdateResult.builder()
+                    .productId(item.getProductId())
+                    .productName(product.getName())
+                    .success(true)
+                    .previousStock(previousStock)
+                    .newStock(newStock)
+                    .build();
+        } catch (Exception e) {
+            String action = increment ? "restoring" : "updating";
+            return StockUpdateResponse.StockUpdateResult.builder()
+                    .productId(item.getProductId())
+                    .success(false)
+                    .error("Error " + action + " stock: " + e.getMessage())
+                    .build();
+        }
     }
 }
