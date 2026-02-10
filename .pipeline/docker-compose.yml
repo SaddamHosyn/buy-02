@@ -14,7 +14,7 @@ services:
     image: mongo:6.0
     container_name: buy-01-mongodb
     ports:
-      - "27018:27017"   # Offset to avoid local MongoDB conflict
+      - "27018:27017" # Offset to avoid local MongoDB conflict
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-admin}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-admin123}
@@ -29,7 +29,7 @@ services:
     depends_on:
       - zookeeper
     ports:
-      - "9094:9092"   # Offset to avoid local Kafka conflict
+      - "9094:9092" # Offset to avoid local Kafka conflict
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -49,7 +49,7 @@ services:
     image: buy01-pipeline-service-registry:latest
     container_name: buy-01-service-registry
     ports:
-      - "8762:8761"   # Offset to avoid local conflict
+      - "8762:8761" # Offset to avoid local conflict
     networks:
       - buy-01-network
 
@@ -57,8 +57,8 @@ services:
     image: buy01-pipeline-api-gateway:latest
     container_name: buy-01-api-gateway
     ports:
-      - "8090:8080"   # HTTP
-      - "8443:8443"   # HTTPS - must match frontend environment.prod.ts
+      - "8090:8080" # HTTP
+      - "8443:8443" # HTTPS - must match frontend environment.prod.ts
     volumes:
       - buy01-certs:/app/certs:ro
     environment:
@@ -83,7 +83,7 @@ services:
     image: buy01-pipeline-user-service:latest
     container_name: buy-01-user-service
     ports:
-      - "8091:8081"   # Offset to avoid local conflict
+      - "8091:8081" # Offset to avoid local conflict
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -102,7 +102,7 @@ services:
     image: buy01-pipeline-product-service:latest
     container_name: buy-01-product-service
     ports:
-      - "8092:8082"   # Offset to avoid local conflict
+      - "8092:8082" # Offset to avoid local conflict
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -122,7 +122,7 @@ services:
     image: buy01-pipeline-order-service:latest
     container_name: buy-01-order-service
     ports:
-      - "8094:8084"   # Offset to avoid local conflict
+      - "8094:8084" # Offset to avoid local conflict
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -143,7 +143,7 @@ services:
     image: buy01-pipeline-media-service:latest
     container_name: buy-01-media-service
     ports:
-      - "8093:8083"   # Offset to avoid local conflict
+      - "8093:8083" # Offset to avoid local conflict
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -165,8 +165,8 @@ services:
     image: buy01-pipeline-frontend:latest
     container_name: buy-01-frontend
     ports:
-      - "4200:80"   # HTTP
-      - "4201:443"  # HTTPS
+      - "4200:80" # HTTP
+      - "4201:443" # HTTPS
     volumes:
       - buy01-certs:/etc/nginx/certs:ro
     depends_on:
@@ -184,9 +184,9 @@ services:
       - SONAR_JDBC_URL=jdbc:postgresql://sonarqube-db:5432/sonar
       - SONAR_JDBC_USERNAME=sonar
       - SONAR_JDBC_PASSWORD=sonar
-    command:
-      - -Dsonar.web.javaOpts=-Xmx512m -Xms128m -XX:+HeapDumpOnOutOfMemoryError
-      - -Dsonar.ce.javaOpts=-Xmx512m -Xms128m -XX:+HeapDumpOnOutOfMemoryError
+      # Java agent for Community Branch Plugin (multi-branch support)
+      - SONAR_WEB_JAVAADDITIONALOPTS=-javaagent:/opt/sonarqube/extensions/plugins/sonarqube-community-branch-plugin-26.1.0.jar=web
+      - SONAR_CE_JAVAADDITIONALOPTS=-javaagent:/opt/sonarqube/extensions/plugins/sonarqube-community-branch-plugin-26.1.0.jar=ce
     volumes:
       - sonarqube_data:/opt/sonarqube/data
       - sonarqube_logs:/opt/sonarqube/logs
@@ -207,7 +207,6 @@ services:
       - sonarqube_db:/var/lib/postgresql/data
     networks:
       - buy-01-network
-
 
 networks:
   buy-01-network:
