@@ -4,8 +4,10 @@ const seller_id = "mock_seller_id";
 const password_hash =
   "$2a$10$tOWtSaDTO1Ph.lJ1odao8OuOsOJt31kj.2k8Ln8h0kvj1oR1OyxyW"; // password123 confirmed hash
 
-const media_url_prefix = (process.env.MEDIA_URL_PREFIX || "https://localhost:8443/api/media/images/");
-print("Using media URL prefix: " + media_url_prefix);
+// Images are served dynamically via the media-service REST endpoint:
+//   GET /api/media/images/{mediaId}
+// Products store only mediaIds; the frontend resolves URLs at runtime
+// using MediaService.getMediaUrl(id) → `${environment.mediaUrl}/images/${id}`
 
 // 1. Setup Users
 db = db.getSiblingDB("userdb");
@@ -42,7 +44,6 @@ db.products.insertMany([
     userId: seller_id,
     category: "Electronics",
     mediaIds: ["63e3aea6-318c-414e-a87e-8482febbaa61"],
-    imageUrls: [media_url_prefix + "63e3aea6-318c-414e-a87e-8482febbaa61"],
     _class: "ax.gritlab.buy_01.product.model.Product",
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -56,7 +57,6 @@ db.products.insertMany([
     userId: seller_id,
     category: "Food",
     mediaIds: ["e7915468-ff09-406b-b843-529a0a4849bb"],
-    imageUrls: [media_url_prefix + "e7915468-ff09-406b-b843-529a0a4849bb"],
     _class: "ax.gritlab.buy_01.product.model.Product",
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -71,7 +71,6 @@ db.products.insertMany([
     userId: seller_id,
     category: "Electronics",
     mediaIds: ["796e3151-0fb0-48e6-bcc0-b6f1ce9608c7"],
-    imageUrls: [media_url_prefix + "796e3151-0fb0-48e6-bcc0-b6f1ce9608c7"],
     _class: "ax.gritlab.buy_01.product.model.Product",
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -90,7 +89,7 @@ db.media.insertMany([
         filePath: "63e3aea6-318c-414e-a87e-8482febbaa61.jpg",
         userId: seller_id,
         productId: "prod_1",
-        url: media_url_prefix + "63e3aea6-318c-414e-a87e-8482febbaa61",
+        url: "/api/media/images/63e3aea6-318c-414e-a87e-8482febbaa61",
         createdAt: new Date(),
         updatedAt: new Date(),
         _class: "ax.gritlab.buy_01.media.model.Media"
@@ -103,7 +102,7 @@ db.media.insertMany([
         filePath: "e7915468-ff09-406b-b843-529a0a4849bb.jpg",
         userId: seller_id,
         productId: "prod_2",
-        url: media_url_prefix + "e7915468-ff09-406b-b843-529a0a4849bb",
+        url: "/api/media/images/e7915468-ff09-406b-b843-529a0a4849bb",
         createdAt: new Date(),
         updatedAt: new Date(),
         _class: "ax.gritlab.buy_01.media.model.Media"
@@ -116,7 +115,7 @@ db.media.insertMany([
         filePath: "796e3151-0fb0-48e6-bcc0-b6f1ce9608c7.jpg",
         userId: seller_id,
         productId: "prod_3",
-        url: media_url_prefix + "796e3151-0fb0-48e6-bcc0-b6f1ce9608c7",
+        url: "/api/media/images/796e3151-0fb0-48e6-bcc0-b6f1ce9608c7",
         createdAt: new Date(),
         updatedAt: new Date(),
         _class: "ax.gritlab.buy_01.media.model.Media"
@@ -142,6 +141,7 @@ db.orders.insertMany([
         subtotal: 19.99,
         sellerId: seller_id,
         category: "Electronics",
+        thumbnailMediaId: "63e3aea6-318c-414e-a87e-8482febbaa61",
         _class: "ax.gritlab.buy_01.order.model.OrderItem",
       },
     ],
@@ -168,6 +168,7 @@ db.orders.insertMany([
         subtotal: 1.98,
         sellerId: seller_id,
         category: "Food",
+        thumbnailMediaId: "e7915468-ff09-406b-b843-529a0a4849bb",
         _class: "ax.gritlab.buy_01.order.model.OrderItem",
       },
     ],
@@ -194,6 +195,7 @@ db.orders.insertMany([
         subtotal: 2.59,
         sellerId: seller_id,
         category: "Electronics",
+        thumbnailMediaId: "796e3151-0fb0-48e6-bcc0-b6f1ce9608c7",
         _class: "ax.gritlab.buy_01.order.model.OrderItem",
       },
     ],
